@@ -1,0 +1,421 @@
+<!--
+  accueil_invite.html — Page Invite (visiteur non connecte)
+  IMPORTANT : cette page est AUTONOME. Elle ne doit PAS heriter de base.html
+  (pas de balise extends). Sers-la directement via une vue (voir views.py / urls.py).
+  Elle ne depend ni de Bootstrap ni de site.css : aucun conflit avec ton base.html.
+-->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ImmoGérer — Louer, acheter, construire en Côte d'Ivoire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#185FA5; --primary-dark:#1A3E6A;
+    --accent:#C9A84C; --accent-light:#FFFBEB; --accent-dark:#7A5F1A;
+    --green:#3B6D11; --green-light:#EAF3DE; --green-text:#27500A;
+    --blue:#185FA5; --blue-light:#E6F1FB; --blue-text:#0C447C;
+    --text:#111; --muted:#666; --muted-2:#9aa0a6;
+    --border:#e5e7eb; --bg:#F4F6F9; --card:#fff;
+    --warn:#B4441F;
+    --font-display:"Plus Jakarta Sans",system-ui,sans-serif;
+    --font-body:"Inter",system-ui,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box}
+  html{max-width:100%;overflow-x:hidden}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;font-weight:600;font-size:14px;padding:10px 17px;cursor:pointer;border:1px solid transparent;transition:.16s;font-family:var(--font-body)}
+  .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+  .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark);transform:translateY(-1px)}
+  .btn-amber{background:var(--accent);color:#1c1405}.btn-amber:hover{filter:brightness(.96);transform:translateY(-1px)}
+  .btn-green{background:var(--green);color:#fff}.btn-green:hover{filter:brightness(1.05);transform:translateY(-1px)}
+  .btn-ghost{background:var(--card);border-color:var(--border);color:var(--text)}.btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+
+  /* ===== top bar ===== */
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(244,246,249,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .topbar .wrap{display:flex;align-items:center;gap:24px;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;font-size:18px;letter-spacing:-.01em}
+  .brand .mk{width:23px;height:23px}
+  .nav{display:flex;gap:2px;margin-left:6px}
+  .nav a{padding:8px 12px;border-radius:9px;color:var(--muted);font-weight:500;font-size:14px;transition:.15s}
+  .nav a:hover{color:var(--text);background:#eaedf1}
+  .spacer{flex:1}
+  .signin{font-weight:600;font-size:14px;padding:8px 8px}.signin:hover{color:var(--primary)}
+
+  /* ===== guest banner ===== */
+  .guest{background:var(--blue-light);border-bottom:1px solid #d6e6f6}
+  .guest .wrap{display:flex;align-items:center;gap:14px;padding:10px 24px;flex-wrap:wrap}
+  .guest .eye{width:30px;height:30px;border-radius:8px;background:#fff;display:grid;place-items:center;flex:0 0 30px}
+  .guest .eye svg{width:16px;height:16px;stroke:var(--primary);fill:none;stroke-width:1.8}
+  .guest p{margin:0;font-size:13.5px;color:var(--blue-text)}
+  .guest p b{font-weight:600}
+  .guest .btn{margin-left:auto;padding:7px 14px;font-size:13px}
+
+  /* ===== hero ===== */
+  .hero{padding:48px 0 30px}
+  .hero .eyebrow{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .hero h1{font-family:var(--font-display);font-weight:800;font-size:clamp(32px,4.6vw,50px);line-height:1.03;letter-spacing:-.025em;margin:14px 0 0;max-width:14ch}
+  .hero h1 em{font-style:normal;color:var(--primary)}
+  .hero .sub{font-size:17px;color:#33414a;max-width:36em;margin:16px 0 0}
+  .hero .sub b{color:var(--text);font-weight:600}
+
+  /* search composer */
+  .composer{margin-top:26px;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 14px 40px -26px rgba(24,95,165,.5);overflow:hidden}
+  .ops{display:flex;gap:2px;padding:8px 8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .op{display:flex;align-items:center;gap:8px;padding:11px 17px;border-radius:11px 11px 0 0;font-weight:600;font-size:14px;color:var(--muted);cursor:pointer;position:relative;border:1px solid transparent;border-bottom:none}
+  .op svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7}
+  .op[aria-selected="true"]{color:var(--primary);background:var(--bg);border-color:var(--border)}
+  .op[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent)}
+  .fields{display:grid;grid-template-columns:1.3fr 1.3fr 1fr auto;align-items:stretch}
+  .field{padding:13px 17px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+  .field:last-of-type{border-right:none}
+  .field label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2);font-weight:600}
+  .field select{border:none;background:transparent;font-family:var(--font-body);font-size:15px;font-weight:500;color:var(--text);outline:none;cursor:pointer}
+  .search-go{display:flex;align-items:center;padding:11px}
+  .search-go .btn{height:100%;padding:0 24px}
+  .composer-foot{display:flex;align-items:center;gap:16px;padding:11px 17px;border-top:1px solid var(--border);flex-wrap:wrap;font-size:13px;color:var(--muted)}
+  .switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
+  .switch i{width:34px;height:20px;border-radius:20px;background:var(--green);position:relative;transition:.2s;flex:0 0 34px}
+  .switch i::after{content:"";position:absolute;top:2px;left:16px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+  .switch.off i{background:#c7cabd}.switch.off i::after{left:2px}
+  .composer-foot .stat{margin-left:auto;font-weight:500}.composer-foot .stat b{color:var(--primary);font-weight:700}
+
+  /* ===== categories ===== */
+  .cats{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:22px}
+  .cat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 12px;text-align:center;transition:.16s;cursor:pointer}
+  .cat:hover{transform:translateY(-3px);border-color:var(--primary);box-shadow:0 8px 22px rgba(24,95,165,.09)}
+  .cat .ic{width:42px;height:42px;border-radius:11px;margin:0 auto 10px;display:grid;place-items:center;background:var(--blue-light)}
+  .cat .ic svg{width:21px;height:21px;stroke:var(--primary);fill:none;stroke-width:1.6}
+  .cat .nm{font-weight:600;font-size:13px}
+  .cat .ct{font-size:11.5px;color:var(--muted-2)}
+
+  /* ===== section ===== */
+  .section{padding:40px 0}
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:16px}
+  .sec-head h2{font-family:var(--font-display);font-weight:700;font-size:24px;letter-spacing:-.015em;margin:4px 0 0}
+  .sec-head .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .sec-head a{font-weight:600;font-size:14px;color:var(--primary);white-space:nowrap}
+
+  /* filter row */
+  .filters{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+  .fsel{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:13px;font-weight:500}
+  .fsel svg{width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:1.8}
+  .fsel select{border:none;background:transparent;font-family:var(--font-body);font-size:13px;font-weight:500;outline:none;cursor:pointer}
+  .switch.sm i{width:30px;height:18px;flex:0 0 30px}.switch.sm i::after{width:14px;height:14px;left:13px}.switch.sm.off i::after{left:2px}
+  .switch.sm{font-size:13px;color:var(--muted);background:var(--card);border:1px solid var(--border);border-radius:20px;padding:6px 13px}
+
+  /* listings */
+  .listings{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .lc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:.16s;display:flex;flex-direction:column}
+  .lc:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(24,95,165,.10)}
+  .lc .vis{height:140px;position:relative;display:grid;place-items:center;background:radial-gradient(120% 120% at 70% 0%,#1c66ad,#15528f)}
+  .lc .vis .grid{position:absolute;inset:0;opacity:.5;background-image:linear-gradient(rgba(201,168,76,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.15) 1px,transparent 1px);background-size:20px 20px;mask-image:radial-gradient(120% 100% at 60% 30%,#000 50%,transparent 100%)}
+  .lc .vis svg.house{position:relative;width:84px;height:84px;stroke:#dfe9f4;fill:none;stroke-width:1.4}
+  .lc .fav{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.93);display:grid;place-items:center;cursor:pointer;z-index:2;transition:.14s}
+  .lc .fav:hover{transform:scale(1.08)}
+  .lc .fav svg{width:16px;height:16px;stroke:var(--warn);fill:none;stroke-width:1.9}
+  .lc .tag{position:absolute;top:10px;left:10px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 8px;border-radius:7px;background:rgba(255,255,255,.93);color:var(--primary);z-index:2}
+  .lc .tag.vente{color:var(--accent-dark)}.lc .tag.terrain{color:var(--green)}.lc .tag.projet{color:#C2410C}
+  .lc .b{padding:14px 15px 15px;display:flex;flex-direction:column;flex:1}
+  .lc .t{font-weight:600;font-size:15px}
+  .lc .loc{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:5px;margin-top:2px}
+  .lc .loc svg{width:12px;height:12px;stroke:var(--muted);fill:none;stroke-width:1.7}
+  .lc .meta{font-size:12px;color:var(--muted-2);margin-top:3px}
+  .lc .foot{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:12px}
+  .lc .price{font-family:var(--font-display);font-weight:700;font-size:16px}
+  .lc .price small{font-size:11px;color:var(--muted);font-weight:500}
+  .lc .contact{font-size:12.5px;font-weight:600;color:var(--primary);display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+  .lc .contact svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.9}
+  .lc .vf{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);font-weight:600;margin-top:9px;padding-top:9px;border-top:1px solid var(--border)}
+  .lc .vf svg{width:13px;height:13px;stroke:var(--green);fill:none;stroke-width:2.4}
+
+  /* firms */
+  .firms{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .firm{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;transition:.16s}
+  .firm:hover{border-color:var(--green);box-shadow:0 8px 22px rgba(59,109,17,.08)}
+  .firm .ft{display:flex;align-items:center;gap:12px}
+  .firm .lg{width:42px;height:42px;border-radius:11px;background:var(--green-light);color:var(--green);display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:16px;flex:0 0 42px}
+  .firm .nm{font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px}
+  .firm .nm svg{width:14px;height:14px;stroke:var(--green);fill:none;stroke-width:2.6}
+  .firm .rc{font-size:11px;color:var(--muted-2)}
+  .firm .row2{display:flex;align-items:center;gap:14px;margin-top:13px;font-size:13px;color:var(--muted)}
+  .firm .star{color:var(--accent-dark);font-weight:700}
+
+  /* CTA band -> choose profile */
+  .cta-band{background:linear-gradient(115deg,#1c66ad,#185FA5 60%,#15528f);border-radius:18px;padding:34px;color:#eaf2fb;text-align:center}
+  .cta-band h2{font-family:var(--font-display);font-weight:800;font-size:24px;margin:0 0 6px;color:#fff}
+  .cta-band p{margin:0 0 20px;color:#cfe0f2}
+  .cta-band .opts{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+  footer{border-top:1px solid var(--border);padding:28px 0 40px;color:var(--muted);font-size:13px;margin-top:24px}
+  footer .wrap{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;align-items:center}
+  footer .fnav{display:flex;gap:18px;flex-wrap:wrap}footer a:hover{color:var(--primary)}
+
+  /* ===== gate modal ===== */
+  .overlay{position:fixed;inset:0;background:rgba(20,33,28,.5);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:90;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--card);border-radius:18px;max-width:400px;width:100%;padding:28px;text-align:center;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+  .modal .mi{width:54px;height:54px;border-radius:14px;margin:0 auto 14px;display:grid;place-items:center;background:var(--blue-light)}
+  .modal .mi svg{width:26px;height:26px;stroke:var(--primary);fill:none;stroke-width:1.7}
+  .modal h3{font-family:var(--font-display);font-weight:700;font-size:19px;margin:0 0 6px}
+  .modal p{color:var(--muted);margin:0 0 20px;font-size:14px}
+  .modal .macts{display:flex;flex-direction:column;gap:10px}
+  .modal .macts .btn{width:100%;justify-content:center;padding:12px}
+  .modal .close{margin-top:14px;font-size:13px;color:var(--muted-2);cursor:pointer}
+
+  @media (max-width:980px){.cats{grid-template-columns:repeat(3,1fr)}.fields{grid-template-columns:1fr 1fr}.field:nth-child(2){border-right:none}.field{border-bottom:1px solid var(--border)}.search-go{grid-column:1/-1}.search-go .btn{width:100%;padding:13px}.listings,.firms{grid-template-columns:repeat(2,1fr)}.nav{display:none}}
+  @media (max-width:600px){.cats{grid-template-columns:repeat(2,1fr)}.fields{grid-template-columns:1fr}.field{border-right:none}.listings,.firms{grid-template-columns:1fr}.composer-foot .stat{margin-left:0;width:100%}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="/">
+      <svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#185FA5" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/><path d="M3 21h18" stroke="#185FA5" stroke-width="1.8" stroke-linecap="round"/></svg>
+      ImmoGérer
+    </a>
+    <nav class="nav">
+      <a href="/explorer/">Explorer</a><a href="/explorer/?tab=vente">Acheter</a>
+      <a href="/explorer/?tab=terrains">Terrains</a><a href="/explorer/?tab=construction">Construire</a>
+      <a href="/entreprises/">Entreprises vérifiées</a>
+    </nav>
+    <div class="spacer"></div>
+    {% if not request.user.is_authenticated %}
+    <a class="signin" href="/accounts/login/">Se connecter</a>
+    <a class="btn btn-amber" href="/choisir-profil/">Commencer gratuitement</a>
+    {% endif %}
+  </div>
+</header>
+
+<!-- GUEST BANNER -->
+{% if not user.is_authenticated %}
+<div class="guest">
+  <div class="wrap">
+    <span class="eye"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
+    <p>Vous naviguez <b>en tant qu'invité</b>. Créez un compte pour réserver, contacter une entreprise et enregistrer vos favoris.</p>
+    <a class="btn btn-primary" href="/choisir-profil/">Créer un compte</a>
+  </div>
+</div>
+{% endif %}
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Immobilier vérifié · Côte d'Ivoire</div>
+    <h1 class="">Le bon bien, la <em>bonne entreprise</em>.</h1>
+    <p class="sub">Locations, ventes, terrains et projets de construction à Abidjan et alentours — <b>uniquement avec des entreprises dont le RCCM a été contrôlé.</b></p>
+
+    <!-- SEARCH -->
+    <div class="composer">
+      <div class="ops" role="tablist">
+        <div class="op" role="tab" aria-selected="true" data-op="louer"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/></svg>Louer</div>
+        <div class="op" role="tab" aria-selected="false" data-op="acheter"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg>Acheter</div>
+        <div class="op" role="tab" aria-selected="false" data-op="terrain"><svg viewBox="0 0 24 24"><path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5"/></svg>Terrain</div>
+        <div class="op" role="tab" aria-selected="false" data-op="construire"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg>Construire</div>
+      </div>
+      <div class="fields">
+        <div class="field"><label>Localité</label><select><option>Toutes les communes</option><option>Cocody</option><option>Marcory</option><option>Yopougon</option><option>Bingerville</option><option>Grand-Bassam</option><option>Plateau</option></select></div>
+        <div class="field"><label>Type de bien</label><select><option>Appartement</option><option>Villa</option><option>Studio</option><option>Duplex</option><option>Magasin</option><option>Bureau</option><option>Terrain</option></select></div>
+        <div class="field"><label id="budLab">Budget / mois</label><select><option>Indifférent</option><option>≤ 150 000 F</option><option>150 000 – 400 000 F</option><option>400 000 – 1 000 000 F</option><option>≥ 1 000 000 F</option></select></div>
+        <div class="search-go"><button class="btn btn-primary" id="goBtn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg> Rechercher</button></div>
+      </div>
+      <div class="composer-foot">
+        <span class="switch" id="verSwitch"><i></i> Entreprises vérifiées uniquement</span>
+        <span class="stat"><b>320</b> biens · <b>48</b> entreprises vérifiées · <b>6</b> communes</span>
+      </div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div class="cats">
+      <div class="cat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/></svg></div><div class="nm">Locations</div><div class="ct">186 biens</div></div>
+      <div class="cat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10M9 20v-6h6v6"/></svg></div><div class="nm">Maisons à vendre</div><div class="ct">74 biens</div></div>
+      <div class="cat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5"/></svg></div><div class="nm">Terrains</div><div class="ct">38 lots</div></div>
+      <div class="cat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 21V9h16v12M4 9l2-4h12l2 4M8 21v-6h3v6"/></svg></div><div class="nm">Magasins</div><div class="ct">22 locaux</div></div>
+      <div class="cat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 21V8l7-4v17M10 21V4l9 5v12M3 21h18"/></svg></div><div class="nm">Bureaux</div><div class="ct">15 locaux</div></div>
+      <div class="cat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 21V7h8v14M13 11h6v10M3 21h18M16 4l3 1"/></svg></div><div class="nm">Projets</div><div class="ct">9 chantiers</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- LISTINGS -->
+<section class="section" style="padding-top:8px">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><div class="eyebrow">Sélection du moment</div><h2>Biens à découvrir</h2></div>
+      <a href="/explorer/">Explorer tout le catalogue →</a>
+    </div>
+
+    <div class="filters">
+      <span class="fsel"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/></svg><select><option>Toutes communes</option><option>Cocody</option><option>Marcory</option><option>Yopougon</option><option>Bingerville</option><option>Grand-Bassam</option></select></span>
+      <span class="fsel"><select><option>Louer ou acheter</option><option>Louer</option><option>Acheter</option></select></span>
+      <span class="fsel"><select><option>Tous types</option><option>Appartement</option><option>Villa</option><option>Studio</option><option>Magasin</option><option>Bureau</option><option>Terrain</option></select></span>
+      <span class="fsel"><select><option>Tous prix</option><option>≤ 200 000 F</option><option>200 000 – 1 000 000 F</option><option>≥ 1 000 000 F</option></select></span>
+      <span class="fsel"><select><option>Pièces</option><option>1+</option><option>2+</option><option>3+</option><option>4+</option></select></span>
+      <span class="switch sm" id="verSwitch2"><i></i> Vérifiées uniquement</span>
+    </div>
+
+    <div class="listings">
+
+      <article class="lc">
+        <div class="vis"><div class="grid"></div><svg class="house" viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6M8 11h2M14 11h2"/></svg>
+          <span class="tag">Location</span>
+          <button class="fav" data-gate="ajouter ce bien à vos favoris"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+        </div>
+        <div class="b">
+          <div class="t">Appartement F4 meublé</div>
+          <div class="loc"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Cocody, Riviera</div>
+          <div class="meta">4 pièces · 120 m² · meublé</div>
+          <div class="foot"><div class="price">450 000 <small>F/mois</small></div><span class="contact" data-gate="contacter cette entreprise"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Contacter</span></div>
+          <div class="vf"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Azimuts SARL · vérifiée</div>
+        </div>
+      </article>
+
+      <article class="lc">
+        <div class="vis"><div class="grid"></div><svg class="house" viewBox="0 0 24 24"><path d="M3 21V11l9-6 9 6v10M3 21h18M8 21v-5h3v5M14 13h3v3h-3z"/></svg>
+          <span class="tag vente">Vente</span>
+          <button class="fav" data-gate="ajouter ce bien à vos favoris"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+        </div>
+        <div class="b">
+          <div class="t">Villa basse 5 pièces + piscine</div>
+          <div class="loc"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Cocody, Riviera Golf</div>
+          <div class="meta">5 pièces · 380 m² · jardin</div>
+          <div class="foot"><div class="price">95 000 000 <small>F</small></div><span class="contact" data-gate="contacter cette entreprise"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Contacter</span></div>
+          <div class="vf"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Ivoire Habitat · vérifiée</div>
+        </div>
+      </article>
+
+      <article class="lc">
+        <div class="vis"><div class="grid"></div><svg class="house" viewBox="0 0 24 24"><path d="M3 20h18M5 20l2-7h10l2 7M8 13l4-6 4 6"/><circle cx="12" cy="17" r="1"/></svg>
+          <span class="tag terrain">Terrain</span>
+          <button class="fav" data-gate="ajouter ce terrain à vos favoris"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+        </div>
+        <div class="b">
+          <div class="t">Terrain 500 m² titré ACD</div>
+          <div class="loc"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Bingerville</div>
+          <div class="meta">500 m² · viabilisé · ACD dispo.</div>
+          <div class="foot"><div class="price">18 000 000 <small>F</small></div><span class="contact" data-gate="contacter cette entreprise"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Contacter</span></div>
+          <div class="vf"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Bassam Foncier · vérifiée</div>
+        </div>
+      </article>
+
+      <article class="lc">
+        <div class="vis"><div class="grid"></div><svg class="house" viewBox="0 0 24 24"><path d="M4 21V9h16v12M4 9l2-4h12l2 4M8 21v-6h3v6M14 15h3v6"/></svg>
+          <span class="tag">Location</span>
+          <button class="fav" data-gate="ajouter ce local à vos favoris"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+        </div>
+        <div class="b">
+          <div class="t">Boutique 60 m² sur grande voie</div>
+          <div class="loc"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Yopougon</div>
+          <div class="meta">60 m² · vitrine · eau + électricité</div>
+          <div class="foot"><div class="price">250 000 <small>F/mois</small></div><span class="contact" data-gate="contacter cette entreprise"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Contacter</span></div>
+          <div class="vf"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Eburnie Immo · vérifiée</div>
+        </div>
+      </article>
+
+      <article class="lc">
+        <div class="vis"><div class="grid"></div><svg class="house" viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6M8 11h2M14 11h2"/></svg>
+          <span class="tag">Location</span>
+          <button class="fav" data-gate="ajouter ce bien à vos favoris"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+        </div>
+        <div class="b">
+          <div class="t">Studio meublé Zone 4</div>
+          <div class="loc"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Marcory, Zone 4</div>
+          <div class="meta">38 m² · meublé · climatisé</div>
+          <div class="foot"><div class="price">180 000 <small>F/mois</small></div><span class="contact" data-gate="contacter cette entreprise"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Contacter</span></div>
+          <div class="vf"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Azimuts SARL · vérifiée</div>
+        </div>
+      </article>
+
+      <article class="lc">
+        <div class="vis"><div class="grid"></div><svg class="house" viewBox="0 0 24 24"><path d="M5 21V7h8v14M13 11h6v10M3 21h18M16 4l3 1M16 4v3"/></svg>
+          <span class="tag projet">Sur plan</span>
+          <button class="fav" data-gate="suivre ce projet"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+        </div>
+        <div class="b">
+          <div class="t">Les Jardins de Bingerville</div>
+          <div class="loc"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Bingerville</div>
+          <div class="meta">24 villas · livraison 2027 · échelonné</div>
+          <div class="foot"><div class="price">dès 25 000 000 <small>F</small></div><span class="contact" data-gate="contacter cette entreprise"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Contacter</span></div>
+          <div class="vf"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> BTP Lagune · vérifiée</div>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ENTREPRISES VÉRIFIÉES -->
+<section class="section" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head"><div><div class="eyebrow">Elles publient sur ImmoGérer</div><h2>Entreprises vérifiées</h2></div><a href="/entreprises/">Voir l'annuaire →</a></div>
+    <div class="firms">
+      <div class="firm"><div class="ft"><div class="lg">A</div><div><div class="nm">Azimuts SARL <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div><div class="rc">RCCM CI-ABJ-2019-B-12345</div></div></div><div class="row2"><span class="star">★ 4.8</span><span>37 biens</span><span>Cocody · Marcory</span></div></div>
+      <div class="firm"><div class="ft"><div class="lg">I</div><div><div class="nm">Ivoire Habitat <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div><div class="rc">RCCM CI-ABJ-2021-B-08842</div></div></div><div class="row2"><span class="star">★ 4.6</span><span>52 biens</span><span>Riviera · Plateau</span></div></div>
+      <div class="firm"><div class="ft"><div class="lg">B</div><div><div class="nm">Bassam Foncier <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div><div class="rc">RCCM CI-ABJ-2018-B-04417</div></div></div><div class="row2"><span class="star">★ 4.9</span><span>19 terrains</span><span>Grand-Bassam</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -> choisir profil -->
+<section class="section" style="padding-top:0">
+  <div class="wrap">
+    <div class="cta-band">
+      <h2>Prêt à aller plus loin ?</h2>
+      <p>Créez un compte gratuit pour réserver, contacter les entreprises et suivre vos biens.</p>
+      <div class="opts">
+        <a class="btn btn-ghost" href="/choisir-profil/?profil=particulier">Je recherche un bien</a>
+        <a class="btn btn-amber" href="/choisir-profil/?profil=entreprise">Je représente une entreprise</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>ImmoGérer · Abidjan, Côte d'Ivoire · v1.0.0</span>
+    <nav class="fnav"><a href="/explorer/">Explorer</a><a href="/entreprises/">Entreprises</a><a href="/aide/">Aide</a><a href="/accounts/login/">Se connecter</a></nav>
+  </div>
+</footer>
+
+<!-- GATE MODAL -->
+<div class="overlay" id="gate">
+  <div class="modal">
+    <div class="mi"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    <h3>Créez un compte pour continuer</h3>
+    <p id="gateMsg">Pour aller plus loin, connectez-vous ou créez un compte gratuit.</p>
+    <div class="macts">
+      <a class="btn btn-primary" href="/choisir-profil/">Créer un compte gratuit</a>
+      <a class="btn btn-ghost" href="/accounts/login/">J'ai déjà un compte</a>
+    </div>
+    <div class="close" id="gateClose">Continuer à explorer</div>
+  </div>
+</div>
+
+<script>
+  // onglets d'opération
+  const ops=document.querySelectorAll('.op'), budLab=document.getElementById('budLab'), goBtn=document.getElementById('goBtn');
+  const L={louer:'Budget / mois',acheter:"Budget d'achat",terrain:'Budget terrain',construire:'Budget projet'};
+  ops.forEach(op=>op.addEventListener('click',()=>{ops.forEach(o=>o.setAttribute('aria-selected','false'));op.setAttribute('aria-selected','true');budLab.textContent=L[op.dataset.op];}));
+
+  // toggles
+  document.querySelectorAll('#verSwitch,#verSwitch2').forEach(s=>s.addEventListener('click',()=>s.classList.toggle('off')));
+
+  // GATE : actions réservées aux comptes
+  const gate=document.getElementById('gate'), gateMsg=document.getElementById('gateMsg');
+  function openGate(action){ gateMsg.textContent='Pour '+action+', connectez-vous ou créez un compte gratuit. La navigation reste libre.'; gate.classList.add('show'); }
+  document.querySelectorAll('[data-gate]').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();openGate(el.dataset.gate);}));
+  document.getElementById('gateClose').addEventListener('click',()=>gate.classList.remove('show'));
+  gate.addEventListener('click',e=>{if(e.target===gate)gate.classList.remove('show');});
+</script>
+</body>
+</html>

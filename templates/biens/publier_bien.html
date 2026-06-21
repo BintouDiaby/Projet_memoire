@@ -1,0 +1,288 @@
+<!--
+  ajouter_bien.html — Formulaire "Publier un bien" (entreprise).
+  Dynamique : 1) les OPERATIONS proposees = modules actives de l'entreprise.
+              2) le TYPE de bien depend de l'operation.
+              3) les CHAMPS s'adaptent a l'operation (loyer vs prix vs surface vs livraison...).
+  En Django : ne rends que les cartes d'operation correspondant a entreprise.modules_actifs.
+  Les name= sont indicatifs -> a mapper sur ton modele Bien.
+-->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Publier un bien — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#185FA5;--accent:#C9A84C;--accent-light:#FFFBEB;--accent-dark:#7A5F1A;
+    --green:#3B6D11;--green-dark:#2E5409;--green-light:#EAF3DE;--green-text:#27500A;
+    --blue:#185FA5;--blue-light:#E6F1FB;--orange:#C2410C;--orange-light:#FFEAD9;
+    --text:#111;--muted:#666;--muted-2:#9aa0a6;--border:#e5e7eb;--bg:#F4F6F9;--card:#fff;--err:#B4441F;
+    --font-display:"Plus Jakarta Sans",system-ui,sans-serif;--font-body:"Inter",system-ui,sans-serif;--r:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  .hidden{display:none!important}
+
+  .topbar{height:62px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:0 24px;position:sticky;top:0;z-index:20}
+  .back{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:var(--muted)}
+  .back:hover{color:var(--green)}.back svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2}
+  .topbar .ttl{font-family:var(--font-display);font-weight:800;font-size:16px}
+  .topbar .sp{flex:1}
+  .firm{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--green-text);background:var(--green-light);padding:6px 12px;border-radius:20px}
+  .firm svg{width:14px;height:14px;stroke:var(--green);fill:none;stroke-width:2.6}
+
+  .wrap{max-width:760px;margin:0 auto;padding:28px 24px 60px}
+  .head{margin-bottom:22px}
+  .head h1{font-family:var(--font-display);font-weight:800;font-size:24px;letter-spacing:-.02em;margin:0}
+  .head p{color:var(--muted);margin:6px 0 0}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:18px}
+  .sh{display:flex;align-items:center;gap:10px;margin:0 0 16px}
+  .sh .n{width:26px;height:26px;border-radius:8px;background:var(--green-light);color:var(--green);display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:13px;flex:0 0 26px}
+  .sh h2{font-family:var(--font-display);font-weight:700;font-size:16px;margin:0}
+
+  /* opération cards */
+  .ops{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .op{border:1.5px solid var(--border);border-radius:13px;padding:16px 12px;text-align:center;cursor:pointer;transition:.15s;background:#fff}
+  .op:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.06)}
+  .op .ic{width:42px;height:42px;border-radius:11px;margin:0 auto 9px;display:grid;place-items:center}
+  .op .ic svg{width:21px;height:21px;stroke-width:1.7;fill:none}
+  .op .nm{font-weight:600;font-size:13.5px}
+  .op[data-op=location] .ic{background:var(--blue-light)}.op[data-op=location] .ic svg{stroke:var(--primary)}
+  .op[data-op=vente] .ic{background:var(--green-light)}.op[data-op=vente] .ic svg{stroke:var(--green)}
+  .op[data-op=terrain] .ic{background:var(--accent-light)}.op[data-op=terrain] .ic svg{stroke:var(--accent-dark)}
+  .op[data-op=construction] .ic{background:var(--orange-light)}.op[data-op=construction] .ic svg{stroke:var(--orange)}
+  .op.sel{border-color:var(--green);border-width:2px;background:#F8FBF4;box-shadow:0 6px 18px rgba(59,109,17,.12)}
+  .op .chk{width:18px;height:18px;border-radius:50%;border:1.6px solid #cbd2d9;margin:8px auto 0;display:grid;place-items:center;transition:.14s}
+  .op .chk svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2.8;opacity:0}
+  .op.sel .chk{background:var(--green);border-color:var(--green)}.op.sel .chk svg{opacity:1}
+
+  /* fields */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .field{display:flex;flex-direction:column}
+  .field.full{grid-column:1/-1}
+  .field label{font-size:13px;font-weight:600;margin-bottom:6px;color:#1f2937}
+  .field .req{color:var(--green);margin-left:2px}
+  .field input,.field select,.field textarea{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;font:inherit;font-size:14.5px;background:#fff;outline:none;transition:border-color .15s,box-shadow .15s}
+  .field textarea{resize:vertical;min-height:88px}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(59,109,17,.13)}
+  .field .suffix{position:relative}
+  .field .suffix .u{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted-2);font-weight:600;pointer-events:none}
+  .field .hint{font-size:11.5px;color:var(--muted-2);margin-top:5px}
+
+  .switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none;font-size:14px;font-weight:500}
+  .switch input{display:none}
+  .switch i{width:38px;height:22px;border-radius:20px;background:#cbd2d9;position:relative;transition:.2s;flex:0 0 38px}
+  .switch i::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+  .switch input:checked + i{background:var(--green)}.switch input:checked + i::after{left:18px}
+
+  .specs{display:none}.specs.active{display:block;animation:fin .25s ease}
+  @keyframes fin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .drop{display:flex;align-items:center;gap:14px;border:1.6px dashed #cbd2d9;border-radius:12px;padding:16px;cursor:pointer;transition:.15s;background:#fff}
+  .drop:hover{border-color:var(--green);background:#fafdf6}
+  .drop .dz{width:46px;height:46px;border-radius:12px;background:var(--green-light);display:grid;place-items:center;flex:0 0 46px}
+  .drop .dz svg{width:22px;height:22px;stroke:var(--green);fill:none;stroke-width:1.7}
+  .drop b{display:block;font-size:13.5px}.drop span{font-size:12px;color:var(--muted)}
+  .drop input{display:none}
+
+  .pick-first{border:1px dashed #cbd2d9;border-radius:12px;padding:26px;text-align:center;color:var(--muted-2);font-size:14px}
+
+  .actions{display:flex;gap:12px;justify-content:flex-end;margin-top:8px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:11px;font:inherit;font-weight:600;font-size:14.5px;padding:12px 22px;cursor:pointer;border:1.5px solid transparent;transition:.16s}
+  .btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2}
+  .btn.ghost{background:#fff;border-color:var(--border);color:var(--text)}.btn.ghost:hover{border-color:var(--muted)}
+  .btn.green{background:var(--green);color:#fff}.btn.green:hover{background:var(--green-dark);transform:translateY(-1px)}
+  .btn.green:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+  @media (max-width:620px){.ops{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="back" href="/dashboard/"><svg viewBox="0 0 24 24"><path d="M19 12H5m7-7-7 7 7 7"/></svg> Tableau de bord</a>
+  <span class="ttl">Publier un bien</span>
+  <span class="sp"></span>
+  <span class="firm"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Azimuts SARL</span>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <h1>Publier un bien</h1>
+    <p>Choisissez d'abord l'opération — le formulaire s'adapte automatiquement.</p>
+  </div>
+
+  <form id="bienForm" method="post" enctype="multipart/form-data" action="">
+    {% csrf_token %}
+    <input type="hidden" name="operation" id="operation" value="">
+
+    <!-- 1. OPÉRATION (n'affiche que les modules activés de l'entreprise) -->
+    <div class="card">
+      <div class="sh"><span class="n">1</span><h2>Opération</h2></div>
+      <div class="ops" id="ops">
+        <div class="op" data-op="location">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M14 7a4 4 0 1 0-3 6l-5 5 2 2 6-6a4 4 0 0 0 0-7z"/></svg></div>
+          <div class="nm">Location</div><div class="chk"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
+        </div>
+        <div class="op" data-op="vente">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg></div>
+          <div class="nm">Vente</div><div class="chk"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
+        </div>
+        <div class="op" data-op="terrain">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5"/></svg></div>
+          <div class="nm">Terrain</div><div class="chk"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
+        </div>
+        <div class="op" data-op="construction">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg></div>
+          <div class="nm">Construction</div><div class="chk"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- avant le choix : message -->
+    <div class="card pick-first" id="pickFirst">Sélectionnez une opération ci-dessus pour continuer.</div>
+
+    <!-- la suite, révélée après le choix -->
+    <div id="afterOp" class="hidden">
+
+      <!-- 2. Type & localisation -->
+      <div class="card">
+        <div class="sh"><span class="n">2</span><h2>Type & localisation</h2></div>
+        <div class="grid">
+          <div class="field">
+            <label for="type_bien">Type de bien<span class="req">*</span></label>
+            <select name="type_bien" id="type_bien"></select>
+          </div>
+          <div class="field">
+            <label for="commune">Commune<span class="req">*</span></label>
+            <select name="commune" id="commune">
+              <option value="">Choisir…</option>
+              <option>Cocody</option><option>Marcory</option><option>Yopougon</option>
+              <option>Bingerville</option><option>Grand-Bassam</option><option>Plateau</option>
+              <option>Abobo</option><option>Treichville</option><option>Koumassi</option><option>Port-Bouët</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label for="titre">Titre de l'annonce<span class="req">*</span></label>
+            <input type="text" name="titre" id="titre" placeholder="Ex. Appartement F4 meublé, Cocody Riviera">
+          </div>
+          <div class="field full">
+            <label for="adresse">Adresse / repère</label>
+            <input type="text" name="adresse" id="adresse" placeholder="Quartier, rue, point de repère">
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Caractéristiques (adaptatives) -->
+      <div class="card">
+        <div class="sh"><span class="n">3</span><h2>Caractéristiques</h2></div>
+
+        <!-- LOCATION -->
+        <div class="specs" data-op="location">
+          <div class="grid">
+            <div class="field"><label>Loyer mensuel<span class="req">*</span></label><div class="suffix"><input type="number" name="loyer" min="0" placeholder="450000"><span class="u">FCFA</span></div></div>
+            <div class="field"><label>Caution</label><select name="caution"><option>1 mois</option><option>2 mois</option><option>3 mois</option><option>Aucune</option></select></div>
+            <div class="field"><label>Nombre de pièces</label><input type="number" name="pieces" min="0" placeholder="4"></div>
+            <div class="field"><label>Surface</label><div class="suffix"><input type="number" name="surface" min="0" placeholder="120"><span class="u">m²</span></div></div>
+            <div class="field full"><label class="switch"><input type="checkbox" name="meuble"><i></i> Bien meublé</label></div>
+          </div>
+        </div>
+
+        <!-- VENTE -->
+        <div class="specs" data-op="vente">
+          <div class="grid">
+            <div class="field"><label>Prix de vente<span class="req">*</span></label><div class="suffix"><input type="number" name="prix" min="0" placeholder="95000000"><span class="u">FCFA</span></div></div>
+            <div class="field"><label>Nombre de pièces</label><input type="number" name="pieces_v" min="0" placeholder="5"></div>
+            <div class="field"><label>Surface</label><div class="suffix"><input type="number" name="surface_v" min="0" placeholder="380"><span class="u">m²</span></div></div>
+            <div class="field"><label>Titre de propriété</label><select name="titre_propriete"><option>ACD</option><option>Titre foncier</option><option>Attestation villageoise</option></select></div>
+          </div>
+        </div>
+
+        <!-- TERRAIN -->
+        <div class="specs" data-op="terrain">
+          <div class="grid">
+            <div class="field"><label>Prix<span class="req">*</span></label><div class="suffix"><input type="number" name="prix_t" min="0" placeholder="18000000"><span class="u">FCFA</span></div></div>
+            <div class="field"><label>Superficie<span class="req">*</span></label><div class="suffix"><input type="number" name="superficie" min="0" placeholder="500"><span class="u">m²</span></div></div>
+            <div class="field"><label>Statut foncier</label><select name="statut_foncier"><option>ACD disponible</option><option>Titre foncier</option><option>Lettre d'attribution</option><option>En cours</option></select></div>
+            <div class="field full"><label class="switch"><input type="checkbox" name="viabilise"><i></i> Terrain viabilisé (eau, électricité, voie)</label></div>
+          </div>
+        </div>
+
+        <!-- CONSTRUCTION -->
+        <div class="specs" data-op="construction">
+          <div class="grid">
+            <div class="field full"><label>Nom du projet<span class="req">*</span></label><input type="text" name="nom_projet" placeholder="Les Jardins de Bingerville"></div>
+            <div class="field"><label>Nombre de logements</label><input type="number" name="nb_logements" min="0" placeholder="24"></div>
+            <div class="field"><label>Livraison prévue</label><input type="month" name="livraison"></div>
+            <div class="field"><label>Prix à partir de</label><div class="suffix"><input type="number" name="prix_min" min="0" placeholder="25000000"><span class="u">FCFA</span></div></div>
+            <div class="field"><label>Avancement</label><select name="avancement"><option>Sur plan</option><option>Fondations</option><option>Gros œuvre</option><option>Finitions</option></select></div>
+            <div class="field full"><label class="switch"><input type="checkbox" name="echelonne"><i></i> Paiement échelonné possible</label></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Description & photos -->
+      <div class="card">
+        <div class="sh"><span class="n">4</span><h2>Description & photos</h2></div>
+        <div class="grid">
+          <div class="field full"><label for="description">Description</label><textarea name="description" id="description" placeholder="Décrivez le bien, ses atouts, l'environnement…"></textarea></div>
+          <div class="field full">
+            <label>Photos</label>
+            <label class="drop" for="photos"><span class="dz"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v13"/></svg></span><span><b id="photoName">Ajouter des photos</b><span>JPG ou PNG, plusieurs fichiers possibles.</span></span><input type="file" name="photos" id="photos" accept="image/*" multiple></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a class="btn ghost" href="/dashboard/">Annuler</a>
+        <button type="submit" class="btn green">Publier le bien <svg viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+(function(){
+  // types selon l'opération (conformes à ta spec)
+  var TYPES = {
+    location:    ['Appartement','Villa','Studio','Chambre','Magasin','Boutique','Bureau','Entrepôt'],
+    vente:       ['Maison','Terrain','Magasin','Boutique','Bureau','Entrepôt'],
+    terrain:     ['Parcelle viabilisée','Lot titré (ACD)','Terrain agricole'],
+    construction:['Projet sur plan']
+  };
+  var ops = document.querySelectorAll('.op');
+  var hidden = document.getElementById('operation');
+  var typeSel = document.getElementById('type_bien');
+  var after = document.getElementById('afterOp');
+  var pick = document.getElementById('pickFirst');
+  var specs = document.querySelectorAll('.specs');
+
+  function choose(op){
+    ops.forEach(function(o){ o.classList.toggle('sel', o.dataset.op === op); });
+    hidden.value = op;
+    // remplir les types
+    typeSel.innerHTML = '';
+    (TYPES[op]||[]).forEach(function(t){ var o=document.createElement('option'); o.textContent=t; typeSel.appendChild(o); });
+    // afficher les bons champs
+    specs.forEach(function(s){ s.classList.toggle('active', s.dataset.op === op); });
+    // révéler la suite
+    pick.classList.add('hidden');
+    after.classList.remove('hidden');
+    after.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  ops.forEach(function(o){ o.addEventListener('click', function(){ choose(o.dataset.op); }); });
+
+  // nom des photos
+  var ph = document.getElementById('photos');
+  ph.addEventListener('change', function(){ document.getElementById('photoName').textContent = ph.files.length ? (ph.files.length + ' photo(s) sélectionnée(s)') : 'Ajouter des photos'; });
+})();
+</script>
+</body>
+</html>

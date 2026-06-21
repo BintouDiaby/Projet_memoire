@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Mes locations — Immobilier{% endblock %}
+
+{% block content %}
+  <h1>{{ title }}</h1>
+
+  <h4 class="mt-3">Contrats actifs</h4>
+  <div class="list-group mb-3">
+    {% for c in contrats_actifs %}
+      <a href="/contrats/{{ c.id }}/" class="list-group-item list-group-item-action">
+        <div class="d-flex justify-content-between">
+          <div>
+            <strong>{{ c.bien.titre }}</strong><br>
+            <small class="text-muted">{{ c.bien.ville }} — {{ c.get_statut_display }}</small>
+          </div>
+          <div class="text-end small">
+            {{ c.date_debut }} → {{ c.date_fin }}
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <div class="alert alert-info">Vous n'avez aucune location active.</div>
+    {% endfor %}
+  </div>
+
+  <h4 class="mt-3">Autres contrats</h4>
+  <div class="list-group">
+    {% for c in contrats_autres %}
+      <a href="/contrats/{{ c.id }}/" class="list-group-item list-group-item-action">
+        <div class="d-flex justify-content-between">
+          <div>
+            <strong>{{ c.bien.titre }}</strong><br>
+            <small class="text-muted">{{ c.bien.ville }} — {{ c.get_statut_display }}</small>
+          </div>
+          <div class="text-end small">
+            {{ c.date_debut }} → {{ c.date_fin }}
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <div class="alert alert-secondary">Aucun autre contrat trouvé.</div>
+    {% endfor %}
+  </div>
+{% endblock %}

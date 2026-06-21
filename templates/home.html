@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil — ImmoGérer{% endblock %}
+
+{% block body %}
+{% if messages %}
+<div class="container mt-3">
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-lg-8">
+        <span class="badge bg-light text-dark">
+          Version {{ version }} — <strong class="text-success">{{ status }}</strong>
+        </span>
+
+        <h1 class="mt-3 fw-bold">
+          Bonjour <span class="text-warning">{{ request.user.first_name|default:request.user.username }}</span>
+        </h1>
+
+        <p class="lead mt-3">
+          Voici un aperçu de votre activité immobilière.
+        </p>
+      </div>
+      <div class="col-lg-4 text-end d-none d-lg-block">
+        <div class="badge bg-light text-dark p-3">
+          <div class="small text-muted">Connecté en tant que</div>
+          <strong class="text-primary">{{ request.user.get_role_display }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KPIs -->
+<section class="py-5">
+  <div class="container">
+    <h3 class="fw-bold mb-4">Vue d'ensemble</h3>
+
+    <div class="row g-4 mb-4">
+      <div class="col-md-3">
+        <div class="card p-4 text-center card-feature">
+          <div class="h3 fw-bold text-primary">{{ utilisateurs_count }}</div>
+          <div class="text-muted">Utilisateurs</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-4 text-center card-feature">
+          <div class="h3 fw-bold text-success">{{ biens_count }}</div>
+          <div class="text-muted">Biens</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-4 text-center card-feature">
+          <div class="h3 fw-bold text-warning">{{ contrats_actifs_count }}</div>
+          <div class="text-muted">Contrats actifs</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-4 text-center card-feature">
+          <div class="h5 fw-bold text-danger">{{ montant_outstanding|floatformat:0 }} FCFA</div>
+          <div class="text-muted">Impayés</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-6 mb-4">
+        <div class="card p-3">
+          <h5>🏠 Derniers biens</h5>
+          <ul class="list-group list-group-flush mt-3">
+            {% for bien in derniers_biens %}
+              <li class="list-group-item">
+                <strong>{{ bien.titre }}</strong>
+                <div class="small text-muted">{{ bien.ville }} — {{ bien.prix_mensuel|floatformat:0 }} FCFA/mois</div>
+              </li>
+            {% empty %}
+              <li class="list-group-item text-muted">Aucun bien enregistré.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-lg-6 mb-4">
+        <div class="card p-3">
+          <h5>📄 Derniers contrats</h5>
+          <ul class="list-group list-group-flush mt-3">
+            {% for contrat in derniers_contrats %}
+              <li class="list-group-item">
+                <strong>{{ contrat.numero_contrat }}</strong>
+                <div class="small text-muted">{{ contrat.get_statut_display }}</div>
+              </li>
+            {% empty %}
+              <li class="list-group-item text-muted">Aucun contrat enregistré.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    {# Sections spécifiques pour locataire connecté #}
+    {% if locataire_is_new %}
+      <section class="py-4">
+        {% include 'home_locataire_new.html' %}
+      </section>
+    {% elif locataire_is_new is not none %}
+      <section class="py-4">
+        {% include 'home_locataire_active.html' %}
+      </section>
+    {% endif %}
+
+    <!-- Section 'Répartition' supprimée — remplacée par animation légère des KPI ci-dessous -->
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" class="py-5 bg-light">
+  <div class="container">
+    <h3 class="text-center fw-bold mb-5">Accès rapides</h3>
+    <div class="row g-4">
+      <div class="col-md-2">
+        <div class="card-feature text-center"><h5>👤 Utilisateurs</h5><a href="/utilisateurs/" class="text-primary">Voir</a></div>
+      </div>
+      <div class="col-md-2">
+        <div class="card-feature text-center"><h5>🏠 Biens</h5><a href="/biens/" class="text-primary">Voir</a></div>
+      </div>
+      <div class="col-md-2">
+        <div class="card-feature text-center"><h5>📄 Contrats</h5><a href="/contrats/" class="text-primary">Voir</a></div>
+      </div>
+      <div class="col-md-2">
+        <div class="card-feature text-center"><h5>💳 Facturation</h5><a href="/facturation/ui/" class="text-primary">Voir</a></div>
+      </div>
+      <div class="col-md-2">
+        <div class="card-feature text-center"><h5>🔍 Recherche</h5><a href="/recherche/ui/" class="text-primary">Voir</a></div>
+      </div>
+      <div class="col-md-2">
+        <div class="card-feature text-center"><h5>📊 Dashboard</h5><a href="/dashboard/ui/" class="text-primary">Voir</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Animation simple pour les KPI (compteurs) -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  function animateNumber(el, target) {
+    target = Number(target) || 0;
+    let current = 0;
+    const step = Math.max(1, Math.floor(target / 50));
+    const id = setInterval(() => {
+      current += step;
+      if (current >= target) {
+        el.textContent = target;
+        clearInterval(id);
+      } else {
+        el.textContent = current;
+      }
+    }, 12);
+  }
+
+  // Sélectionne les valeurs numériques à animer
+  document.querySelectorAll('.card-feature').forEach(card => {
+    const numEl = card.querySelector('.h3, .h5');
+    if (!numEl) return;
+    const raw = numEl.textContent || '';
+    const n = raw.replace(/[^0-9.-]/g, '');
+    numEl.textContent = '0';
+    animateNumber(numEl, n);
+  });
+});
+</script>
+{% endblock %}

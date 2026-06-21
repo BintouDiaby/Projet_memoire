@@ -1,0 +1,25 @@
+<div class="card p-3">
+  <h4>🏠 Mes locations</h4>
+  {% if locataire_contrats.count %}
+    <ul class="list-group mt-3">
+      {% for c in locataire_contrats %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{ c.bien.titre }}</strong><br>
+            <small class="text-muted">{{ c.bien.ville }} — {{ c.get_statut_display }}</small>
+          </div>
+          <div class="text-end small">
+            {% if c.is_actif %}
+              Actif
+            {% else %}
+              {{ c.get_statut_display }}
+            {% endif %}<br>
+            <a href="/contrats/{{ c.id }}/" class="btn btn-sm btn-outline-primary mt-1">Voir</a>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="alert alert-info">Vous n'avez pas encore de locations.</div>
+  {% endif %}
+</div>

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Immobilier{% endblock %}
+
+{% block content %}
+  <div class="card p-4">
+    <h1>{{ title }}</h1>
+    <p>Vue d'ensemble du système. API: <a href="{{ api_url }}">{{ api_url }}</a></p>
+    <p><a class="btn btn-primary" href="/admin/">Aller à l'admin</a></p>
+  </div>
+{% endblock %}

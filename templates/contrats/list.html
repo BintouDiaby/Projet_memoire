@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Contrats — Immobilier{% endblock %}
+
+{% block content %}
+  <div class="card p-4">
+    <h1>{{ title }}</h1>
+    <div class="list-group">
+      {% for c in contrats %}
+        <a href="/contrats/{{ c.id }}/" class="list-group-item list-group-item-action">
+          <div class="d-flex w-100 justify-content-between">
+            <h5 class="mb-1">Contrat #{{ c.id }} - {{ c.numero_contrat }}</h5>
+            <small>{{ c.statut }}</small>
+          </div>
+          <p class="mb-1">Bien: {{ c.bien }} — Locataire: {{ c.locataire }}</p>
+        </a>
+      {% empty %}
+        <div class="alert alert-info">Aucun contrat trouvé.</div>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}

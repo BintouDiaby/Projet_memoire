@@ -1,0 +1,273 @@
+<!--
+  publier_bien_module.html — Formulaire "Publier un bien" scope a une operation.
+  Les CHAMPS se reconstruisent selon DEUX axes :
+    - l'operation (location/vente/terrain/construction) -> partie monetaire
+    - la FAMILLE du type choisi (residentiel / commercial / terrain / projet) -> partie physique
+  Django : utilisez `{{ operation }}` et `{{ entreprise.name }}` fournis par la vue.
+  Le bandeau "demo" en haut sert a previsualiser ; a retirer en prod.
+-->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Publier un bien — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --op:#185FA5;--op-light:#E6F1FB;--op-ring:rgba(24,95,165,.15);
+    --text:#111;--muted:#666;--muted-2:#9aa0a6;--border:#e5e7eb;--bg:#F4F6F9;--card:#fff;
+    --font-display:"Plus Jakarta Sans",system-ui,sans-serif;--font-body:"Inter",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+
+  .demo{background:#1f2937;color:#cbd5e1;font-size:12.5px;padding:8px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+  .demo b{color:#fff;font-weight:600}
+  .demo .seg{display:flex;gap:4px;background:#0f172a;padding:3px;border-radius:9px}
+  .demo .seg button{border:none;background:transparent;color:#94a3b8;font:inherit;font-weight:600;font-size:12px;padding:5px 11px;border-radius:7px;cursor:pointer}
+  .demo .seg button.on{background:var(--op);color:#fff}
+
+  .topbar{height:60px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 24px;position:sticky;top:0;z-index:20}
+  .back{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:var(--muted)}
+  .back:hover{color:var(--op)}.back svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2}
+  .topbar .ttl{font-family:var(--font-display);font-weight:800;font-size:16px}
+  .topbar .sp{flex:1}
+  .firm{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#27500A;background:#EAF3DE;padding:6px 12px;border-radius:20px}
+  .firm svg{width:14px;height:14px;stroke:#3B6D11;fill:none;stroke-width:2.6}
+
+  .wrap{max-width:760px;margin:0 auto;padding:24px 24px 60px}
+
+  .ohead{display:flex;align-items:center;gap:16px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin-bottom:18px;position:relative;overflow:hidden}
+  .ohead::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--op)}
+  .ohead .oi{width:52px;height:52px;border-radius:13px;background:var(--op-light);display:grid;place-items:center;flex:0 0 52px}
+  .ohead .oi svg{width:26px;height:26px;stroke:var(--op);fill:none;stroke-width:1.7}
+  .ohead h1{font-family:var(--font-display);font-weight:800;font-size:21px;letter-spacing:-.02em;margin:0}
+  .ohead p{margin:3px 0 0;color:var(--muted);font-size:13.5px}
+  .ohead .switch-op{margin-left:auto;font-size:13px;font-weight:600;color:var(--op);white-space:nowrap}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:18px}
+  .sh{display:flex;align-items:center;gap:10px;margin:0 0 16px}
+  .sh .n{width:26px;height:26px;border-radius:8px;background:var(--op-light);color:var(--op);display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:13px;flex:0 0 26px}
+  .sh h2{font-family:var(--font-display);font-weight:700;font-size:16px;margin:0}
+  .sh .famtag{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--op);background:var(--op-light);padding:4px 10px;border-radius:20px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .field{display:flex;flex-direction:column}
+  .field.full{grid-column:1/-1}
+  .field label{font-size:13px;font-weight:600;margin-bottom:6px;color:#1f2937}
+  .field .req{color:var(--op);margin-left:2px}
+  .field input,.field select,.field textarea{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;font:inherit;font-size:14.5px;background:#fff;outline:none;transition:border-color .15s,box-shadow .15s}
+  .field textarea{resize:vertical;min-height:88px}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--op);box-shadow:0 0 0 3px var(--op-ring)}
+  .field .suffix{position:relative}
+  .field .suffix .u{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted-2);font-weight:600;pointer-events:none}
+
+  .switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none;font-size:14px;font-weight:500}
+  .switch input{display:none}
+  .switch i{width:38px;height:22px;border-radius:20px;background:#cbd2d9;position:relative;transition:.2s;flex:0 0 38px}
+  .switch i::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+  .switch input:checked + i{background:var(--op)}.switch input:checked + i::after{left:18px}
+
+  #charFields{animation:fin .22s ease}
+  @keyframes fin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+  .drop{display:flex;align-items:center;gap:14px;border:1.6px dashed #cbd2d9;border-radius:12px;padding:16px;cursor:pointer;transition:.15s;background:#fff}
+  .drop:hover{border-color:var(--op)}
+  .drop .dz{width:46px;height:46px;border-radius:12px;background:var(--op-light);display:grid;place-items:center;flex:0 0 46px}
+  .drop .dz svg{width:22px;height:22px;stroke:var(--op);fill:none;stroke-width:1.7}
+  .drop b{display:block;font-size:13.5px}.drop span{font-size:12px;color:var(--muted)}
+  .drop input{display:none}
+
+  .actions{display:flex;gap:12px;justify-content:flex-end}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:11px;font:inherit;font-weight:600;font-size:14.5px;padding:12px 22px;cursor:pointer;border:1.5px solid transparent;transition:.16s}
+  .btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2}
+  .btn.ghost{background:#fff;border-color:var(--border);color:var(--text)}.btn.ghost:hover{border-color:var(--muted)}
+  .btn.op{background:var(--op);color:#fff}.btn.op:hover{filter:brightness(.94);transform:translateY(-1px)}
+
+  @media (max-width:620px){.grid{grid-template-columns:1fr}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}#charFields{animation:none}}
+</style>
+</head>
+<body>
+
+<!-- BANDEAU DÉMO (à retirer en prod) -->
+<div class="demo">
+  <b>Aperçu démo</b> — change l'opération et le <b>type</b> pour voir les champs s'adapter :
+  <span class="seg" id="seg">
+    <button data-op="location" class="on">Location</button>
+    <button data-op="vente">Vente</button>
+    <button data-op="terrain">Terrain</button>
+    <button data-op="construction">Construction</button>
+  </span>
+</div>
+
+<div class="topbar">
+  <a class="back" href="/dashboard/"><svg viewBox="0 0 24 24"><path d="M19 12H5m7-7-7 7 7 7"/></svg> Tableau de bord</a>
+  <span class="ttl">Publier un bien</span>
+  <span class="sp"></span>
+  <span class="firm"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> {{ entreprise.name }}</span>
+</div>
+
+<div class="wrap">
+
+  <div class="ohead">
+    <div class="oi" id="oIcon"></div>
+    <div>
+      <h1 id="oTitle">—</h1>
+      <p id="oSub">—</p>
+    </div>
+    {% load static %}
+    <a class="switch-op" href="{% url 'biens_ui:publier' %}">Changer d'opération →</a>
+  </div>
+
+  <form id="bienForm" method="post" enctype="multipart/form-data" action="">
+    {% csrf_token %}
+    <input type="hidden" name="operation" id="operation" value="">
+
+    <!-- 1. Type & localisation -->
+    <div class="card">
+      <div class="sh"><span class="n">1</span><h2>Type & localisation</h2></div>
+      <div class="grid">
+        <div class="field"><label for="type_bien">Type de bien<span class="req">*</span></label><select name="type_bien" id="type_bien"></select></div>
+        <div class="field"><label for="commune">Commune<span class="req">*</span></label>
+          <select name="commune" id="commune"><option value="">Choisir…</option><option>Cocody</option><option>Marcory</option><option>Yopougon</option><option>Bingerville</option><option>Grand-Bassam</option><option>Plateau</option><option>Abobo</option><option>Treichville</option><option>Koumassi</option><option>Port-Bouët</option></select>
+        </div>
+        <div class="field full"><label for="titre">Titre de l'annonce<span class="req">*</span></label><input type="text" name="titre" id="titre" placeholder="Ex. Appartement F4 meublé, Cocody Riviera"></div>
+        <div class="field full"><label for="adresse">Adresse / repère</label><input type="text" name="adresse" id="adresse" placeholder="Quartier, rue, point de repère"></div>
+      </div>
+    </div>
+
+    <!-- 2. Caractéristiques (reconstruites selon opération + famille du type) -->
+    <div class="card">
+      <div class="sh"><span class="n">2</span><h2>Caractéristiques</h2><span class="famtag" id="famTag">—</span></div>
+      <div class="grid" id="charFields"></div>
+    </div>
+
+    <!-- 3. Description & photos -->
+    <div class="card">
+      <div class="sh"><span class="n">3</span><h2>Description & photos</h2></div>
+      <div class="grid">
+        <div class="field full"><label for="description">Description</label><textarea name="description" id="description" placeholder="Décrivez le bien, ses atouts, l'environnement…"></textarea></div>
+        <div class="field full"><label>Photos</label>
+          <label class="drop" for="photos"><span class="dz"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v13"/></svg></span><span><b id="photoName">Ajouter des photos</b><span>JPG ou PNG, plusieurs fichiers possibles.</span></span><input type="file" name="photos" id="photos" accept="image/*" multiple></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a class="btn ghost" href="/dashboard/">Annuler</a>
+      <button type="submit" class="btn op"><span id="submitLbl">Publier</span> <svg viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function(){
+  var META = {
+    location:{ color:'#185FA5', light:'#E6F1FB', ring:'rgba(24,95,165,.15)',
+      title:'Mettre un bien en location', sub:'Logement ou local à louer', submit:'Publier la location',
+      icon:'<svg viewBox="0 0 24 24" fill="none"><path d="M14 7a4 4 0 1 0-3 6l-5 5 2 2 6-6a4 4 0 0 0 0-7z" stroke="currentColor" stroke-width="1.7"/></svg>',
+      types:['Appartement','Villa','Studio','Chambre','Magasin','Boutique','Bureau','Entrepôt'] },
+    vente:{ color:'#3B6D11', light:'#EAF3DE', ring:'rgba(59,109,17,.15)',
+      title:'Mettre un bien en vente', sub:'Maison, local, terrain ou entrepôt à vendre', submit:'Publier la vente',
+      icon:'<svg viewBox="0 0 24 24" fill="none"><path d="M3 11l9-7 9 7M5 10v10h14V10" stroke="currentColor" stroke-width="1.7"/></svg>',
+      types:['Maison','Villa','Appartement','Terrain','Magasin','Boutique','Bureau','Entrepôt'] },
+    terrain:{ color:'#97751B', light:'#FFFBEB', ring:'rgba(151,117,27,.15)',
+      title:'Ajouter un terrain', sub:'Parcelle avec informations cadastrales', submit:'Publier le terrain',
+      icon:'<svg viewBox="0 0 24 24" fill="none"><path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5" stroke="currentColor" stroke-width="1.7"/></svg>',
+      types:['Parcelle viabilisée','Lot titré (ACD)','Terrain agricole'] },
+    construction:{ color:'#C2410C', light:'#FFEAD9', ring:'rgba(194,65,12,.15)',
+      title:'Créer un projet de construction', sub:'Projet sur plan, suivi de chantier', submit:'Publier le projet',
+      icon:'<svg viewBox="0 0 24 24" fill="none"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5" stroke="currentColor" stroke-width="1.7"/></svg>',
+      types:['Projet sur plan'] }
+  };
+
+  // famille de chaque type -> détermine les champs PHYSIQUES
+  var FAMILY = {
+    'Appartement':'residentiel','Villa':'residentiel','Studio':'residentiel','Chambre':'residentiel','Maison':'residentiel','Duplex':'residentiel',
+    'Magasin':'commercial','Boutique':'commercial','Bureau':'commercial','Local commercial':'commercial','Entrepôt':'commercial',
+    'Terrain':'terrain','Parcelle viabilisée':'terrain','Lot titré (ACD)':'terrain','Terrain agricole':'terrain',
+    'Projet sur plan':'projet'
+  };
+  var FAM_LABEL = {residentiel:'Résidentiel', commercial:'Commercial', terrain:'Terrain', projet:'Projet'};
+
+  // ---- helpers de champ ----
+  function fld(inner,full){ return '<div class="field'+(full?' full':'')+'">'+inner+'</div>'; }
+  function lbl(t,req){ return '<label>'+t+(req?'<span class="req">*</span>':'')+'</label>'; }
+  function num(label,name,ph,req){ return fld(lbl(label,req)+'<input type="number" min="0" name="'+name+'" placeholder="'+ph+'">'); }
+  function unit(label,name,ph,u,req){ return fld(lbl(label,req)+'<div class="suffix"><input type="number" min="0" name="'+name+'" placeholder="'+ph+'"><span class="u">'+u+'</span></div>'); }
+  function month(label,name){ return fld(lbl(label)+'<input type="month" name="'+name+'">'); }
+  function selF(label,name,opts){ var o=opts.map(function(x){return '<option>'+x+'</option>';}).join(''); return fld(lbl(label)+'<select name="'+name+'">'+o+'</select>'); }
+  function tog(label,name){ return fld('<label class="switch"><input type="checkbox" name="'+name+'"><i></i> '+label+'</label>', true); }
+
+  var root = document.documentElement;
+  var typeSel = document.getElementById('type_bien');
+  var charFields = document.getElementById('charFields');
+  var famTag = document.getElementById('famTag');
+  var currentOp = 'location';
+
+  // ---- construit les champs selon (opération, famille du type) ----
+  function renderChars(){
+    var op = currentOp, type = typeSel.value, fam = FAMILY[type] || 'residentiel';
+    var h = '';
+
+    // (A) monétaire — dépend de l'OPÉRATION
+    if(op === 'location'){ h += unit('Loyer mensuel','loyer','450000','FCFA',true) + selF('Caution','caution',['1 mois','2 mois','3 mois','Aucune']); }
+    else if(op === 'vente'){ h += unit('Prix de vente','prix','95000000','FCFA',true) + selF('Titre de propriété','titre_propriete',['ACD','Titre foncier','Attestation villageoise']); }
+    else if(op === 'terrain'){ h += unit('Prix','prix','18000000','FCFA',true); }
+    else if(op === 'construction'){ h += unit('Prix à partir de','prix_min','25000000','FCFA',true); }
+
+    // (B) physique — dépend de la FAMILLE du type
+    if(fam === 'residentiel'){
+      h += num('Nombre de pièces','pieces','4') + num('Chambres','chambres','3') + unit('Surface','surface','120','m²');
+      if(op === 'location') h += tog('Bien meublé','meuble');
+    } else if(fam === 'commercial'){
+      h += unit('Surface','surface','60','m²') + selF('Standing','standing',['Standard','Bon standing','Haut standing']);
+      if(op === 'location') h += tog('Local équipé','equipe');
+    } else if(fam === 'terrain'){
+      h += unit('Superficie','superficie','500','m²') + selF('Statut foncier','statut_foncier',['ACD disponible','Titre foncier',"Lettre d'attribution",'En cours']) + tog('Terrain viabilisé (eau, électricité, voie)','viabilise');
+    } else if(fam === 'projet'){
+      h += num('Nombre de logements','nb_logements','24') + month('Livraison prévue','livraison') + selF('Avancement','avancement',['Sur plan','Fondations','Gros œuvre','Finitions']) + tog('Paiement échelonné possible','echelonne');
+    }
+
+    charFields.innerHTML = h;
+    famTag.textContent = FAM_LABEL[fam] || '—';
+  }
+
+  function setOperation(op){
+    var m = META[op]; if(!m){ op='location'; m=META.location; }
+    currentOp = op;
+    root.style.setProperty('--op', m.color);
+    root.style.setProperty('--op-light', m.light);
+    root.style.setProperty('--op-ring', m.ring);
+    document.getElementById('oIcon').innerHTML = m.icon;
+    document.getElementById('oTitle').textContent = m.title;
+    document.getElementById('oSub').textContent = m.sub;
+    document.getElementById('submitLbl').textContent = m.submit;
+    document.getElementById('operation').value = op;
+    typeSel.innerHTML = '';
+    m.types.forEach(function(t){ var o=document.createElement('option'); o.textContent=t; typeSel.appendChild(o); });
+    renderChars();
+    document.querySelectorAll('#seg button').forEach(function(b){ b.classList.toggle('on', b.dataset.op === op); });
+  }
+
+  // le TYPE pilote les champs physiques
+  typeSel.addEventListener('change', renderChars);
+  // démo : boutons d'opération
+  document.querySelectorAll('#seg button').forEach(function(b){ b.addEventListener('click', function(){ setOperation(b.dataset.op); }); });
+  // photos
+  var ph = document.getElementById('photos');
+  ph.addEventListener('change', function(){ document.getElementById('photoName').textContent = ph.files.length ? (ph.files.length+' photo(s) sélectionnée(s)') : 'Ajouter des photos'; });
+
+  // EN DJANGO : '{{ operation }}' est rendu par la vue. Fallback 'location' pour l'aperçu.
+  var initial = '{{ operation }}';
+  if(!META[initial]) initial = 'location';
+  setOperation(initial);
+})();
+</script>
+</body>
+</html>

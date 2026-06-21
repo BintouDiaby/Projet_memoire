@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} — Immobilier{% endblock %}
+
+{% block content %}
+  <div class="card p-4">
+    <h1>{{ title }}</h1>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="btn btn-primary" type="submit">Enregistrer</button>
+      <a class="btn btn-secondary" href="/biens/">Annuler</a>
+    </form>
+  </div>
+{% endblock %}

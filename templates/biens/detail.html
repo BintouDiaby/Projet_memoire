@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bien.titre }} — Immobilier{% endblock %}
+
+{% block content %}
+  <div class="card p-4">
+    <h1>{{ bien.titre }}</h1>
+    <p class="text-muted">{{ bien.ville }} — {{ bien.adresse }}</p>
+    <h3>{{ bien.prix_mensuel }} € / mois</h3>
+    <p>{{ bien.description }}</p>
+    <p><a class="btn btn-secondary" href="/biens/">Retour à la liste</a></p>
+  </div>
+{% endblock %}

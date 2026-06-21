@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Contrat {{ contrat.numero_contrat }} — Immobilier{% endblock %}
+
+{% block content %}
+  <div class="card p-4">
+    <h1>Contrat {{ contrat.numero_contrat }}</h1>
+    <p><strong>Bien:</strong> {{ contrat.bien }}</p>
+    <p><strong>Locataire:</strong> {{ contrat.locataire }}</p>
+    <p><strong>Statut:</strong> {{ contrat.statut }}</p>
+    <p><a class="btn btn-secondary" href="/contrats/">Retour à la liste</a></p>
+  </div>
+{% endblock %}

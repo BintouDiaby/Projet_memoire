@@ -1,0 +1,91 @@
+{% load static %}
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Immobilier — Gestion Locative{% endblock %}</title>
+    <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="{% static 'css/site.css' %}" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body class="{% block body_class %}{% endblock %}">
+
+    {% block navbar %}
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+      <div class="container">
+        <a class="navbar-brand" href="/">🏢 Immobilier</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+          {% if request.user.is_authenticated %}
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item"><a class="nav-link" href="/">Accueil</a></li>
+            <li class="nav-item"><a class="nav-link" href="/biens/">Biens</a></li>
+            <li class="nav-item"><a class="nav-link" href="/contrats/">Contrats</a></li>
+            {% if request.user.role == 'locataire' %}
+              <li class="nav-item"><a class="nav-link" href="/contrats/mes-locations/">Mes locations</a></li>
+            {% endif %}
+            <li class="nav-item"><a class="nav-link" href="/facturation/ui/">Facturation</a></li>
+            <li class="nav-item"><a class="nav-link" href="/recherche/ui/">Recherche</a></li>
+            <li class="nav-item"><a class="nav-link" href="/dashboard/ui/">Dashboard</a></li>
+          </ul>
+          <div class="d-flex align-items-center">
+            <span class="me-3 small text-muted">
+              {{ request.user.get_full_name|default:request.user.username }}
+              <span class="badge bg-light text-dark ms-1">{{ request.user.get_role_display }}</span>
+            </span>
+            {% if request.user.is_staff %}<a href="/admin/" class="btn btn-sm btn-outline-warning me-2">Admin</a>{% endif %}
+            <form method="post" action="{% url 'logout' %}" class="d-inline m-0">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-secondary">Déconnexion</button>
+            </form>
+          </div>
+          {% else %}
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0"></ul>
+          <div class="d-flex align-items-center">
+            <a href="{% url 'login' %}" class="btn btn-outline-secondary me-2">Se connecter</a>
+            <a href="{% url 'signup' %}" class="btn btn-primary">S'inscrire</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+    {% endblock %}
+
+    {% block body %}
+    <main class="page-wrapper">
+      <div class="container">
+        {% if messages %}
+          <div class="mb-3">
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% comment %}Pour les pages publiques (landing/onboarding) nous n'enveloppons pas le contenu
+           dans la card blanche afin d'éviter un rendu blanc sur blanc.{% endcomment %}
+        {% if request.resolver_match %}
+          {% if request.resolver_match.url_name == 'landing' or request.resolver_match.url_name == 'onboarding' %}
+            <div>
+          {% else %}
+            <div class="card p-4">
+          {% endif %}
+        {% else %}
+          <div class="card p-4">
+        {% endif %}
+
+          {% block content %}{% endblock %}
+
+        </div>
+      </div>
+    </main>
+    {% endblock %}
+
+    <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

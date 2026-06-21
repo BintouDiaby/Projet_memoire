@@ -1,0 +1,347 @@
+<!--
+  inscription_entreprise.html (version assistant multi-etapes) — remplace ton template.
+  Page autonome (ne pas etendre base.html). Reutilise ton site.css pour le decor .auth-*.
+  Un SEUL <form> : les etapes masquent/affichent des panneaux, tous les champs sont postes ensemble.
+  Aucun name= modifie. logo + documents optionnels (a gerer cote serveur via request.FILES).
+-->
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inscription entreprise — ImmoGérer</title>
+  <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="/static/css/site.css" rel="stylesheet">
+  <style>
+    /* ===== GARDE-FOU : empeche la mise en page auth (site.css) de couper le bas du formulaire =====
+       Beaucoup de layouts auth utilisent height:100vh + overflow:hidden ; comme l'assistant est
+       plus haut, les boutons en bas etaient coupes hors ecran. On force le conteneur a grandir/defiler. */
+    html,body{height:auto!important;min-height:100%;overflow-y:auto!important}
+    .auth-page{height:auto!important;min-height:100vh;overflow:visible!important}
+    .auth-main,.auth-wrapper,.auth-card{height:auto!important;max-height:none!important;overflow:visible!important}
+    .auth-main{padding-top:28px;padding-bottom:28px}
+    .ef-nav{display:flex!important}
+
+    .ef{--g:#3B6D11;--g-dark:#2E5409;--g-soft:#EAF3DE;--bd:#e5e7eb;--mut:#6b7280;--ink:#1f2937;--err:#b4441f;font-family:"Inter",system-ui,sans-serif}
+
+    /* ===== stepper ===== */
+    .ef-stepper{position:relative;display:flex;justify-content:space-between;margin:2px 6px 26px}
+    .ef-stepper::before{content:"";position:absolute;left:17px;right:17px;top:17px;height:2px;background:var(--bd)}
+    .ef-stepper .pbar{position:absolute;left:17px;top:17px;height:2px;background:var(--g);width:0;transition:width .4s ease;z-index:0}
+    .ef-node{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:7px;background:#fff;padding:0 2px}
+    .ef-node .circle{width:34px;height:34px;border-radius:50%;border:2px solid #d8dce3;background:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;color:#9aa0a6;transition:.25s}
+    .ef-node .circle svg{width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2.6;display:none}
+    .ef-node .lbl{font-size:11.5px;font-weight:600;color:#9aa0a6;transition:.2s}
+    .ef-node.active .circle{border-color:var(--g);color:var(--g);box-shadow:0 0 0 4px rgba(59,109,17,.13)}
+    .ef-node.active .lbl{color:var(--g)}
+    .ef-node.done .circle{background:var(--g);border-color:var(--g)}
+    .ef-node.done .circle span{display:none}.ef-node.done .circle svg{display:block}
+    .ef-node.done .lbl{color:var(--ink)}
+
+    /* ===== steps ===== */
+    .ef-step{display:none}
+    .ef-step.active{display:block;animation:efin .32s ease}
+    @keyframes efin{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+    .ef-sh{display:flex;align-items:center;gap:10px;margin:0 0 18px}
+    .ef-sh .ic{width:32px;height:32px;border-radius:9px;background:var(--g-soft);display:grid;place-items:center;flex:0 0 32px}
+    .ef-sh .ic svg{width:17px;height:17px;stroke:var(--g);fill:none;stroke-width:1.8}
+    .ef-sh h3{font-size:16px;font-weight:700;margin:0;color:var(--ink)}
+    .ef-sh .sub{font-size:12px;color:var(--mut);margin:1px 0 0}
+
+    .ef-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .ef-field{display:flex;flex-direction:column}
+    .ef-field.full{grid-column:1 / -1}
+    .ef-field label{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink)}
+    .ef-field .req{color:var(--g);margin-left:2px}
+    .ef-field input[type=text],.ef-field input[type=email],.ef-field input[type=tel],.ef-field input[type=password]{
+      width:100%;padding:11px 13px;border:1.5px solid var(--bd);border-radius:10px;font:inherit;font-size:14.5px;background:#fff;outline:none;transition:border-color .15s,box-shadow .15s}
+    .ef-field input:focus{border-color:var(--g);box-shadow:0 0 0 3px rgba(59,109,17,.13)}
+    .ef-field.invalid input{border-color:var(--err);box-shadow:0 0 0 3px rgba(180,68,31,.12)}
+    .ef-field .hint{font-size:11.5px;color:var(--mut);margin-top:5px}
+    .ef-field .err{font-size:11.5px;color:var(--err);margin-top:5px;display:none}
+    .ef-field.invalid .err{display:block}
+    .ef-field.shake{animation:shake .3s}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+    .ef-pwd{position:relative}
+    .ef-pwd .toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:6px;display:grid;place-items:center;color:var(--mut)}
+    .ef-pwd .toggle svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7}
+    .ef-match{font-size:11.5px;margin-top:5px;display:none}
+    .ef-match.ok{display:block;color:var(--g)}
+    .ef-match.no{display:block;color:var(--err)}
+
+    .ef-drop{display:flex;align-items:center;gap:14px;border:1.6px dashed #cbd2d9;border-radius:12px;padding:13px 15px;cursor:pointer;transition:.15s;background:#fff}
+    .ef-drop:hover{border-color:var(--g);background:#fafdf6}
+    .ef-drop .dz{width:44px;height:44px;border-radius:11px;background:var(--g-soft);display:grid;place-items:center;flex:0 0 44px}
+    .ef-drop .dz svg{width:21px;height:21px;stroke:var(--g);fill:none;stroke-width:1.7}
+    .ef-drop .dt b{display:block;font-size:13.5px;color:var(--ink)}
+    .ef-drop .dt span{font-size:12px;color:var(--mut)}
+    .ef-drop input[type=file]{display:none}
+
+    .ef-chips{display:flex;flex-wrap:wrap;gap:9px}
+    .ef-chip{display:inline-flex;align-items:center;gap:9px;padding:9px 13px;border:1.5px solid var(--bd);border-radius:11px;font-size:13.5px;font-weight:500;color:var(--ink);cursor:pointer;user-select:none;transition:.14s;background:#fff}
+    .ef-chip:hover{border-color:rgba(59,109,17,.55)}
+    .ef-chip .box{width:18px;height:18px;border-radius:6px;border:1.6px solid #cbd2d9;display:grid;place-items:center;transition:.14s}
+    .ef-chip .box svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2.6;opacity:0}
+    .ef-chip.on{border-color:var(--g);background:#F4F8EE;color:#27500A}
+    .ef-chip.on .box{background:var(--g);border-color:var(--g)}
+    .ef-chip.on .box svg{opacity:1}
+    .ef-chips-err{font-size:11.5px;color:var(--err);margin-top:8px;display:none}
+    .ef-chips-err.show{display:block}
+
+    /* recap */
+    .ef-recap{background:#f8faf5;border:1px solid #e3ead7;border-radius:12px;padding:16px 18px;margin-top:18px}
+    .ef-recap .rr{display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13.5px}
+    .ef-recap .rr span{color:var(--mut)}
+    .ef-recap .rr b{color:var(--ink);font-weight:600;text-align:right}
+
+    /* nav */
+    .ef-nav{display:flex;gap:12px;margin-top:26px}
+    .ef-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:11px;font:inherit;font-weight:600;font-size:14.5px;padding:12px 20px;cursor:pointer;border:1.5px solid transparent;transition:.16s}
+    .ef-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2}
+    .ef-btn.ghost{background:#fff;border-color:var(--bd);color:var(--ink)}
+    .ef-btn.ghost:hover{border-color:var(--g);color:var(--g)}
+    .ef-btn.green{background:var(--g);color:#fff;flex:1}
+    .ef-btn.green:hover{background:var(--g-dark);transform:translateY(-1px)}
+    .ef-foot{text-align:center;margin-top:16px;font-size:13.5px;color:var(--mut)}
+    .ef-foot a{color:var(--g);font-weight:600;text-decoration:none}
+    .ef-foot a:hover{text-decoration:underline}
+    @media (max-width:520px){.ef-grid{grid-template-columns:1fr}.ef-node .lbl{display:none}}
+  </style>
+</head>
+<body class="">
+
+<div class="auth-page">
+  <aside class="auth-aside">
+    <div class="auth-aside-content">
+      <a href="/" class="d-inline-flex align-items-center text-white text-decoration-none mb-4">
+        <span style="font-size:1.6rem;">🏢</span>
+        <strong class="ms-2">ImmoGérer</strong>
+      </a>
+      <h2>Inscription entreprise</h2>
+      <p>Créez un compte entreprise et configurez votre espace de travail.</p>
+    </div>
+    <div class="auth-aside-footer">© 2026 ImmoGérer</div>
+  </aside>
+
+  <section class="auth-main">
+    <div class="auth-wrapper">
+      <div class="auth-header">
+        <div class="auth-logo">✨</div>
+        <h1>Créer un compte entreprise</h1>
+        <p>Trois étapes rapides, et votre espace est prêt.</p>
+      </div>
+
+      <div class="auth-card">
+        {% if messages %}
+          <div style="max-width:720px;margin:0 auto 12px;">
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <form class="ef" id="efForm" method="post" enctype="multipart/form-data" action="" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="role" value="proprietaire">
+
+          <!-- STEPPER -->
+          <div class="ef-stepper">
+            <span class="pbar" id="efPbar"></span>
+            <div class="ef-node active" data-node="1"><span class="circle"><span>1</span><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="lbl">Compte</span></div>
+            <div class="ef-node" data-node="2"><span class="circle"><span>2</span><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="lbl">Entreprise</span></div>
+            <div class="ef-node" data-node="3"><span class="circle"><span>3</span><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="lbl">Activités</span></div>
+          </div>
+
+          <!-- ÉTAPE 1 : compte -->
+          <div class="ef-step active" data-step="1">
+            <div class="ef-sh">
+              <span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+              <div><h3>Vos informations</h3><p class="sub">Le compte du responsable de l'entreprise.</p></div>
+            </div>
+            <div class="ef-grid">
+              <div class="ef-field full" data-required><label for="id_username">Nom d'utilisateur<span class="req">*</span></label><input type="text" name="username" id="id_username"><div class="err">Ce champ est requis.</div></div>
+              <div class="ef-field" data-required><label for="id_first_name">Prénom<span class="req">*</span></label><input type="text" name="first_name" id="id_first_name"><div class="err">Ce champ est requis.</div></div>
+              <div class="ef-field" data-required><label for="id_last_name">Nom<span class="req">*</span></label><input type="text" name="last_name" id="id_last_name"><div class="err">Ce champ est requis.</div></div>
+              <div class="ef-field" data-required data-type="email"><label for="id_email">E-mail<span class="req">*</span></label><input type="email" name="email" id="id_email"><div class="err">E-mail invalide.</div></div>
+              <div class="ef-field" data-required><label for="id_telephone">Téléphone<span class="req">*</span></label><input type="tel" name="telephone" id="id_telephone" placeholder="+225 …"><div class="err">Ce champ est requis.</div></div>
+              <div class="ef-field" data-required>
+                <label for="id_password1">Mot de passe<span class="req">*</span></label>
+                <div class="ef-pwd"><input type="password" name="password1" id="id_password1"><button type="button" class="toggle" data-target="id_password1"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+                <div class="hint">8 caractères minimum.</div><div class="err">Ce champ est requis.</div>
+              </div>
+              <div class="ef-field" data-required>
+                <label for="id_password2">Confirmation<span class="req">*</span></label>
+                <div class="ef-pwd"><input type="password" name="password2" id="id_password2"><button type="button" class="toggle" data-target="id_password2"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+                <div class="ef-match" id="efMatch"></div><div class="err">Ce champ est requis.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ÉTAPE 2 : entreprise -->
+          <div class="ef-step" data-step="2">
+            <div class="ef-sh">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M3 21h18M3 21V7l7-4v18M10 21V8l8 4v9M14 12h.01M14 16h.01"/></svg></span>
+              <div><h3>Votre entreprise</h3><p class="sub">Ces informations servent à vérifier votre entreprise.</p></div>
+            </div>
+            <div class="ef-grid">
+              <div class="ef-field full" data-required><label for="id_company_name">Nom de l'entreprise<span class="req">*</span></label><input type="text" name="company_name" id="id_company_name"><div class="err">Ce champ est requis.</div></div>
+              <div class="ef-field"><label for="id_rccm">RCCM</label><input type="text" name="rccm" id="id_rccm" placeholder="CI-ABJ-2026-B-…"><div class="hint">Sert à obtenir le badge « vérifiée ».</div></div>
+              <div class="ef-field"><label for="id_company_phone">Téléphone entreprise</label><input type="text" name="company_phone" id="id_company_phone" placeholder="+225 …"></div>
+              <div class="ef-field full"><label for="id_company_adresse">Adresse</label><input type="text" name="company_adresse" id="id_company_adresse" placeholder="Commune, quartier, rue…"></div>
+              <div class="ef-field full">
+                <label>Logo <span class="hint" style="font-weight:400">(optionnel)</span></label>
+                <label class="ef-drop" for="id_logo"><span class="dz"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v13"/></svg></span><span class="dt"><b id="efLogoName">Choisir un fichier</b><span>PNG ou JPG, 2 Mo max.</span></span><input type="file" name="logo" id="id_logo" accept="image/*"></label>
+              </div>
+              <div class="ef-field full">
+                <label>Documents légaux <span class="hint" style="font-weight:400">(optionnel)</span></label>
+                <label class="ef-drop" for="id_documents"><span class="dz"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><span class="dt"><b id="efDocsName">Ajouter des documents</b><span>PDF, plusieurs fichiers possibles.</span></span><input type="file" name="documents" id="id_documents" accept=".pdf,image/*" multiple></label>
+              </div>
+            </div>
+          </div>
+
+          <!-- ÉTAPE 3 : activités + récap -->
+          <div class="ef-step" data-step="3">
+            <div class="ef-sh">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg></span>
+              <div><h3>Vos activités</h3><p class="sub">Sélectionnez au moins une activité proposée.</p></div>
+            </div>
+            <div class="ef-chips" id="efChips">
+              <span class="ef-chip" data-value="location_maison"><span class="box"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span> Location de logements</span>
+              <span class="ef-chip" data-value="vente_maison"><span class="box"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span> Vente de maisons</span>
+              <span class="ef-chip" data-value="vente_terrain"><span class="box"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span> Vente de terrains</span>
+              <span class="ef-chip" data-value="vente_commercial"><span class="box"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span> Locaux commerciaux</span>
+              <span class="ef-chip" data-value="location_bureau"><span class="box"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span> Location bureaux</span>
+              <span class="ef-chip" data-value="construction"><span class="box"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span> Construction</span>
+            </div>
+            <div class="ef-chips-err" id="efChipsErr">Choisissez au moins une activité.</div>
+            <input type="hidden" name="types" id="id_types" value="">
+
+            <div class="ef-recap" id="efRecap">
+              <div class="rr"><span>Entreprise</span><b id="rcName">—</b></div>
+              <div class="rr"><span>Responsable</span><b id="rcUser">—</b></div>
+              <div class="rr"><span>E-mail</span><b id="rcMail">—</b></div>
+              <div class="rr"><span>Activités</span><b id="rcActs">—</b></div>
+            </div>
+          </div>
+
+          <!-- NAV -->
+          <div class="ef-nav">
+            <button type="button" class="ef-btn ghost" id="efBack" style="display:none"><svg viewBox="0 0 24 24"><path d="M19 12H5m7-7-7 7 7 7"/></svg> Précédent</button>
+            <button type="button" class="ef-btn green" id="efNext">Continuer <svg viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
+            <button type="submit" class="ef-btn green" id="efSubmit" style="display:none">Créer mon compte <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>
+          </div>
+
+          <div class="ef-foot">Vous avez déjà un compte ? <a href="{% url 'login_company' %}">Se connecter (compte entreprise)</a></div>
+        </form>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script>
+(function(){
+  var step = 1, total = 3;
+  var form = document.getElementById('efForm');
+  var pbar = document.getElementById('efPbar');
+  var nodes = document.querySelectorAll('.ef-node');
+  var panels = document.querySelectorAll('.ef-step');
+  var back = document.getElementById('efBack');
+  var next = document.getElementById('efNext');
+  var submit = document.getElementById('efSubmit');
+
+  function show(n){
+    step = n;
+    panels.forEach(function(p){ p.classList.toggle('active', +p.dataset.step === n); });
+    nodes.forEach(function(nd){
+      var i = +nd.dataset.node;
+      nd.classList.toggle('active', i === n);
+      nd.classList.toggle('done', i < n);
+    });
+    pbar.style.width = ((n - 1) / (total - 1) * 100) + '%';
+    back.style.display = n === 1 ? 'none' : 'inline-flex';
+    next.style.display = n === total ? 'none' : 'inline-flex';
+    submit.style.display = n === total ? 'inline-flex' : 'none';
+    if(n === total) fillRecap();
+    form.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  function markInvalid(field, on){
+    field.classList.toggle('invalid', on);
+    if(on){ field.classList.add('shake'); setTimeout(function(){ field.classList.remove('shake'); }, 300); }
+  }
+
+  function validateStep(n){
+    var ok = true, panel = document.querySelector('.ef-step[data-step="'+n+'"]');
+    panel.querySelectorAll('.ef-field[data-required]').forEach(function(f){
+      var inp = f.querySelector('input'), val = inp.value.trim(), bad = !val;
+      if(!bad && f.dataset.type === 'email'){ bad = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val); }
+      markInvalid(f, bad); if(bad) ok = false;
+    });
+    // étape 1 : correspondance des mots de passe
+    if(n === 1){
+      var p1 = document.getElementById('id_password1'), p2 = document.getElementById('id_password2');
+      if(p1.value && p2.value && p1.value !== p2.value){ markInvalid(p2.closest('.ef-field'), true); ok = false; checkMatch(); }
+    }
+    // étape 3 : au moins une activité
+    if(n === 3){
+      var chosen = document.querySelectorAll('#efChips .ef-chip.on').length;
+      document.getElementById('efChipsErr').classList.toggle('show', chosen === 0);
+      if(chosen === 0) ok = false;
+    }
+    return ok;
+  }
+
+  next.addEventListener('click', function(){ if(validateStep(step)) show(step + 1); });
+  back.addEventListener('click', function(){ show(step - 1); });
+  form.addEventListener('submit', function(e){ if(!validateStep(3)){ e.preventDefault(); } });
+
+  // retirer l'état invalide à la saisie
+  form.querySelectorAll('.ef-field input').forEach(function(inp){
+    inp.addEventListener('input', function(){ inp.closest('.ef-field').classList.remove('invalid'); });
+  });
+
+  // chips -> champ caché types
+  var chips = document.querySelectorAll('#efChips .ef-chip'), hidden = document.getElementById('id_types');
+  function syncTypes(){
+    var vals = [];
+    chips.forEach(function(c){ if(c.classList.contains('on')) vals.push(c.dataset.value); });
+    hidden.value = vals.join(',');
+    if(vals.length) document.getElementById('efChipsErr').classList.remove('show');
+  }
+  chips.forEach(function(c){ c.addEventListener('click', function(){ c.classList.toggle('on'); syncTypes(); }); });
+
+  // afficher/masquer mots de passe
+  document.querySelectorAll('.ef-pwd .toggle').forEach(function(b){
+    b.addEventListener('click', function(){ var i = document.getElementById(b.dataset.target); i.type = i.type === 'password' ? 'text' : 'password'; });
+  });
+  // correspondance live
+  var p1 = document.getElementById('id_password1'), p2 = document.getElementById('id_password2'), mb = document.getElementById('efMatch');
+  function checkMatch(){
+    if(!p2.value){ mb.className = 'ef-match'; mb.textContent = ''; return; }
+    if(p1.value === p2.value){ mb.className = 'ef-match ok'; mb.textContent = '✓ Les mots de passe correspondent'; }
+    else { mb.className = 'ef-match no'; mb.textContent = '✗ Les mots de passe ne correspondent pas'; }
+  }
+  p1.addEventListener('input', checkMatch); p2.addEventListener('input', checkMatch);
+
+  // noms de fichiers
+  var logo = document.getElementById('id_logo');
+  logo.addEventListener('change', function(){ document.getElementById('efLogoName').textContent = logo.files.length ? logo.files[0].name : 'Choisir un fichier'; });
+  var docs = document.getElementById('id_documents');
+  docs.addEventListener('change', function(){ document.getElementById('efDocsName').textContent = docs.files.length ? (docs.files.length + ' fichier(s) sélectionné(s)') : 'Ajouter des documents'; });
+
+  // récap
+  function fillRecap(){
+    document.getElementById('rcName').textContent = val('id_company_name') || '—';
+    document.getElementById('rcUser').textContent = (val('id_first_name') + ' ' + val('id_last_name')).trim() || '—';
+    document.getElementById('rcMail').textContent = val('id_email') || '—';
+    var acts = Array.prototype.map.call(document.querySelectorAll('#efChips .ef-chip.on'), function(c){ return c.textContent.trim(); });
+    document.getElementById('rcActs').textContent = acts.length ? acts.join(', ') : 'Aucune';
+  }
+  function val(id){ return document.getElementById(id).value.trim(); }
+})();
+</script>
+</body>
+</html>

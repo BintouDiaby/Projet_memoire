@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer le bien — Immobilier{% endblock %}
+
+{% block content %}
+  <div class="card p-4">
+    <h1>Supprimer le bien</h1>
+    <p>Confirmez la suppression de <strong>{{ bien.titre }}</strong>.</p>
+    <form method="post">
+      {% csrf_token %}
+      <button class="btn btn-danger" type="submit">Supprimer</button>
+      <a class="btn btn-secondary" href="/biens/{{ bien.id }}/">Annuler</a>
+    </form>
+  </div>
+{% endblock %}

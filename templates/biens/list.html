@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Biens disponibles — Immobilier{% endblock %}
+
+{% block content %}
+  <div class="card p-4">
+    <h1>{{ title }}</h1>
+    <form method="get" class="mb-3">
+      <div class="row g-2">
+        <div class="col-md-3">
+          <input name="ville" value="{{ request.GET.ville }}" class="form-control" placeholder="Ville / Quartier">
+        </div>
+        <div class="col-md-2">
+          <select name="min_chambres" class="form-control">
+            <option value="">Pièces (min)</option>
+            {% for i in rooms_range %}
+              <option value="{{ i }}" {% if request.GET.min_chambres == i|stringformat:"s" %}selected{% endif %}>{{ i }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <input name="min_price" value="{{ request.GET.min_price }}" class="form-control" placeholder="Budget min">
+        </div>
+        <div class="col-md-2">
+          <input name="max_price" value="{{ request.GET.max_price }}" class="form-control" placeholder="Budget max">
+        </div>
+        <div class="col-md-3 text-end">
+          <button class="btn btn-primary">Filtrer</button>
+          <a class="btn btn-link" href="/biens/">Réinitialiser</a>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <strong>Type d'opération</strong>
+        {% for val,label in transaction_choices %}
+          <label class="ms-2"><input type="checkbox" name="transaction_type" value="{{ val }}" {% if val in selected_transaction_types %}checked{% endif %}> {{ label }}</label>
+        {% endfor %}
+      </div>
+
+      <div class="mt-2">
+        <strong>Type de bien</strong>
+        {% for val,label in type_choices %}
+          <label class="ms-2"><input type="checkbox" name="type_bien" value="{{ val }}" {% if val in selected_types_bien %}checked{% endif %}> {{ label }}</label>
+        {% endfor %}
+      </div>
+
+      <div class="form-check mt-2">
+        <input class="form-check-input" type="checkbox" name="entreprises_verifiees" value="1" id="entreprises_verifiees" {% if request.GET.entreprises_verifiees %}checked{% endif %}>
+        <label class="form-check-label" for="entreprises_verifiees">Entreprises vérifiées uniquement</label>
+      </div>
+    </form>
+    <div class="list-group">
+    {% for b in biens %}
+      <a href="/biens/{{ b.id }}/" class="list-group-item list-group-item-action">
+        <div class="d-flex w-100 justify-content-between">
+          <h5 class="mb-1">{{ b.titre }}</h5>
+          <small>{{ b.ville }}</small>
+        </div>
+        <p class="mb-1">{{ b.description|truncatechars:120 }}</p>
+        <small>{{ b.prix_mensuel }} € / mois</small>
+      </a>
+    {% empty %}
+      <div class="alert alert-info">Aucun bien disponible.</div>
+    {% endfor %}
+    </div>
+  </div>
+{% endblock %}

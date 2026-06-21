@@ -1,0 +1,287 @@
+<!--
+  dashboard_entreprise_vide.html — Etat initial d'une entreprise qui vient de s'inscrire.
+  Aucune donnee : 0 bien, statut "Verification en cours" (pas encore "Verifiee").
+  Reste DYNAMIQUE : seuls les modules choisis a l'inscription s'affichent (data-mod).
+  Demo : la barre "Activites" simule ces choix.
+-->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Espace entreprise — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#185FA5;--accent:#C9A84C;--accent-light:#FFFBEB;--accent-dark:#7A5F1A;
+    --green:#3B6D11;--green-dark:#2E5409;--green-light:#EAF3DE;--green-text:#27500A;
+    --blue:#185FA5;--blue-light:#E6F1FB;--orange:#C2410C;--orange-light:#FFEAD9;
+    --text:#111;--muted:#666;--muted-2:#9aa0a6;--border:#e5e7eb;--bg:#F4F6F9;--card:#fff;
+    --amber-bg:#FEF6E1;--amber-tx:#8A6310;
+    --font-display:"Plus Jakarta Sans",system-ui,sans-serif;--font-body:"Inter",system-ui,sans-serif;--r:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  .app{display:flex;min-height:100vh}
+  .hidden{display:none!important}
+
+  /* sidebar */
+  .sidebar{width:256px;flex:0 0 256px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .logo{display:flex;align-items:center;gap:10px;padding:20px 22px 14px;font-family:var(--font-display);font-weight:800;font-size:18px;letter-spacing:-.01em}
+  .logo .mk{width:24px;height:24px}
+  .firm-tag{margin:0 16px 6px;padding:11px 13px;background:var(--amber-bg);border-radius:11px;display:flex;align-items:center;gap:10px}
+  .firm-tag .lg{width:34px;height:34px;border-radius:9px;background:var(--green);color:#fff;display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:14px;flex:0 0 34px}
+  .firm-tag .nm{font-weight:700;font-size:13px;line-height:1.2}
+  .firm-tag .vf{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--amber-tx);margin-top:1px}
+  .firm-tag .vf svg{width:11px;height:11px;stroke:var(--amber-tx);fill:none;stroke-width:2.2}
+  .side-lab{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted-2);padding:14px 22px 6px;font-weight:600}
+  .snav{display:flex;flex-direction:column;gap:2px;padding:0 12px}
+  .snav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;color:var(--muted);font-weight:500;font-size:13.5px;transition:.14s;position:relative}
+  .snav a svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;flex:0 0 18px}
+  .snav a:hover{background:#f3f5f8;color:var(--text)}
+  .snav a.active{background:var(--green-light);color:var(--green);font-weight:600}
+  .snav a.active::before{content:"";position:absolute;left:-12px;top:7px;bottom:7px;width:3px;border-radius:3px;background:var(--green)}
+  .snav .z{margin-left:auto;font-size:11px;color:var(--muted-2);font-weight:600}
+  .side-foot{margin-top:auto;padding:14px 16px;border-top:1px solid var(--border)}
+  .logout{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:var(--muted);font-weight:500;font-size:14px}
+  .logout:hover{background:#f3f5f8;color:#B4441F}.logout svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7}
+
+  /* main */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{height:64px;background:rgba(244,246,249,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:0 28px;position:sticky;top:0;z-index:20}
+  .tsearch{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:9px 14px;width:300px;max-width:38vw}
+  .tsearch svg{width:17px;height:17px;stroke:var(--muted-2);fill:none;stroke-width:1.8}
+  .tsearch input{border:none;outline:none;background:transparent;font-family:var(--font-body);font-size:14px;width:100%}
+  .tspacer{flex:1}
+  .addbtn{display:inline-flex;align-items:center;gap:8px;background:var(--green);color:#fff;font-weight:600;font-size:13.5px;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;transition:.16s}
+  .addbtn:hover{background:var(--green-dark);transform:translateY(-1px)}.addbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2}
+  .me .av{width:38px;height:38px;border-radius:11px;background:var(--green-light);color:var(--green);display:grid;place-items:center;font-family:var(--font-display);font-weight:700}
+
+  .content{padding:24px 28px;max-width:1180px;width:100%}
+
+  /* activity bar (démo) */
+  .actbar{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+  .actbar .ti{display:flex;flex-direction:column;gap:1px;margin-right:6px}
+  .actbar .ti b{font-family:var(--font-display);font-size:14px}.actbar .ti span{font-size:11.5px;color:var(--muted-2)}
+  .tog{display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border:1.5px solid var(--border);border-radius:20px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none;transition:.14s;background:#fff}
+  .tog .box{width:16px;height:16px;border-radius:5px;border:1.6px solid #cbd2d9;display:grid;place-items:center;transition:.14s}
+  .tog .box svg{width:10px;height:10px;stroke:#fff;fill:none;stroke-width:2.8;opacity:0}
+  .tog.on{color:var(--green-text);border-color:var(--green);background:#F4F8EE}
+  .tog.on .box{background:var(--green);border-color:var(--green)}.tog.on .box svg{opacity:1}
+  .tog .dot{width:7px;height:7px;border-radius:50%}
+  .tog[data-mod=location] .dot{background:var(--blue)}.tog[data-mod=vente] .dot{background:var(--green)}
+  .tog[data-mod=terrain] .dot{background:var(--accent)}.tog[data-mod=construction] .dot{background:var(--orange)}
+
+  .greet{margin-bottom:18px}
+  .greet h1{font-family:var(--font-display);font-weight:800;font-size:25px;letter-spacing:-.02em;margin:0;display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+  .pending{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--amber-tx);background:var(--amber-bg);padding:5px 11px;border-radius:20px}
+  .pending svg{width:13px;height:13px;stroke:var(--amber-tx);fill:none;stroke-width:2.2}
+  .greet p{margin:7px 0 0;color:var(--muted)}
+
+  /* bandeau vérification */
+  .verif-banner{display:flex;align-items:center;gap:13px;background:var(--amber-bg);border:1px solid #f3e3b8;border-radius:var(--r);padding:13px 16px;margin-bottom:22px}
+  .verif-banner .vi{width:34px;height:34px;border-radius:9px;background:#fff;display:grid;place-items:center;flex:0 0 34px}
+  .verif-banner .vi svg{width:18px;height:18px;stroke:var(--amber-tx);fill:none;stroke-width:1.9}
+  .verif-banner p{margin:0;font-size:13px;color:#6b5414}.verif-banner p b{color:var(--amber-tx)}
+  .verif-banner a{margin-left:auto;font-size:13px;font-weight:600;color:var(--amber-tx);white-space:nowrap}
+
+  /* premiers pas (vert) */
+  .start{background:linear-gradient(115deg,#48831a,#3B6D11 60%,#2E5409);border-radius:18px;padding:26px 28px;color:#eaf3e0;display:grid;grid-template-columns:1fr auto;gap:26px;align-items:center;margin-bottom:24px}
+  .start h2{font-family:var(--font-display);font-weight:700;font-size:20px;margin:0 0 4px;color:#fff}
+  .start .lead{font-size:14px;color:#d4e6c5;margin:0 0 18px}
+  .steps{display:flex;flex-direction:column;gap:10px}
+  .step{display:flex;align-items:center;gap:12px}
+  .step .tick{width:24px;height:24px;border-radius:50%;flex:0 0 24px;display:grid;place-items:center;border:1.6px solid rgba(255,255,255,.45)}
+  .step .tick svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.4;opacity:0}
+  .step.done .tick{background:#fff;border-color:#fff}.step.done .tick svg{stroke:var(--green);opacity:1}
+  .step.cur .tick{border-color:#fff;border-style:dashed}
+  .step .lbl{font-size:14px;font-weight:500;color:#eaf3e0}
+  .step.done .lbl{color:#cfe2bf;text-decoration:line-through;text-decoration-color:rgba(207,226,191,.5)}
+  .step .pin{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:10px;background:rgba(255,255,255,.18);margin-left:4px}
+  .ring-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .ring{width:118px;height:118px;position:relative}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .bg{fill:none;stroke:rgba(255,255,255,.22);stroke-width:9}
+  .ring .fg{fill:none;stroke:var(--accent);stroke-width:9;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:.75;transition:stroke-dashoffset 1s ease}
+  .ring .lab{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+  .ring .lab b{font-family:var(--font-display);font-size:23px;font-weight:800;color:#fff}.ring .lab span{font-size:11px;color:#d4e6c5;display:block}
+  .start .gob{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--green-dark);font-weight:700;font-size:14px;padding:11px 18px;border-radius:10px;border:none;cursor:pointer;transition:.16s}
+  .start .gob:hover{transform:translateY(-1px)}.start .gob svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4}
+
+  /* modules vides */
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin:6px 0 14px}
+  .sec-head h2{font-family:var(--font-display);font-weight:700;font-size:18px;margin:0}
+  .sec-head .meta{font-size:12px;color:var(--muted-2)}
+  .mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
+  .modcard{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;transition:.16s;display:flex;flex-direction:column}
+  .modcard:hover{box-shadow:0 8px 22px rgba(0,0,0,.05)}
+  .modcard .mh{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+  .modcard .mi{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;flex:0 0 42px}
+  .modcard .mi svg{width:21px;height:21px;stroke-width:1.7;fill:none}
+  .modcard[data-mod=location] .mi{background:var(--blue-light)}.modcard[data-mod=location] .mi svg{stroke:var(--primary)}
+  .modcard[data-mod=vente] .mi{background:var(--green-light)}.modcard[data-mod=vente] .mi svg{stroke:var(--green)}
+  .modcard[data-mod=terrain] .mi{background:var(--accent-light)}.modcard[data-mod=terrain] .mi svg{stroke:var(--accent-dark)}
+  .modcard[data-mod=construction] .mi{background:var(--orange-light)}.modcard[data-mod=construction] .mi svg{stroke:var(--orange)}
+  .modcard h3{font-family:var(--font-display);font-weight:700;font-size:15.5px;margin:0}
+  .modcard .z0{font-size:12.5px;color:var(--muted-2);font-weight:600}
+  .modcard .desc{font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.45}
+  .types{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+  .ty{font-size:11px;font-weight:500;padding:3px 9px;border-radius:14px;background:#f3f5f8;color:#3a4750}
+  .addmod{margin-top:auto;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-weight:600;font-size:13.5px;padding:10px;border-radius:10px;border:1.5px dashed;cursor:pointer;transition:.15s;background:#fff}
+  .addmod svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.2}
+  .modcard[data-mod=location] .addmod{color:var(--primary);border-color:#b9d3ec}.modcard[data-mod=location] .addmod:hover{background:var(--blue-light)}
+  .modcard[data-mod=vente] .addmod{color:var(--green);border-color:#c5d9ac}.modcard[data-mod=vente] .addmod:hover{background:var(--green-light)}
+  .modcard[data-mod=terrain] .addmod{color:var(--accent-dark);border-color:#ecd9a8}.modcard[data-mod=terrain] .addmod:hover{background:var(--accent-light)}
+  .modcard[data-mod=construction] .addmod{color:var(--orange);border-color:#f0c9b0}.modcard[data-mod=construction] .addmod:hover{background:var(--orange-light)}
+
+  .none{background:var(--card);border:1px dashed #cbd2d9;border-radius:var(--r);padding:38px;text-align:center;color:var(--muted)}
+  .none b{display:block;font-family:var(--font-display);color:var(--text);font-size:16px;margin-bottom:4px}
+
+  @media (max-width:860px){.sidebar{position:fixed;left:-264px;z-index:60}.main{width:100%}.start{grid-template-columns:1fr}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+{% load static %}
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#3B6D11" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/><path d="M3 21h18" stroke="#3B6D11" stroke-width="1.8" stroke-linecap="round"/></svg>
+      ImmoGérer
+    </div>
+    <div class="firm-tag"><div class="lg">A</div><div><div class="nm">Azimuts SARL</div><div class="vf"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5l3 2"/></svg> Vérification en cours</div></div></div>
+    <div class="side-lab">Pilotage</div>
+    <nav class="snav" id="snav">
+      <a href="#" class="active"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3zM13 21h8V11h-8zM13 3v6h8V3zM3 21h8v-6H3z"/></svg> Vue globale</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12M3 21h18"/></svg> Biens <span class="z">0</span></a>
+      <a href="#" data-mod="location"><svg viewBox="0 0 24 24"><path d="M14 7a4 4 0 1 0-3 6l-5 5 2 2 6-6a4 4 0 0 0 0-7z"/></svg> Locations <span class="z">0</span></a>
+      <a href="#" data-mod="vente"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg> Ventes <span class="z">0</span></a>
+      <a href="#" data-mod="terrain"><svg viewBox="0 0 24 24"><path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5"/></svg> Terrains <span class="z">0</span></a>
+      <a href="#" data-mod="construction"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg> Construction <span class="z">0</span></a>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0M16 5a3.5 3.5 0 0 1 0 7"/></svg> Clients <span class="z">0</span></a>
+      <a href="#"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Paiements</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Statistiques</a>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V20a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 6 18.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H2a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 3.7 6L3.6 6a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 9 4.6V4a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.9H20a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg> Paramètres</a>
+    </nav>
+    <div class="side-foot"><a href="/accounts/logout/" class="logout"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg> Déconnexion</a></div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="tsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="Rechercher…"></div>
+      <div class="tspacer"></div>
+      <a class="addbtn" href="{% url 'biens_ui:publier' %}"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Publier un bien</a>
+      <div class="me"><div class="av">A</div></div>
+    </div>
+
+    <div class="content">
+
+      <!-- barre activités (démo) -->
+      <div class="actbar">
+        <div class="ti"><b>Activités de l'entreprise</b><span>Démo — défini par les choix à l'inscription</span></div>
+        <span class="tog on" data-mod="location"><span class="box"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="dot"></span> Location</span>
+        <span class="tog on" data-mod="vente"><span class="box"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="dot"></span> Vente</span>
+        <span class="tog on" data-mod="terrain"><span class="box"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="dot"></span> Terrains</span>
+        <span class="tog on" data-mod="construction"><span class="box"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="dot"></span> Construction</span>
+      </div>
+
+      <div class="greet">
+        <h1>Bienvenue, Azimuts SARL <span class="pending"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5l3 2"/></svg> Vérification en cours</span></h1>
+        <p>Votre espace est créé. Configurons-le pour publier vos premiers biens.</p>
+      </div>
+
+      <!-- bandeau vérification -->
+      <div class="verif-banner">
+        <span class="vi"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/></svg></span>
+        <p><b>Vérification en cours.</b> Vos documents (RCCM, pièces légales) sont en cours de contrôle. Vous pouvez déjà préparer vos biens — ils deviendront visibles publiquement une fois votre entreprise vérifiée.</p>
+        <a href="#">Compléter le dossier →</a>
+      </div>
+
+      <!-- PREMIERS PAS -->
+      <div class="start">
+        <div>
+          <h2>Vos premiers pas</h2>
+          <p class="lead">Quatre étapes pour activer votre espace entreprise.</p>
+          <div class="steps">
+            <div class="step done"><span class="tick"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="lbl">Compte entreprise créé</span></div>
+            {% if not profile_complete %}
+            <div class="step"><span class="tick"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="lbl">Compléter le profil (logo, adresse, téléphone)</span></div>
+            {% endif %}
+            {% if not documents_verifies %}
+            <div class="step cur"><span class="tick"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="lbl">Vérification du RCCM & documents <span class="pin">en cours</span></span></div>
+            {% else %}
+            <div class="step done"><span class="tick"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="lbl">Vérification du RCCM & documents</span></div>
+            {% endif %}
+            <div class="step {% if biens_count > 0 %}done{% endif %}"><span class="tick"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="lbl">Publier votre premier bien</span></div>
+          </div>
+        </div>
+        <div class="ring-wrap">
+          <div class="ring"><svg width="118" height="118" viewBox="0 0 118 118"><circle class="bg" cx="59" cy="59" r="49" pathLength="1"/><circle class="fg" id="ring" cx="59" cy="59" r="49" pathLength="1"/></svg><div class="lab"><b>{{ steps_completed }}/4</b><span>complété</span></div></div>
+          <a class="gob" href="{% url 'biens_ui:publier' %}"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Publier un bien</a>
+        </div>
+      </div>
+
+      <!-- MODULES (vides, dynamiques) -->
+      <div class="sec-head"><h2>Vos modules</h2><span class="meta" id="modCount"></span></div>
+      <div class="mods" id="mods">
+
+        <div class="modcard" data-mod="location">
+          <div class="mh"><div class="mi"><svg viewBox="0 0 24 24"><path d="M14 7a4 4 0 1 0-3 6l-5 5 2 2 6-6a4 4 0 0 0 0-7z"/></svg></div><div><h3>Location</h3><div class="z0">Aucun bien</div></div></div>
+          <p class="desc">Publiez votre premier logement ou local à louer pour le voir apparaître ici.</p>
+          <div class="types"><span class="ty">Appartement</span><span class="ty">Villa</span><span class="ty">Studio</span><span class="ty">Chambre</span><span class="ty">Magasin</span><span class="ty">Boutique</span><span class="ty">Bureau</span><span class="ty">Entrepôt</span></div>
+          <a class="addmod" href="{% url 'biens_ui:ajouter' 'location' %}"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Ajouter un bien en location</a>
+        </div>
+
+        <div class="modcard" data-mod="vente">
+          <div class="mh"><div class="mi"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg></div><div><h3>Vente</h3><div class="z0">Aucun bien</div></div></div>
+          <p class="desc">Mettez en vente une maison, un local ou un entrepôt pour démarrer.</p>
+          <div class="types"><span class="ty">Maison</span><span class="ty">Terrain</span><span class="ty">Magasin</span><span class="ty">Boutique</span><span class="ty">Bureau</span><span class="ty">Entrepôt</span></div>
+          <a class="addmod" href="{% url 'biens_ui:ajouter' 'vente' %}"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Mettre un bien en vente</a>
+        </div>
+
+        <div class="modcard" data-mod="terrain">
+          <div class="mh"><div class="mi"><svg viewBox="0 0 24 24"><path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5"/></svg></div><div><h3>Terrains</h3><div class="z0">Aucune parcelle</div></div></div>
+          <p class="desc">Ajoutez une parcelle avec ses informations cadastrales (ACD).</p>
+          <div class="types"><span class="ty">Parcelle viabilisée</span><span class="ty">Lot titré (ACD)</span><span class="ty">Terrain agricole</span></div>
+          <a class="addmod" href="{% url 'biens_ui:ajouter' 'terrain' %}"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Ajouter un terrain</a>
+        </div>
+
+        <div class="modcard" data-mod="construction">
+          <div class="mh"><div class="mi"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg></div><div><h3>Construction</h3><div class="z0">Aucun projet</div></div></div>
+          <p class="desc">Publiez un projet sur plan et suivez l'avancement du chantier.</p>
+          <div class="types"><span class="ty">Projet sur plan</span><span class="ty">Suivi de chantier</span><span class="ty">Futurs logements</span></div>
+          <a class="addmod" href="{% url 'biens_ui:ajouter' 'construction' %}"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Créer un projet</a>
+        </div>
+
+      </div>
+
+      <div class="none hidden" id="noneBox"><b>Aucune activité active</b>Activez au moins une activité pour configurer votre espace.</div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var ring=document.getElementById('ring');
+  if(ring){ ring.style.strokeDashoffset='1'; setTimeout(function(){ ring.style.strokeDashoffset='0.75'; },200); } // 1/4 = 25%
+  var togs=document.querySelectorAll('.tog');
+  function apply(){
+    var s={}; togs.forEach(function(t){ if(t.classList.contains('on')) s[t.dataset.mod]=1; });
+    document.querySelectorAll('[data-mod]').forEach(function(el){ if(el.classList.contains('tog'))return; el.classList.toggle('hidden',!s[el.dataset.mod]); });
+    var n=Object.keys(s).length;
+    document.getElementById('modCount').textContent=n+' module'+(n>1?'s':'')+' configuré'+(n>1?'s':'');
+    document.getElementById('noneBox').classList.toggle('hidden',n>0);
+  }
+  togs.forEach(function(t){ t.addEventListener('click',function(){ t.classList.toggle('on'); apply(); }); });
+  apply();
+})();
+</script>
+</body>
+</html>

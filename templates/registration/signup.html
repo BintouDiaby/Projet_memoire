@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Inscription — ImmoGérer{% endblock %}
+
+{% block navbar %}{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+
+  <aside class="auth-aside">
+    <div class="auth-aside-content">
+      <a href="/" class="d-inline-flex align-items-center text-white text-decoration-none mb-4">
+        <span style="font-size:1.6rem;">🏢</span>
+        <strong class="ms-2">ImmoGérer</strong>
+      </a>
+      <h2>Rejoignez la plateforme <em>n°1</em> de gestion locative</h2>
+      <p>
+        Facturation mensuelle automatique, rappels de paiement programmés,
+        recherche multi-critères et tableaux de bord en temps réel.
+      </p>
+
+      <ul class="list-unstyled mt-4" style="font-size:0.92rem; opacity:0.9;">
+        <li class="mb-2">✓ Génération automatique des factures le 1er du mois</li>
+        <li class="mb-2">✓ Rappels programmés à J+2, J+7, J+15</li>
+        <li class="mb-2">✓ Suivi des impayés en FCFA et alertes en temps réel</li>
+        <li class="mb-2">✓ Recherche avancée pour vos locataires</li>
+      </ul>
+
+      <div class="auth-stats">
+        <div class="auth-stat">
+          <div class="num">{{ stats.biens_total }}</div>
+          <div class="label">Biens</div>
+        </div>
+        <div class="auth-stat">
+          <div class="num">{{ stats.utilisateurs_actifs }}</div>
+          <div class="label">Utilisateurs</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-aside-footer">
+      © {% now "Y" %} ImmoGérer — Plateforme de gestion locative
+    </div>
+  </aside>
+
+  <section class="auth-main">
+    <div class="auth-wrapper">
+
+      <div class="auth-header">
+        <div class="auth-logo">✨</div>
+        <h1>Créer un compte</h1>
+        <p>Gratuit, sans engagement</p>
+      </div>
+
+      <div class="auth-card">
+
+        {% if form.non_field_errors %}
+          <div class="alert-error">
+            <span>⚠️</span>
+            <div>{% for err in form.non_field_errors %}{{ err }}<br>{% endfor %}</div>
+          </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'signup' %}" novalidate>
+          {% csrf_token %}
+
+          <!-- Sélection du rôle -->
+          <div class="field-group">
+            <label>Vous êtes</label>
+            <div class="role-picker">
+              {% for value, label in form.role.field.choices %}
+              <label class="role-card">
+                <input type="radio" name="role" value="{{ value }}"
+                       {% if form.role.value == value or not form.role.value and value == 'locataire' %}checked{% endif %}>
+                <div class="role-content">
+                  <span class="role-icon">
+                    {% if value == 'proprietaire' %}🏠
+                    {% elif value == 'locataire' %}🔑
+                    {% elif value == 'gestionnaire' %}💼
+                    {% else %}👤{% endif %}
+                  </span>
+                  <div class="role-name">{{ label }}</div>
+                  <div class="role-desc">
+                    {% if value == 'proprietaire' %}Je mets en location mes biens
+                    {% elif value == 'locataire' %}Je cherche un logement
+                    {% elif value == 'gestionnaire' %}Je gère un parc immobilier
+                    {% endif %}
+                  </div>
+                </div>
+              </label>
+              {% endfor %}
+            </div>
+            {% if form.role.errors %}<div class="field-error">{{ form.role.errors|join:", " }}</div>{% endif %}
+          </div>
+
+          <div class="row-2">
+            <div class="field-group">
+              <label for="id_first_name">Prénom</label>
+              <div class="field-wrap">
+                <span class="field-icon">📝</span>
+                <input type="text" id="id_first_name" name="first_name" required autocomplete="given-name"
+                       placeholder="Aïcha" value="{{ form.first_name.value|default:'' }}">
+              </div>
+              {% if form.first_name.errors %}<div class="field-error">{{ form.first_name.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="field-group">
+              <label for="id_last_name">Nom</label>
+              <div class="field-wrap">
+                <span class="field-icon">📝</span>
+                <input type="text" id="id_last_name" name="last_name" required autocomplete="family-name"
+                       placeholder="Koné" value="{{ form.last_name.value|default:'' }}">
+              </div>
+              {% if form.last_name.errors %}<div class="field-error">{{ form.last_name.errors|join:", " }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="id_username">Nom d'utilisateur</label>
+            <div class="field-wrap">
+              <span class="field-icon">👤</span>
+              <input type="text" id="id_username" name="username" required autocomplete="username"
+                     placeholder="aicha.kone" value="{{ form.username.value|default:'' }}">
+            </div>
+            {% if form.username.errors %}<div class="field-error">{{ form.username.errors|join:", " }}</div>{% endif %}
+          </div>
+
+          <div class="field-group">
+            <label for="id_email">Email</label>
+            <div class="field-wrap">
+              <span class="field-icon">✉️</span>
+              <input type="email" id="id_email" name="email" required autocomplete="email"
+                     placeholder="aicha.kone@exemple.com" value="{{ form.email.value|default:'' }}">
+            </div>
+            {% if form.email.errors %}<div class="field-error">{{ form.email.errors|join:", " }}</div>{% endif %}
+          </div>
+
+          <div class="field-group">
+            <label for="id_telephone">Téléphone</label>
+            <div class="field-wrap">
+              <span class="field-icon">📱</span>
+              <input type="tel" id="id_telephone" name="telephone" required autocomplete="tel"
+                     placeholder="+225 07 00 00 00 00" value="{{ form.telephone.value|default:'' }}">
+            </div>
+            <div class="field-help">Utilisé pour les notifications de paiement (SMS).</div>
+            {% if form.telephone.errors %}<div class="field-error">{{ form.telephone.errors|join:", " }}</div>{% endif %}
+          </div>
+
+          <div class="row-2">
+            <div class="field-group">
+              <label for="id_password1">Mot de passe</label>
+              <div class="field-wrap">
+                <span class="field-icon">🔒</span>
+                <input type="password" id="id_password1" name="password1" required autocomplete="new-password" placeholder="••••••••">
+                <button type="button" class="toggle-pw" onclick="togglePassword('id_password1', this)">👁️</button>
+              </div>
+              {% if form.password1.errors %}<div class="field-error">{{ form.password1.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="field-group">
+              <label for="id_password2">Confirmation</label>
+              <div class="field-wrap">
+                <span class="field-icon">🔒</span>
+                <input type="password" id="id_password2" name="password2" required autocomplete="new-password" placeholder="••••••••">
+                <button type="button" class="toggle-pw" onclick="togglePassword('id_password2', this)">👁️</button>
+              </div>
+              {% if form.password2.errors %}<div class="field-error">{{ form.password2.errors|join:", " }}</div>{% endif %}
+            </div>
+          </div>
+          <div class="password-hint">
+            Au moins 8 caractères, pas trop courant, pas uniquement numérique.
+          </div>
+
+          <button type="submit" class="btn-auth mt-3">
+            Créer mon compte <span>→</span>
+          </button>
+        </form>
+
+        <div class="divider">ou</div>
+
+        <div class="signup-prompt">
+          Déjà un compte ?
+          <a href="{% url 'login' %}">Se connecter</a>
+        </div>
+      </div>
+
+      <div class="secure-badge">
+        <span class="dot"></span> Vos données restent confidentielles
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+function togglePassword(inputId, btn){
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+  else { input.type = 'password'; btn.textContent = '👁️'; }
+}
+</script>
+{% endblock %}

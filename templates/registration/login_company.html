@@ -1,0 +1,173 @@
+<!--
+  connexion_entreprise.html — Page de connexion (espace entreprise). Autonome (pas besoin de site.css/Bootstrap).
+  Django : {% csrf_token %}, champ "next", action /accounts/login/ et name= (username/password/remember_me) conserves.
+  C'est le meme backend d'auth ; seul le template change.
+-->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connexion entreprise — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --g:#3B6D11;--g-dark:#2E5409;--g-soft:#EAF3DE;--g-text:#27500A;
+    --accent:#C9A84C;--ink:#15211C;--text:#1f2937;--muted:#6b7280;--muted-2:#9aa0a6;
+    --border:#e5e7eb;--bg:#F4F6F9;--card:#fff;--err:#B4441F;
+    --font-display:"Plus Jakarta Sans",system-ui,sans-serif;--font-body:"Inter",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{max-width:100%;overflow-x:hidden}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  .auth{display:grid;grid-template-columns:1.05fr 1fr;min-height:100vh}
+
+  /* ===== aside (vert) ===== */
+  .aside{position:relative;overflow:hidden;color:#eaf3e0;padding:48px 52px;display:flex;flex-direction:column;
+    background:radial-gradient(120% 90% at 85% 0%, #4a861b 0%, var(--g) 55%, #2c520a 100%)}
+  .aside .grid-bg{position:absolute;inset:0;opacity:.5;
+    background-image:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);
+    background-size:30px 30px;mask-image:radial-gradient(120% 100% at 80% 10%,#000 50%,transparent 100%)}
+  .aside>*{position:relative;z-index:1}
+  .brand{display:inline-flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;font-size:19px;color:#fff;margin-bottom:34px}
+  .brand .mk{width:24px;height:24px}
+  .tag{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;background:rgba(255,255,255,.16);color:#fff;
+    font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:6px 12px;border-radius:20px;margin-bottom:20px}
+  .tag svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.2}
+  .aside h2{font-family:var(--font-display);font-weight:800;font-size:30px;line-height:1.1;letter-spacing:-.02em;color:#fff;margin:0 0 14px;max-width:13ch}
+  .aside h2 em{font-style:normal;color:#e7c970}
+  .aside .lead{font-size:15px;color:#d4e6c5;margin:0 0 28px;max-width:34ch}
+  .feats{display:flex;flex-direction:column;gap:14px}
+  .feat{display:flex;align-items:center;gap:12px;font-size:14px;color:#eaf3e0}
+  .feat .fi{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.14);display:grid;place-items:center;flex:0 0 30px}
+  .feat .fi svg{width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2}
+  .aside .foot{margin-top:auto;padding-top:32px;font-size:12.5px;color:#bcd4ac}
+
+  /* ===== main / form ===== */
+  .main{display:flex;align-items:center;justify-content:center;padding:40px 24px}
+  .box{width:100%;max-width:400px}
+  .head{text-align:center;margin-bottom:24px}
+  .head .logo{width:54px;height:54px;border-radius:15px;background:var(--g-soft);display:grid;place-items:center;margin:0 auto 14px}
+  .head .logo svg{width:27px;height:27px;stroke:var(--g);fill:none;stroke-width:1.7}
+  .head h1{font-family:var(--font-display);font-weight:800;font-size:24px;letter-spacing:-.02em;margin:0}
+  .head p{color:var(--muted);margin:6px 0 0;font-size:14px}
+
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:7px;color:var(--text)}
+  .fld{position:relative}
+  .fld .ic{position:absolute;left:13px;top:50%;transform:translateY(-50%);display:grid;place-items:center;color:var(--muted-2);pointer-events:none}
+  .fld .ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+  .fld input{width:100%;padding:12px 14px 12px 42px;border:1.5px solid var(--border);border-radius:11px;font:inherit;font-size:14.5px;background:#fff;outline:none;transition:border-color .15s,box-shadow .15s}
+  .fld input:focus{border-color:var(--g);box-shadow:0 0 0 3px rgba(59,109,17,.13)}
+  .fld .eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:7px;display:grid;place-items:center;color:var(--muted-2)}
+  .fld .eye svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7}
+
+  .row{display:flex;align-items:center;justify-content:space-between;margin:14px 0 20px;font-size:13.5px}
+  .remember{display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:var(--text)}
+  .remember input{display:none}
+  .remember .cb{width:18px;height:18px;border-radius:5px;border:1.6px solid #cbd2d9;display:grid;place-items:center;transition:.14s}
+  .remember .cb svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2.8;opacity:0}
+  .remember input:checked + .cb{background:var(--g);border-color:var(--g)}.remember input:checked + .cb svg{opacity:1}
+  .forgot{color:var(--g);font-weight:600}.forgot:hover{text-decoration:underline}
+
+  .submit{width:100%;padding:13px;border:none;border-radius:11px;background:var(--g);color:#fff;font:inherit;font-weight:600;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:.16s}
+  .submit:hover{background:var(--g-dark);transform:translateY(-1px)}
+  .submit svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2}
+
+  .divider{display:flex;align-items:center;gap:14px;margin:22px 0;color:var(--muted-2);font-size:12.5px}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border)}
+  .signup{text-align:center;font-size:13.5px;color:var(--muted)}
+  .signup a{color:var(--g);font-weight:600}.signup a:hover{text-decoration:underline}
+  .secure{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:22px;font-size:12px;color:var(--muted-2)}
+  .secure .dot{width:7px;height:7px;border-radius:50%;background:var(--g);box-shadow:0 0 0 0 rgba(59,109,17,.5);animation:p 2.4s infinite}
+  @keyframes p{0%{box-shadow:0 0 0 0 rgba(59,109,17,.4)}70%{box-shadow:0 0 0 6px rgba(59,109,17,0)}100%{box-shadow:0 0 0 0 rgba(59,109,17,0)}}
+
+  @media (max-width:860px){.auth{grid-template-columns:1fr}.aside{display:none}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="auth">
+
+  <!-- ASIDE -->
+  <aside class="aside">
+    <div class="grid-bg"></div>
+    <a href="/" class="brand">
+      <svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#e7c970" stroke-width="1.6"/><path d="M3 21h18" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+      ImmoGérer
+    </a>
+    <span class="tag"><svg viewBox="0 0 24 24"><path d="M3 21h18M3 21V7l7-4v18M10 21V8l8 4v9"/></svg> Espace entreprise</span>
+    <h2>Pilotez tout votre <em>parc immobilier</em></h2>
+    <p class="lead">Location, vente, terrains et construction — vos biens, contrats et paiements réunis dans un seul tableau de bord.</p>
+    <div class="feats">
+      <div class="feat"><span class="fi"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span> Badge « Entreprise vérifiée » (RCCM contrôlé)</div>
+      <div class="feat"><span class="fi"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12M3 21h18"/></svg></span> Publication multi-activités en quelques clics</div>
+      <div class="feat"><span class="fi"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span> Loyers, quittances et échéances suivis</div>
+    </div>
+    <div class="foot">© 2026 ImmoGérer — Plateforme de gestion immobilière</div>
+  </aside>
+
+  <!-- MAIN -->
+  <section class="main">
+    <div class="box">
+      <div class="head">
+        <div class="logo"><svg viewBox="0 0 24 24"><path d="M3 21h18M3 21V7l7-4v18M10 21V8l8 4v9M14 11h.5M14 15h.5M6 11h.5M6 15h.5"/></svg></div>
+        <h1>Connexion entreprise</h1>
+        <p>Accédez à votre tableau de bord</p>
+      </div>
+
+      <form method="post" action="/accounts/login/" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="/dashboard/company/">
+
+        <div class="field">
+          <label for="id_username">Nom d'utilisateur</label>
+          <div class="fld">
+            <span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+            <input type="text" id="id_username" name="username" placeholder="Votre identifiant" required autocomplete="username" autofocus>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="id_password">Mot de passe</label>
+          <div class="fld">
+            <span class="ic"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+            <input type="password" id="id_password" name="password" placeholder="Votre mot de passe" required autocomplete="current-password">
+            <button type="button" class="eye" id="eye" aria-label="Afficher le mot de passe">
+              <svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="row">
+          <label class="remember">
+            <input type="checkbox" name="remember_me" checked>
+            <span class="cb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>
+            Se souvenir de moi
+          </label>
+          <a href="/accounts/password_reset/" class="forgot">Mot de passe oublié ?</a>
+        </div>
+
+        <button type="submit" class="submit">Se connecter <svg viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
+      </form>
+
+      <div class="divider">ou</div>
+      <div class="signup">Pas encore de compte entreprise ? <a href="/accounts/signup/">Créer un compte gratuitement</a></div>
+
+      <div class="secure"><span class="dot"></span> Connexion sécurisée — données chiffrées</div>
+    </div>
+  </section>
+</div>
+
+<script>
+  var eye = document.getElementById('eye'), pw = document.getElementById('id_password');
+  eye.addEventListener('click', function(){
+    if(pw.type === 'password'){ pw.type = 'text'; eye.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2M9.9 5.2A9.5 9.5 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.2 6.2A17 17 0 0 0 2 12s3.5 7 10 7a9.5 9.5 0 0 0 3-.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>'; }
+    else { pw.type = 'password'; eye.innerHTML = '<svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>'; }
+  });
+</script>
+</body>
+</html>

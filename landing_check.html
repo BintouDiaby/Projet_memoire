@@ -1,0 +1,765 @@
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ImmoGérer — Gérez vos biens simplement</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/static/css/site.css" rel="stylesheet">
+    
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #F5EDD4;
+    --navy: #0F2B4C;
+    --navy-mid: #1A3E6A;
+    --off-white: #FAF9F6;
+    --text: #1A1A2E;
+    --muted: #6B7280;
+    --border: #E5E2D8;
+    --r: 14px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--off-white);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    background: var(--navy);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 6rem 2rem 4rem;
+  }
+
+  /* Cercles décoratifs */
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -120px; right: -120px;
+    width: 520px; height: 520px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,168,76,0.12);
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: -80px;
+    width: 380px; height: 380px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .hero-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(201,168,76,0.12);
+    border: 1px solid rgba(201,168,76,0.25);
+    border-radius: 99px;
+    padding: 0.35rem 1rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 2rem;
+  }
+
+  .hero-eyebrow .pulse {
+    width: 7px; height: 7px;
+    background: #4ADE80;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(74,222,128,0.4); }
+    50%      { box-shadow: 0 0 0 5px rgba(74,222,128,0); }
+  }
+
+  .hero h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+    max-width: 720px;
+  }
+
+  .hero h1 em {
+    color: var(--gold);
+    font-style: italic;
+  }
+
+  .hero-sub {
+    color: rgba(255,255,255,0.55);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    max-width: 500px;
+    margin-bottom: 2.5rem;
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 4rem;
+  }
+
+  .btn-primary-hero {
+    background: var(--gold);
+    color: var(--navy);
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.03em;
+    padding: 0.85rem 2rem;
+    border-radius: 10px;
+    border: none;
+    text-decoration: none;
+    transition: opacity 0.2s, transform 0.15s;
+    cursor: pointer;
+  }
+
+  .btn-primary-hero:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+    color: var(--navy);
+  }
+
+  .btn-ghost-hero {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.875rem;
+    padding: 0.85rem 1.75rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: transparent;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .btn-ghost-hero:hover {
+    color: #fff;
+    border-color: rgba(255,255,255,0.45);
+  }
+
+  /* Stats animées */
+  .hero-stats {
+    display: flex;
+    gap: 3rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .stat-item .stat-val {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .stat-item .stat-label {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 0.25rem;
+  }
+
+  /* ── SECTION — DASHBOARD ── */
+  .section-dashboard {
+    padding: 7rem 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-tag {
+    display: inline-block;
+    background: var(--gold-light);
+    color: #7A5F1A;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.8rem;
+    border-radius: 99px;
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    font-weight: 600;
+    color: var(--navy);
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+
+  .section-title em {
+    color: var(--gold);
+    font-style: italic;
+  }
+
+  .section-body {
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.75;
+    max-width: 460px;
+    margin-bottom: 1.75rem;
+  }
+
+  .feature-list {
+    list-style: none;
+    margin-bottom: 2rem;
+  }
+
+  .feature-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    font-size: 0.875rem;
+    color: var(--text);
+    margin-bottom: 0.7rem;
+  }
+
+  .feature-list li::before {
+    content: '';
+    width: 18px; height: 18px;
+    min-width: 18px;
+    background: var(--gold-light);
+    border-radius: 50%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M4 9l4 4 6-6' fill='none' stroke='%23C9A84C' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    margin-top: 1px;
+  }
+
+  .btn-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--navy);
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.8rem 1.75rem;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s;
+  }
+
+  .btn-cta:hover {
+    background: var(--navy-mid);
+    transform: translateY(-1px);
+    color: #fff;
+  }
+
+  /* Mockup dashboard */
+  .dashboard-mockup {
+    background: var(--navy);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(15,43,76,0.18);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .mockup-bar {
+    background: rgba(255,255,255,0.04);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .mockup-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  .mockup-body {
+    padding: 1.25rem;
+  }
+
+  .mockup-stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .mockup-stat {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 0.9rem;
+  }
+
+  .mockup-stat .m-val {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .mockup-stat .m-lbl {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 4px;
+  }
+
+  .mockup-chart {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 1rem;
+    height: 120px;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .mockup-bar-item {
+    flex: 1;
+    border-radius: 4px 4px 0 0;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    background: var(--gold);
+  }
+
+  .mockup-bar-item:hover { opacity: 1; }
+  .mockup-bar-item.dim { background: rgba(201,168,76,0.25); }
+
+  /* ── FEATURES GRID ── */
+  .section-features {
+    background: var(--navy);
+    padding: 7rem 2rem;
+  }
+
+  .features-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .features-header {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+
+  .features-header .section-title {
+    color: #fff;
+  }
+
+  .features-header .section-body {
+    color: rgba(255,255,255,0.45);
+    margin: 0 auto;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .feature-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--r);
+    padding: 2rem;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .feature-card:hover {
+    border-color: rgba(201,168,76,0.35);
+    background: rgba(201,168,76,0.04);
+  }
+
+  .feature-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: rgba(201,168,76,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .feature-card h4 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 0.5rem;
+  }
+
+  .feature-card p {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.65;
+  }
+
+  /* ── TESTIMONIAL ── */
+  .section-testimonial {
+    padding: 7rem 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .quote-mark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 5rem;
+    color: var(--gold);
+    line-height: 0.5;
+    margin-bottom: 1.5rem;
+    opacity: 0.4;
+  }
+
+  .quote-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+    font-style: italic;
+    color: var(--navy);
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+  }
+
+  .quote-author {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .quote-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--gold-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+  }
+
+  .quote-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .quote-role {
+    font-size: 0.75rem;
+    color: var(--muted);
+    display: block;
+  }
+
+  /* ── CTA FINAL ── */
+  .section-cta {
+    background: var(--navy);
+    padding: 6rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .section-cta::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,168,76,0.08);
+  }
+
+  .section-cta h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 1rem;
+    position: relative;
+  }
+
+  .section-cta h2 em {
+    color: var(--gold);
+    font-style: italic;
+  }
+
+  .section-cta p {
+    color: rgba(255,255,255,0.45);
+    font-size: 1rem;
+    margin-bottom: 2.5rem;
+    position: relative;
+  }
+
+  .cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    position: relative;
+  }
+
+  @media (max-width: 768px) {
+    .hero-stats { gap: 1.5rem; flex-wrap: wrap; }
+    .section-dashboard { padding: 4rem 1.25rem; }
+    .section-features { padding: 4rem 1.25rem; }
+  }
+</style>
+
+  </head>
+  <body class="">
+
+    
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+      <div class="container">
+        <a class="navbar-brand" href="/">🏢 Immobilier</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+          
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0"></ul>
+          <div class="d-flex align-items-center">
+            <a href="/accounts/login/" class="btn btn-outline-secondary me-2">Se connecter</a>
+            <a href="/accounts/signup/" class="btn btn-primary">S'inscrire</a>
+          </div>
+          
+        </div>
+      </div>
+    </nav>
+    
+
+    
+
+<!-- ══ HERO ══ -->
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">
+      <span class="pulse"></span>
+      Plateforme opérationnelle
+    </div>
+
+    <h1>
+      Gérez vos biens<br>
+      <em>intelligemment</em>
+    </h1>
+
+    <p class="hero-sub">
+      Contrats, paiements, rappels et tableaux de bord personnalisés — tout ce dont vous avez besoin pour gérer votre activité immobilière.
+    </p>
+
+    <div class="hero-ctas">
+        {% if not request.user.is_authenticated %}
+          <a href="/accounts/login/" class="btn-ghost-hero">Se connecter</a>
+          <a href="/onboarding/" class="btn-primary-hero">Commencer gratuitement</a>
+        {% endif %}
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-val stat-value" data-target="1">0</div>
+        <div class="stat-label">Utilisateurs</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val stat-value" data-target="580">0</div>
+        <div class="stat-label">Biens gérés</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val stat-value" data-target="320">0</div>
+        <div class="stat-label">Contrats actifs</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ══ DASHBOARD PREVIEW ══ -->
+<section class="section-dashboard">
+  <div class="row align-items-center g-5" style="display:flex;flex-wrap:wrap;gap:3rem;">
+
+    <div style="flex:1;min-width:280px;">
+      <span class="section-tag">Tableau de bord</span>
+      <h2 class="section-title">Un espace qui<br>s'adapte à <em>vous</em></h2>
+      <p class="section-body">
+        Lors de l'inscription, vous choisissez vos activités — nous configurons alors les widgets, rapports et alertes pertinents pour votre profil.
+      </p>
+
+      <ul class="feature-list">
+        <li>Factures et rappels générés automatiquement</li>
+        <li>Suivi des paiements et alertes d'impayés</li>
+        <li>Tableaux de bord par rôle (propriétaire / gestionnaire / locataire)</li>
+        <li>Moteur de recherche multi-critères pour vos biens</li>
+      </ul>
+
+      <a href="/onboarding/" class="btn-cta">Configurer mon espace →</a>
+    </div>
+
+    <!-- Mockup -->
+    <div style="flex:1;min-width:280px;">
+      <div class="dashboard-mockup">
+        <div class="mockup-bar">
+          <div class="mockup-dot" style="background:#FF5F56;"></div>
+          <div class="mockup-dot" style="background:#FFBD2E;"></div>
+          <div class="mockup-dot" style="background:#27C93F;"></div>
+        </div>
+        <div class="mockup-body">
+          <div class="mockup-stat-row">
+            <div class="mockup-stat">
+              <div class="m-val">12</div>
+              <div class="m-lbl">Biens</div>
+            </div>
+            <div class="mockup-stat">
+              <div class="m-val">8</div>
+              <div class="m-lbl">Contrats</div>
+            </div>
+            <div class="mockup-stat">
+              <div class="m-val" style="color:var(--gold);">0 €</div>
+              <div class="m-lbl">Impayés</div>
+            </div>
+          </div>
+          <div class="mockup-chart">
+            <div class="mockup-bar-item dim" style="height:40%;"></div>
+            <div class="mockup-bar-item" style="height:65%;"></div>
+            <div class="mockup-bar-item dim" style="height:50%;"></div>
+            <div class="mockup-bar-item" style="height:80%;"></div>
+            <div class="mockup-bar-item dim" style="height:55%;"></div>
+            <div class="mockup-bar-item" style="height:90%;"></div>
+            <div class="mockup-bar-item dim" style="height:70%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ FEATURES ══ -->
+<section class="section-features">
+  <div class="features-inner">
+
+    <div class="features-header">
+      <span class="section-tag" style="background:rgba(201,168,76,0.12);color:var(--gold);">Fonctionnalités</span>
+      <h2 class="section-title" style="color:#fff;">Tout ce qu'il vous faut,<br><em>rien de superflu</em></h2>
+      <p class="section-body" style="color:rgba(255,255,255,0.45);margin:0.75rem auto 0;">
+        Une plateforme pensée pour les professionnels de l'immobilier ivoirien.
+      </p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🧾</div>
+        <h4>Facturation automatique</h4>
+        <p>Factures et rappels générés chaque fin de mois pour tous vos contrats actifs, sans intervention manuelle.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💳</div>
+        <h4>Suivi des paiements</h4>
+        <p>Statuts en temps réel : en attente, retard mineur, retard majeur, impayé — avec alertes automatiques.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h4>Dashboards personnalisés</h4>
+        <p>Des widgets adaptés à votre activité — location, vente, construction ou syndic — configurés lors de l'onboarding.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h4>Moteur de recherche</h4>
+        <p>Filtres multi-critères : budget, localisation, superficie, équipements, disponibilité — pour vos locataires et acheteurs.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📄</div>
+        <h4>Gestion des contrats</h4>
+        <p>Création, signature, suivi et archivage de tous vos contrats de location ou de vente en un seul endroit.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔔</div>
+        <h4>Notifications</h4>
+        <p>Alertes par email et SMS pour les échéances, impayés et renouvellements de contrats.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ TESTIMONIAL ══ -->
+<section class="section-testimonial">
+  <div class="quote-mark">"</div>
+  <p class="quote-text">
+    Nous avons réduit les impayés de 30% grâce aux rappels automatisés d'ImmoGérer.
+  </p>
+  <div class="quote-author">
+    <div class="quote-avatar">👩‍💼</div>
+    <div>
+      <span class="quote-name">Marie Dupont</span>
+      <span class="quote-role">Directrice — Agence Locative Abidjan</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CTA FINAL ══ -->
+<section class="section-cta">
+  <h2>Prêt à <em>digitaliser</em><br>votre gestion ?</h2>
+  <p>Rejoignez les professionnels qui font confiance à ImmoGérer.</p>
+  <div class="cta-buttons">
+    <a href="/accounts/signup/" class="btn-primary-hero">Créer mon compte</a>
+    <a href="/accounts/login/" class="btn-ghost-hero">Me connecter</a>
+  </div>
+</section>
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+<script>
+/* ── Compteur animé ── */
+function animateCounter(el) {
+  const target = parseInt(el.dataset.target) || 0;
+  const duration = 1800;
+  const start = performance.now();
+  const update = (now) => {
+    const progress = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.floor(ease * target).toLocaleString('fr');
+    if (progress < 1) requestAnimationFrame(update);
+  };
+  requestAnimationFrame(update);
+}
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      animateCounter(e.target);
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.3 });
+
+document.querySelectorAll('.stat-value').forEach(el => observer.observe(el));
+</script>
+
+  </body>
+</html>
