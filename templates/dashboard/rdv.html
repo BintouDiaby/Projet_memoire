@@ -1,0 +1,84 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rendez-vous — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head><body>
+<div class="app">
+{% with active_page='rdv' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+<button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="Rechercher…"></div>
+  <div class="tspacer"></div>
+  <a class="addbtn" href="/biens/publier/"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Publier un bien</a>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+<div class="pg-head">
+  <h1>Rendez-vous</h1>
+  <p>Visites de biens et rendez-vous construction à venir</p>
+</div>
+
+{% if visites or rdv_construction %}
+
+{% if visites %}
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Visites de biens</h2>
+    <span class="badge b-amber">{{ visites|length }} rendez-vous</span>
+  </div>
+  {% for v in visites %}
+  <div class="row">
+    <div style="width:46px;height:46px;border-radius:11px;background:{% if v.statut == 'en_attente' %}var(--amber-bg){% else %}var(--green-light){% endif %};display:grid;place-items:center;flex:0 0 46px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{% if v.statut == 'en_attente' %}var(--amber-tx){% else %}var(--green){% endif %}" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:13.5px;color:#111">{{ v.locataire.get_full_name|default:v.locataire.username }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ v.bien.titre|truncatechars:40 }}</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-weight:700;font-size:13px;color:#111">{{ v.date_visite|date:"d/m/Y" }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ v.date_visite|date:"H:i" }}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      {% if v.statut == 'en_attente' %}
+      <form method="post" action="/chat/visite/{{ v.id }}/gerer/" style="margin:0">{% csrf_token %}<input type="hidden" name="action" value="confirmer"><input type="hidden" name="next" value="/dashboard/rdv/"><button style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Confirmer</button></form>
+      <form method="post" action="/chat/visite/{{ v.id }}/gerer/" style="margin:0">{% csrf_token %}<input type="hidden" name="action" value="refuser"><input type="hidden" name="next" value="/dashboard/rdv/"><button style="background:#FEE2E2;color:#B91C1C;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Refuser</button></form>
+      {% else %}<span class="badge b-green">Confirmée</span>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if rdv_construction %}
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg> Rendez-vous construction</h2>
+    <span class="badge b-blue">{{ rdv_construction|length }} RDV</span>
+  </div>
+  {% for p in rdv_construction %}
+  <div class="row">
+    <div style="width:46px;height:46px;border-radius:11px;background:var(--blue-light);display:grid;place-items:center;flex:0 0 46px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.8"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:13.5px;color:#111">{{ p.client.get_full_name|default:p.client.username }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ p.get_type_projet_display }} — {{ p.notes_rdv|truncatechars:40|default:"Aucune note" }}</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-weight:700;font-size:13px;color:#111">{{ p.date_rdv|date:"d/m/Y" }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ p.date_rdv|date:"H:i" }}</div>
+    </div>
+    <a href="/construction/projet/{{ p.id }}/" style="background:var(--blue-light);color:var(--primary);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;flex-shrink:0">Voir projet</a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card"><div class="empty"><b>Aucun rendez-vous prévu</b>Les visites demandées et les rendez-vous construction apparaîtront ici.</div></div>
+{% endif %}
+
+</div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .app -->
+</body></html>

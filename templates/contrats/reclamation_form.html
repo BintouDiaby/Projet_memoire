@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Signaler un problème — ImmoGérer{% endblock %}
+
+{% block extra_head %}
+<style>
+  .me-page { background: var(--ig-bg, #F4F6F9); min-height: calc(100vh - 60px); padding: 28px 0 56px; }
+  .me-wrap  { max-width: 620px; margin: 0 auto; padding: 0 24px; }
+
+  .me-greeting { margin-bottom: 22px; }
+  .me-greeting h1 { font-family: var(--ig-font-display); font-weight: 800; font-size: 22px; letter-spacing: -.02em; margin: 0 0 6px; color: #111; display: flex; align-items: center; gap: 10px; }
+  .me-greeting .ic { width: 38px; height: 38px; border-radius: 11px; background: #FFF5F5; display: grid; place-items: center; flex: 0 0 38px; }
+  .me-greeting .ic svg { width: 19px; height: 19px; stroke: #B91C1C; fill: none; stroke-width: 1.8; }
+  .me-greeting p { font-size: 13.5px; color: #6B7280; margin: 0 0 0 48px; }
+
+  .me-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px; }
+
+  .form-field { margin-bottom: 18px; }
+  .form-field label { display: block; font-size: 12.5px; font-weight: 600; color: #374151; margin-bottom: 7px; }
+  .form-field input[type="text"],
+  .form-field select,
+  .form-field textarea {
+    width: 100%; padding: 10px 13px; border: 1.5px solid #e5e7eb; border-radius: 10px;
+    font-size: 13.5px; font-family: var(--ig-font-body); color: #111; transition: .14s;
+  }
+  .form-field input[type="text"]:focus,
+  .form-field select:focus,
+  .form-field textarea:focus { outline: none; border-color: #185FA5; }
+  .form-field textarea { resize: vertical; min-height: 100px; }
+  .field-error { color: #B91C1C; font-size: 12px; margin-top: 5px; }
+
+  .form-actions { display: flex; gap: 10px; margin-top: 22px; }
+  .ig-btn-full { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; font-weight: 600; font-size: 13.5px; padding: 11px 20px; cursor: pointer; border: none; text-decoration: none; transition: .15s; font-family: var(--ig-font-body); }
+  .ig-btn-full.primary { background: #185FA5; color: #fff; }
+  .ig-btn-full.primary:hover { background: #1A3E6A; color: #fff; }
+  .ig-btn-full.ghost { background: #fff; border: 1px solid #e5e7eb; color: #111; }
+  .ig-btn-full.ghost:hover { border-color: #185FA5; color: #185FA5; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="me-page">
+  <div class="me-wrap">
+
+    <div class="me-greeting">
+      <h1>
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M10.3 3.3 2 20h20L13.7 3.3a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r=".5" fill="#B91C1C"/></svg></span>
+        Signaler un problème
+      </h1>
+      <p>{{ bien.titre }} — {{ bien.ville }}</p>
+    </div>
+
+    <div class="me-card">
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-field">
+          <label for="{{ form.titre.id_for_label }}">Titre</label>
+          {{ form.titre }}
+          {% if form.titre.errors %}<div class="field-error">{{ form.titre.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="form-field">
+          <label for="{{ form.priorite.id_for_label }}">Priorité</label>
+          {{ form.priorite }}
+        </div>
+        <div class="form-field">
+          <label for="{{ form.description.id_for_label }}">Description</label>
+          {{ form.description }}
+          {% if form.description.errors %}<div class="field-error">{{ form.description.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="ig-btn-full primary">Envoyer au propriétaire</button>
+          <a href="/contrats/mes-reclamations/" class="ig-btn-full ghost">Annuler</a>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

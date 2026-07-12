@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Fiche client — {{ client.get_full_name|default:client.username }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .fc-page { background: #F4F6F9; min-height: calc(100vh - 60px); padding: 28px 0 56px; }
+  .fc-wrap  { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+  .back-link { display: inline-flex; align-items: center; gap: 7px; color: #185FA5; font-size: 13px; font-weight: 600; text-decoration: none; margin-bottom: 20px; }
+  .back-link svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+  .fc-header { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .fc-avatar { width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(135% 135% at 70% 0%, #1c66ad, #15528f); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 22px; flex: 0 0 64px; text-transform: uppercase; }
+  .fc-name { font-family: var(--ig-font-display); font-weight: 800; font-size: 20px; color: #111; letter-spacing: -.02em; }
+  .fc-role { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: #E6F1FB; color: #185FA5; margin-top: 4px; }
+  .fc-meta { font-size: 13px; color: #6B7280; margin-top: 6px; }
+  .fc-meta a { color: #185FA5; text-decoration: none; }
+  .fc-actions { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+  .fc-actions a { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 10px; text-decoration: none; border: 1px solid #e5e7eb; color: #111; background: #fff; transition: .14s; }
+  .fc-actions a:hover { border-color: #185FA5; color: #185FA5; }
+  .fc-actions a.primary { background: #185FA5; color: #fff; border-color: #185FA5; }
+  .fc-actions a.primary:hover { background: #1A3E6A; }
+  .fc-actions a svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+  .fc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .fc-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 20px; }
+  .fc-card h3 { font-family: var(--ig-font-display); font-weight: 700; font-size: 14px; color: #111; margin: 0 0 16px; display: flex; align-items: center; gap: 9px; }
+  .fc-card h3 svg { width: 16px; height: 16px; stroke: #185FA5; fill: none; stroke-width: 2; }
+
+  .hist-row { display: flex; align-items: flex-start; gap: 12px; padding: 9px 0; border-top: 1px solid #f3f4f6; }
+  .hist-row:first-child { border-top: none; padding-top: 0; }
+  .hist-icon { width: 32px; height: 32px; border-radius: 9px; background: #E6F1FB; display: grid; place-items: center; flex: 0 0 32px; }
+  .hist-icon svg { width: 14px; height: 14px; stroke: #185FA5; fill: none; stroke-width: 2; }
+  .hist-icon.green { background: #EAF3DE; } .hist-icon.green svg { stroke: #3B6D11; }
+  .hist-icon.amber { background: #FFFBEB; } .hist-icon.amber svg { stroke: #92400E; }
+  .hist-title { font-weight: 600; font-size: 13px; color: #111; }
+  .hist-sub   { font-size: 12px; color: #6B7280; margin-top: 2px; }
+
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  .b-ok   { background: #D1FAE5; color: #065F46; }
+  .b-warn { background: #FFFBEB; color: #92400E; }
+  .b-muted{ background: #F3F4F6; color: #6B7280; }
+
+  .empty-small { font-size: 13px; color: #9aa0a6; text-align: center; padding: 20px 0; }
+
+  @media (max-width: 700px) { .fc-grid { grid-template-columns: 1fr; } .fc-header { flex-direction: column; align-items: flex-start; } .fc-actions { margin-left: 0; } }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="fc-page">
+  <div class="fc-wrap">
+
+    <a class="back-link" href="/chat/{{ conv.id }}/">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      Retour à la conversation
+    </a>
+
+    <!-- Header client -->
+    <div class="fc-header">
+      <div class="fc-avatar">{{ client.first_name|first|default:client.username|first }}</div>
+      <div>
+        <div class="fc-name">{{ client.get_full_name|default:client.username }}</div>
+        <div class="fc-role">
+          <svg viewBox="0 0 24 24" style="width:12px;height:12px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          {{ client.get_role_display }}
+        </div>
+        <div class="fc-meta">
+          {% if client.email %}<a href="mailto:{{ client.email }}">{{ client.email }}</a>{% endif %}
+          {% if client.telephone %} · <a href="tel:{{ client.telephone }}">{{ client.telephone }}</a>{% endif %}
+          {% if client.ville %} · {{ client.ville }}{% endif %}
+        </div>
+      </div>
+      <div class="fc-actions">
+        <a class="primary" href="/chat/{{ conv.id }}/">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Ouvrir le chat
+        </a>
+        {% if client.telephone %}
+        <a href="https://wa.me/225{{ client.telephone|cut:' '|cut:'-'|cut:'+' }}" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          WhatsApp
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="fc-grid">
+
+      <!-- Contrats -->
+      <div class="fc-card">
+        <h3>
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+          Contrats ({{ contrats|length }})
+        </h3>
+        {% if contrats %}
+        {% for c in contrats %}
+        <div class="hist-row">
+          <div class="hist-icon {% if c.statut == 'en_cours' %}green{% elif c.statut in 'resilie,termine' %}amber{% endif %}">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div>
+            <div class="hist-title">{{ c.bien.titre|truncatechars:35 }}</div>
+            <div class="hist-sub">
+              {{ c.date_debut|date:"d/m/Y" }} → {{ c.date_fin|date:"d/m/Y" }} ·
+              {{ c.prix_mensuel|floatformat:0|intcomma }} F/mois ·
+              <span class="badge {% if c.statut == 'en_cours' %}b-ok{% elif c.statut == 'brouillon' %}b-muted{% else %}b-warn{% endif %}">{{ c.get_statut_display }}</span>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="empty-small">Aucun contrat avec ce client.</p>
+        {% endif %}
+      </div>
+
+      <!-- Visites -->
+      <div class="fc-card">
+        <h3>
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Visites ({{ visites|length }})
+        </h3>
+        {% if visites %}
+        {% for v in visites %}
+        <div class="hist-row">
+          <div class="hist-icon {% if v.statut == 'confirmee' %}green{% elif v.statut == 'refusee' %}amber{% endif %}">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+          <div>
+            <div class="hist-title">{{ v.bien.titre|truncatechars:35 }}</div>
+            <div class="hist-sub">
+              {{ v.date_visite|date:"d/m/Y à H:i" }} ·
+              <span class="badge {% if v.statut == 'confirmee' %}b-ok{% elif v.statut == 'en_attente' %}b-warn{% else %}b-muted{% endif %}">{{ v.get_statut_display }}</span>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="empty-small">Aucune visite demandée.</p>
+        {% endif %}
+      </div>
+
+      <!-- Autres conversations -->
+      <div class="fc-card" style="grid-column: 1 / -1">
+        <h3>
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Toutes les conversations ({{ autres_convs|length }})
+        </h3>
+        {% if autres_convs %}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
+          {% for c in autres_convs %}
+          <a href="/chat/{{ c.id }}/" style="display:block;border:1px solid #e5e7eb;border-radius:10px;padding:12px;text-decoration:none;color:inherit;transition:.14s" onmouseover="this.style.borderColor='#185FA5'" onmouseout="this.style.borderColor='#e5e7eb'">
+            <div style="font-weight:600;font-size:13px;color:#111;margin-bottom:3px">{{ c.bien.titre|truncatechars:30 }}</div>
+            <div style="font-size:11.5px;color:#6B7280">{{ c.bien.commune|default:c.bien.ville }}</div>
+            <div style="margin-top:6px">
+              <span style="font-size:10px;font-weight:700;border-radius:20px;padding:2px 7px;background:{% if c.phase == 'commercial' %}#E6F1FB{% elif c.phase == 'locataire' %}#EAF3DE{% else %}#FFFBEB{% endif %};color:{% if c.phase == 'commercial' %}#185FA5{% elif c.phase == 'locataire' %}#3B6D11{% else %}#92400E{% endif %}">{{ c.get_phase_display }}</span>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty-small">Aucune autre conversation.</p>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

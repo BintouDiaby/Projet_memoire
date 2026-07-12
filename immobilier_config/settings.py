@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -51,6 +52,8 @@ INSTALLED_APPS = [
     'facturation.apps.FacturationConfig',
     'recherche.apps.RechercheConfig',
     'dashboard.apps.DashboardConfig',
+    'messagerie',
+    'construction',
 ]
 
 MIDDLEWARE = [
@@ -117,7 +120,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'fr-fr'
 
 TIME_ZONE = 'UTC'
 
@@ -171,5 +174,20 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Modèle d'utilisateur personnalisé
 AUTH_USER_MODEL = 'utilisateurs.Utilisateur'
 
-# Redirection après connexion
+# Redirection après connexion / déconnexion
 LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# Email (OTP / confirmation de compte) — lu depuis .env, jamais commité.
+# En l'absence de .env (ex. environnement de test), retombe sur la console
+# pour ne jamais bloquer ni tenter d'envoyer un vrai email par erreur.
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='ImmoGérer <noreply@immogerer.local>')
+
+# Stripe (paiement par carte bancaire) — clé restreinte de test, lue depuis .env.
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')

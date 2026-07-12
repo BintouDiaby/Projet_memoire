@@ -1,0 +1,500 @@
+<!--
+  dashboard_company.html — Vue globale de l'espace entreprise.
+  Entièrement dynamique : stats, checklist, profil, modules, activité et
+  pipeline CRM viennent tous de vraies requêtes (dashboard/views.py::dashboard_company),
+  plus aucune donnée de démo.
+-->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Espace entreprise — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#185FA5;--accent:#A8842F;--accent-light:#F6EEDC;--accent-dark:#A8842F;--accent-line:#E7D6AC;
+    --green:#3B6D11;--green-dark:#2C520C;--green-light:#EDF3E4;--green-text:#2C520C;
+    --blue:#185FA5;--blue-light:#E7F0F9;--orange:#C2410C;--orange-light:#FBEADF;
+    --text:#39413B;--ink:#16211B;--muted:#8B938C;--muted-2:#AEB4AD;--border:#E7EAE4;--border-2:#DCE0D8;--bg:#F5F6F3;--card:#fff;
+    --amber-bg:#F6EEDC;--amber-tx:#A8842F;
+    --sh:0 1px 2px rgba(22,33,27,.05);--sh-lg:0 10px 30px rgba(22,33,27,.07);
+    --font-display:"Plus Jakarta Sans",system-ui,sans-serif;--font-body:"Inter",system-ui,sans-serif;--r:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  .app{display:flex;min-height:100vh}
+  .hidden{display:none!important}
+
+  /* sidebar */
+  .sidebar{width:250px;flex:0 0 250px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .logo{display:flex;align-items:center;gap:10px;padding:22px 22px 16px;font-family:var(--font-display);font-weight:800;font-size:17px;letter-spacing:-.01em;color:var(--ink)}
+  .logo .mk{width:23px;height:23px}
+  .firm-tag{margin:0 14px 8px;padding:11px 12px;border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;gap:11px}
+  .firm-tag .lg{width:34px;height:34px;border-radius:9px;background:var(--green);color:#fff;display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:14px;flex:0 0 34px;overflow:hidden}
+  .firm-tag .lg img{width:100%;height:100%;object-fit:cover}
+  .firm-tag .nm{font-weight:600;font-size:13px;line-height:1.2;color:var(--ink)}
+  .firm-tag .vf{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;color:var(--accent);margin-top:2px}
+  .firm-tag .vf svg{width:10px;height:10px;stroke:var(--accent);fill:none;stroke-width:2.4}
+  .side-lab{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted-2);padding:16px 22px 7px;font-weight:600}
+  .snav{display:flex;flex-direction:column;gap:1px;padding:0 12px}
+  .snav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;color:var(--muted);font-weight:500;font-size:13.5px;transition:background .14s,color .14s;position:relative}
+  .snav a svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;flex:0 0 18px}
+  .snav a:hover{background:#f4f5f2;color:var(--ink)}
+  .snav a.active{background:var(--green-light);color:var(--green-text);font-weight:600}
+  .snav .z{margin-left:auto;font-size:11px;color:var(--muted-2);font-weight:600}
+  .side-foot{margin-top:auto;padding:14px}
+  .logout{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;color:var(--muted);font-weight:500;font-size:13.5px}
+  .logout:hover{background:#f4f5f2;color:#9a3b1f}.logout svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7}
+
+  /* main */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{height:64px;background:rgba(245,246,243,.8);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 26px;position:sticky;top:0;z-index:20}
+  .tsearch{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 13px;width:300px;max-width:32vw}
+  .tsearch svg{width:16px;height:16px;stroke:var(--muted-2);fill:none;stroke-width:1.8}
+  .tsearch input{border:none;outline:none;background:transparent;font-family:var(--font-body);font-size:13.5px;width:100%;color:var(--text)}
+  .tspacer{flex:1}
+  .backbtn{background:var(--card);border:1px solid var(--border);border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;color:var(--text);transition:.14s;flex:0 0 38px;padding:0}
+  .backbtn:hover{border-color:var(--border-2);background:#fbfbfa}
+  .backbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .bellbtn{position:relative;background:var(--card);border:1px solid var(--border);border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;color:var(--text);transition:.14s;flex:0 0 38px}
+  .bellbtn:hover{border-color:var(--border-2);background:#fbfbfa}
+  .bellbtn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+  .bellbtn .bdot{position:absolute;top:8px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--accent);border:2px solid var(--card)}
+  .addbtn{display:inline-flex;align-items:center;gap:8px;background:var(--green);color:#fff;font-weight:600;font-size:13.5px;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;transition:.16s;box-shadow:var(--sh)}
+  .addbtn:hover{background:var(--green-dark);transform:translateY(-1px)}.addbtn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.3}
+  .me .av{width:38px;height:38px;border-radius:10px;background:var(--green-light);color:var(--green-text);display:grid;place-items:center;font-family:var(--font-display);font-weight:700;overflow:hidden}
+  .me .av img{width:100%;height:100%;object-fit:cover}
+
+  .content{padding:28px 26px;max-width:1180px;width:100%;animation:rise .5s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-2);font-weight:600;margin-bottom:6px}
+
+  /* ── header ── */
+  .cover-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:20px;box-shadow:var(--sh)}
+  .cover-body{display:flex;align-items:center;gap:16px;padding:20px 22px;flex-wrap:wrap}
+  .cover-logo{width:68px;height:68px;border-radius:15px;background:var(--green);color:#fff;display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:24px;flex:0 0 68px;overflow:hidden}
+  .cover-logo img{width:100%;height:100%;object-fit:cover}
+  .cover-txt{padding-bottom:2px}
+  .cover-txt h1{font-family:var(--font-display);font-weight:800;font-size:24px;letter-spacing:-.02em;color:var(--ink);margin:0 0 4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .cover-txt p{margin:0;color:var(--muted);font-size:13.5px}
+  .vbadge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--amber-bg);color:var(--amber-tx);border:1px solid var(--accent-line)}
+  .vbadge.ok{background:var(--green-light);color:var(--green-text);border-color:#c8ddb0}
+  .vbadge svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.4}
+
+  /* ── stat cards ── */
+  .stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;display:flex;flex-direction:column;gap:9px;box-shadow:var(--sh);transition:box-shadow .18s,transform .18s}
+  .stat-card:hover{box-shadow:var(--sh-lg);transform:translateY(-2px)}
+  .stat-ico{width:34px;height:34px;border-radius:9px;display:grid;place-items:center}
+  .stat-ico svg{width:17px;height:17px;stroke-width:2;fill:none}
+  .stat-ico.i-blue{background:var(--blue-light)}.stat-ico.i-blue svg{stroke:var(--primary)}
+  .stat-ico.i-green{background:var(--green-light)}.stat-ico.i-green svg{stroke:var(--green)}
+  .stat-ico.i-amber{background:var(--accent-light)}.stat-ico.i-amber svg{stroke:var(--accent)}
+  .stat-ico.i-orange{background:var(--orange-light)}.stat-ico.i-orange svg{stroke:var(--orange)}
+  .stat-card b{font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--ink)}
+  .stat-card span{font-size:12px;color:var(--muted-2);font-weight:600}
+  @media(max-width:1050px){.stats-row{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:640px){.stats-row{grid-template-columns:repeat(2,1fr)}}
+
+  .greet{margin-bottom:18px}
+  .greet p{margin:0;color:var(--muted)}
+
+  /* bandeau vérification */
+  .verif-banner{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:13px 16px;margin-bottom:22px;box-shadow:var(--sh)}
+  .verif-banner .vi{width:32px;height:32px;border-radius:9px;background:var(--amber-bg);display:grid;place-items:center;flex:0 0 32px}
+  .verif-banner .vi svg{width:17px;height:17px;stroke:var(--accent);fill:none;stroke-width:1.9}
+  .verif-banner p{margin:0;font-size:13px;color:var(--text)}.verif-banner p b{color:var(--ink)}
+  .verif-banner a{margin-left:auto;font-size:13px;font-weight:600;color:var(--green-text);white-space:nowrap}
+
+  /* ── deux colonnes : checklist + profil ── */
+  .two-col{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin-bottom:24px;align-items:start}
+  @media(max-width:900px){.two-col{grid-template-columns:1fr}}
+
+  .checklist-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 24px 20px;box-shadow:var(--sh)}
+  .cl-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px}
+  .cl-head h2{font-family:var(--font-display);font-weight:700;font-size:16px;margin:0;color:var(--ink)}
+  .cl-head b{font-family:var(--font-display);font-size:14px;color:var(--green-text)}
+  .cl-bar{height:6px;border-radius:3px;background:#eceee9;overflow:hidden;margin-bottom:16px}
+  .cl-fill{height:100%;background:var(--green);border-radius:3px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+  .cl-items{display:flex;flex-direction:column;gap:11px}
+  .cl-item{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text)}
+  .cl-item .ck{width:19px;height:19px;border-radius:50%;border:2px solid var(--border-2);display:grid;place-items:center;flex:0 0 19px;font-size:11px;color:transparent;background:#fff}
+  .cl-item.done .ck{background:var(--green);border-color:var(--green);color:#fff}
+  .cl-item.done{color:var(--muted)}
+
+  .profile-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;box-shadow:var(--sh)}
+  .profile-card h2{font-family:var(--font-display);font-weight:700;font-size:16px;margin:0 0 14px;color:var(--ink)}
+  .pc-row{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text);margin-bottom:10px}
+  .pc-row svg{width:15px;height:15px;stroke:var(--muted-2);fill:none;stroke-width:1.9;flex:0 0 15px}
+  .pc-row.empty{color:var(--muted-2)}
+  .pc-desc{font-size:13px;color:var(--muted);margin:8px 0 14px;line-height:1.5}
+  .pc-modules-lab{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2);font-weight:600;margin:14px 0 8px}
+  .pc-modules{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+  .ty{font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;background:#f3f5f1;color:#5a625a}
+  .ty.muted{color:var(--muted-2);background:transparent;border:1px dashed var(--border-2)}
+  .pc-edit{display:block;text-align:center;font-weight:600;font-size:13px;color:var(--green-text);border:1px solid var(--border);background:var(--green-light);padding:9px;border-radius:10px;transition:.14s}
+  .pc-edit:hover{background:#e2ecd6}
+
+  /* ── actions rapides ── */
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin:6px 0 14px}
+  .sec-head h2{font-family:var(--font-display);font-weight:700;font-size:17px;margin:0;color:var(--ink)}
+  .sec-head .meta{font-size:12px;color:var(--muted-2)}
+  .sec-head a.me-link{font-size:13px;font-weight:600;color:var(--green-text)}
+  .sec-head a.me-link:hover{text-decoration:underline}
+  .qa-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:28px}
+  .qa-btn{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:13px 14px;font-weight:600;font-size:13.5px;color:var(--text);transition:.15s;box-shadow:var(--sh)}
+  .qa-btn:hover{border-color:var(--border-2);box-shadow:var(--sh-lg);transform:translateY(-1px)}
+  .qa-btn svg{width:17px;height:17px;stroke:var(--green);fill:none;stroke-width:2;flex:0 0 17px}
+
+  /* ── modules ── */
+  .mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:15px;margin-bottom:28px}
+  .modcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;transition:box-shadow .18s,transform .18s;display:flex;flex-direction:column;box-shadow:var(--sh)}
+  .modcard:hover{box-shadow:var(--sh-lg);transform:translateY(-2px)}
+  .modcard .mh{display:flex;align-items:center;gap:11px;margin-bottom:13px}
+  .modcard .mi{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex:0 0 40px}
+  .modcard .mi svg{width:20px;height:20px;stroke-width:1.7;fill:none}
+  .modcard[data-mod=location] .mi{background:var(--blue-light)}.modcard[data-mod=location] .mi svg{stroke:var(--blue)}
+  .modcard[data-mod=vente] .mi{background:var(--green-light)}.modcard[data-mod=vente] .mi svg{stroke:var(--green)}
+  .modcard[data-mod=terrain] .mi{background:var(--accent-light)}.modcard[data-mod=terrain] .mi svg{stroke:var(--accent)}
+  .modcard[data-mod=construction] .mi{background:var(--orange-light)}.modcard[data-mod=construction] .mi svg{stroke:var(--orange)}
+  .modcard h3{font-family:var(--font-display);font-weight:700;font-size:15px;margin:0;color:var(--ink)}
+  .mod-metrics{display:flex;gap:10px;margin-bottom:16px}
+  .mod-metric{flex:1;background:#f6f7f4;border-radius:10px;padding:10px 12px}
+  .mod-metric b{display:block;font-family:var(--font-display);font-weight:800;font-size:18px;color:var(--ink)}
+  .mod-metric span{font-size:11px;color:var(--muted-2);font-weight:600}
+  .addmod{margin-top:auto;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-weight:600;font-size:13px;padding:10px;border-radius:10px;border:1px solid var(--border);cursor:pointer;transition:.15s;background:#fff;color:var(--text)}
+  .addmod svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.2}
+  .modcard[data-mod=location] .addmod:hover{border-color:#bcd6ee;color:var(--blue);background:var(--blue-light)}
+  .modcard[data-mod=vente] .addmod:hover{border-color:#c8ddb0;color:var(--green-text);background:var(--green-light)}
+  .modcard[data-mod=terrain] .addmod:hover{border-color:var(--accent-line);color:var(--accent);background:var(--accent-light)}
+  .modcard[data-mod=construction] .addmod:hover{border-color:#f0c9b0;color:var(--orange);background:var(--orange-light)}
+
+  .none{background:var(--card);border:1px dashed var(--border-2);border-radius:14px;padding:40px;text-align:center;color:var(--muted);margin-bottom:28px}
+  .none b{display:block;font-family:var(--font-display);color:var(--ink);font-size:15px;margin-bottom:4px}
+  .none .actbar-cta{display:inline-flex;margin-top:14px}
+
+  .actbar-cta{align-items:center;gap:7px;font-size:13px;font-weight:600;color:#fff;background:var(--green);padding:9px 16px;border-radius:10px;transition:.14s;display:inline-flex}
+  .actbar-cta:hover{background:var(--green-dark)}
+  .actbar-cta svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.4}
+
+  /* ── activité récente ── */
+  .tl-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:28px;box-shadow:var(--sh)}
+  .tl{display:flex;flex-direction:column}
+  .tl-item{display:flex;gap:13px;padding-bottom:16px;position:relative}
+  .tl-item:not(:last-child)::before{content:"";position:absolute;left:5px;top:16px;bottom:0;width:1.5px;background:var(--border)}
+  .tl-dot{width:11px;height:11px;border-radius:50%;flex:0 0 11px;margin-top:3px}
+  .tl-bien{background:var(--blue)}.tl-contrat{background:var(--green)}.tl-paiement{background:var(--accent)}.tl-message{background:var(--orange)}.tl-visite{background:#7c3aed}
+  .tl-item b{display:block;font-size:13.5px;font-weight:600;color:var(--ink)}
+  .tl-item span{font-size:12px;color:var(--muted-2)}
+
+  /* ── pipeline CRM ── */
+  .crm-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:28px;box-shadow:var(--sh)}
+  .crm-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .crm-stage{flex:1;min-width:100px;text-align:center;background:#f6f7f4;border-radius:12px;padding:16px 10px}
+  .crm-stage b{display:block;font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--ink)}
+  .crm-stage span{font-size:11.5px;color:var(--muted-2);font-weight:600}
+  .crm-arrow{color:var(--muted-2);font-size:16px;flex:0 0 auto}
+  @media(max-width:700px){.crm-row{flex-direction:column}.crm-arrow{transform:rotate(90deg)}}
+
+  /* ── aperçus messages / rdv / devis ── */
+  .prev-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:10px}
+  .prev-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--sh)}
+  .prev-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+  .prev-head h3{font-family:var(--font-display);font-weight:700;font-size:14.5px;margin:0;color:var(--ink)}
+  .prev-head a{font-size:12px;font-weight:600;color:var(--green-text)}
+  .prev-item{padding:9px 0;border-top:1px solid var(--border)}
+  .prev-item:first-child{border-top:none;padding-top:0}
+  .prev-item b{display:block;font-size:13px;font-weight:600;color:var(--ink)}
+  .prev-item span{font-size:12px;color:var(--muted-2)}
+  .prev-empty{font-size:12.5px;color:var(--muted-2);padding:6px 0}
+  .prev-empty a{font-weight:600;color:var(--green-text)}
+
+  @media (max-width:860px){.sidebar{position:fixed;left:-260px;z-index:60}.main{width:100%}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+{% load static %}
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#3B6D11" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/><path d="M3 21h18" stroke="#3B6D11" stroke-width="1.8" stroke-linecap="round"/></svg>
+      ImmoGérer
+    </div>
+    <a class="firm-tag" href="{% url 'entreprise_profil' %}" style="text-decoration:none;cursor:pointer">
+      <div class="lg">{% if company.logo %}<img src="{{ company.logo.url }}" alt="">{% else %}{{ company_initial }}{% endif %}</div>
+      <div>
+        <div class="nm">{{ company_name }}</div>
+        {% if documents_verifies %}
+        <div class="vf" style="color:var(--green-text)"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Vérifiée</div>
+        {% else %}
+        <div class="vf"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5l3 2"/></svg> Vérification en cours</div>
+        {% endif %}
+      </div>
+    </a>
+    <div class="side-lab">Pilotage</div>
+    <nav class="snav" id="snav">
+      <a href="/dashboard/company/" class="active"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3zM13 21h8V11h-8zM13 3v6h8V3zM3 21h8v-6H3z"/></svg> Vue globale</a>
+      <a href="/dashboard/biens/"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12M3 21h18"/></svg> Biens <span class="z">{{ biens_count }}</span></a>
+      {% if 'location' in types %}<a href="/dashboard/biens/"><svg viewBox="0 0 24 24"><path d="M14 7a4 4 0 1 0-3 6l-5 5 2 2 6-6a4 4 0 0 0 0-7z"/></svg> Locations</a>{% endif %}
+      {% if 'vente' in types %}<a href="/dashboard/biens/"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg> Ventes</a>{% endif %}
+      {% if 'terrain' in types %}<a href="/dashboard/biens/"><svg viewBox="0 0 24 24"><path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5"/></svg> Terrains</a>{% endif %}
+      {% if 'construction' in types %}<a href="/construction/dashboard/"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg> Construction</a>{% endif %}
+    </nav>
+    <div class="side-lab">Relation client</div>
+    <nav class="snav">
+      <a href="/chat/dashboard/"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Messages {% if nb_messages_non_lus %}<span class="z" style="background:#B91C1C;color:#fff;border-radius:9px;padding:1px 6px">{{ nb_messages_non_lus }}</span>{% endif %}</a>
+      <a href="/dashboard/notifications/"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg> Notifications {% if nb_notifs %}<span class="z" style="background:#B91C1C;color:#fff;border-radius:9px;padding:1px 6px">{{ nb_notifs }}</span>{% endif %}</a>
+      <a href="/dashboard/rdv/"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Rendez-vous {% if nb_rdv_en_attente %}<span class="z" style="background:#92400E;color:#fff;border-radius:9px;padding:1px 6px">{{ nb_rdv_en_attente }}</span>{% endif %}</a>
+      {% if 'construction' in types %}
+      <a href="/dashboard/devis/"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg> Demandes de devis {% if nb_devis_en_attente %}<span class="z" style="background:#C2410C;color:#fff;border-radius:9px;padding:1px 6px">{{ nb_devis_en_attente }}</span>{% endif %}</a>
+      {% endif %}
+      <a href="/dashboard/clients/"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0M16 5a3.5 3.5 0 0 1 0 7"/></svg> Clients CRM</a>
+      <a href="/dashboard/reclamations/"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg> Réclamations {% if nb_reclamations_ouvertes %}<span class="z" style="background:#B91C1C;color:#fff;border-radius:9px;padding:1px 6px">{{ nb_reclamations_ouvertes }}</span>{% endif %}</a>
+    </nav>
+    <div class="side-lab">Finances</div>
+    <nav class="snav">
+      <a href="/dashboard/facturation/"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Paiements</a>
+      <a href="/dashboard/company/"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Statistiques</a>
+    </nav>
+    <div class="side-lab">Compte</div>
+    <nav class="snav">
+      <a href="/dashboard/entreprise/profil/"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> Mon profil</a>
+      <a href="/dashboard/entreprise/parametres/"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Paramètres</a>
+    </nav>
+    <div class="side-foot"><a href="/accounts/logout/" class="logout"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg> Déconnexion</a></div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+      <div class="tsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="Rechercher…"></div>
+      <div class="tspacer"></div>
+      <a class="bellbtn" href="/dashboard/notifications/" title="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        {% if nb_notifs %}<span class="bdot"></span>{% endif %}
+      </a>
+      <a class="addbtn" href="{% url 'biens_ui:publier' %}"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Publier un bien</a>
+      <a class="me" href="{% url 'entreprise_profil' %}" title="Mon profil" style="text-decoration:none"><div class="av">{% if company.logo %}<img src="{{ company.logo.url }}" alt="">{% else %}{{ company_initial }}{% endif %}</div></a>
+    </div>
+
+    {% if request.user.email and not request.user.email_verifie %}
+    <div style="background:#FFFBEB;border-bottom:1px solid #FCD34D;padding:9px 20px;font-size:13px;color:#92400E;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
+      <span>Confirmez votre adresse email ({{ request.user.email }}) pour sécuriser votre compte.</span>
+      <a href="{% url 'confirmer_email' %}" style="color:#92400E;font-weight:700;text-decoration:underline">Entrer le code reçu par email</a>
+    </div>
+    {% endif %}
+
+    <div class="content">
+
+      <!-- ═══ HEADER ═══ -->
+      <div class="cover-card">
+        <div class="cover-body">
+          <div class="cover-logo">{% if company.logo %}<img src="{{ company.logo.url }}" alt="">{% else %}{{ company_initial }}{% endif %}</div>
+          <div class="cover-txt">
+            <div class="eyebrow" style="margin-bottom:2px">Vue d'ensemble</div>
+            <h1>
+              {{ company_name }}
+              {% if documents_verifies %}
+              <span class="vbadge ok"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Vérifiée</span>
+              {% else %}
+              <span class="vbadge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5l3 2"/></svg> Vérification en cours</span>
+              {% endif %}
+            </h1>
+            <p>
+              Entreprise immobilière{% if company.ville %} · 📍 {{ company.ville }}{% endif %}{% if company.date_creation %} · Depuis {{ company.date_creation|date:"Y" }}{% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ STATS ═══ -->
+      <div class="stats-row">
+        <a class="stat-card" href="/dashboard/biens/">
+          <div class="stat-ico i-blue"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12M3 21h18"/></svg></div>
+          <b>{{ biens_count }}</b><span>Biens publiés</span>
+        </a>
+        <div class="stat-card">
+          <div class="stat-ico i-green"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0M16 5a3.5 3.5 0 0 1 0 7"/></svg></div>
+          <b>{{ nb_clients }}</b><span>Clients</span>
+        </div>
+        <div class="stat-card">
+          <div class="stat-ico i-amber"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <b>{{ nb_conversations }}</b><span>Messages</span>
+        </div>
+        <div class="stat-card">
+          <div class="stat-ico i-orange"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+          <b>{{ nb_rdv_total }}</b><span>Rendez-vous</span>
+        </div>
+        <div class="stat-card">
+          <div class="stat-ico i-blue"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+          <b>{{ nb_paiements }}</b><span>Paiements</span>
+        </div>
+      </div>
+
+      <div class="greet">
+        {% if biens_count == 0 %}<p>Votre espace est créé. Configurons-le pour publier vos premiers biens.</p>
+        {% else %}<p>Votre espace est actif — {{ biens_count }} bien{{ biens_count|pluralize }} publié{{ biens_count|pluralize }}.</p>{% endif %}
+      </div>
+
+      {% if not documents_verifies %}
+      <!-- bandeau vérification -->
+      <div class="verif-banner">
+        <span class="vi"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/></svg></span>
+        <p><b>Vérification en cours.</b> Vos documents (RCCM, pièces légales) sont en cours de contrôle. Vous pouvez déjà préparer vos biens — ils deviendront visibles publiquement une fois votre entreprise vérifiée.</p>
+        <a href="{% url 'company_profile_edit' %}">Compléter le dossier →</a>
+      </div>
+      {% endif %}
+
+      <!-- ═══ CHECKLIST + PROFIL ═══ -->
+      <div class="two-col">
+        <div class="checklist-card">
+          <div class="cl-head"><h2>Votre espace</h2><b>{{ completion_pct }}% complété</b></div>
+          <div class="cl-bar"><div class="cl-fill" style="width:{{ completion_pct }}%"></div></div>
+          <div class="cl-items">
+            {% for item in checklist %}
+            <div class="cl-item {% if item.done %}done{% endif %}"><span class="ck">✓</span> {{ item.label }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="profile-card">
+          <h2>Profil entreprise</h2>
+          <div class="pc-row {% if not company.adresse %}empty{% endif %}"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.5 7-11a7 7 0 1 0-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg> {% if company.adresse %}{{ company.adresse }}{% if company.ville %}, {{ company.ville }}{% endif %}{% else %}Adresse non renseignée{% endif %}</div>
+          <div class="pc-row {% if not company.telephone %}empty{% endif %}"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.4 2.1L8 10.1a16 16 0 0 0 6 6l1.3-1.4a2 2 0 0 1 2.1-.4c1 .3 2 .5 3 .7a2 2 0 0 1 1.6 2z"/></svg> {{ company.telephone|default:"Téléphone non renseigné" }}</div>
+          <div class="pc-row {% if not company.email %}empty{% endif %}"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg> {{ company.email|default:"Email non renseigné" }}</div>
+          <div class="pc-row"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Créée le {{ company.date_creation|date:"d/m/Y" }}</div>
+          {% if company.description %}<p class="pc-desc">{{ company.description }}</p>{% endif %}
+          <div class="pc-modules-lab">Modules actifs</div>
+          <div class="pc-modules">
+            {% for m in modules_data %}<span class="ty">{{ m.label }}</span>{% empty %}<span class="ty muted">Aucun module actif</span>{% endfor %}
+          </div>
+          <a class="pc-edit" href="{% url 'company_profile_edit' %}">Modifier mon entreprise</a>
+        </div>
+      </div>
+
+      <!-- ═══ ACTIONS RAPIDES ═══ -->
+      <div class="sec-head"><h2>Actions rapides</h2></div>
+      <div class="qa-grid">
+        <a class="qa-btn" href="{% url 'biens_ui:publier' %}"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Publier un bien</a>
+        {% if 'terrain' in types %}<a class="qa-btn" href="{% url 'biens_ui:ajouter' 'terrain' %}"><svg viewBox="0 0 24 24"><path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5"/></svg> Ajouter un terrain</a>{% endif %}
+        {% if 'construction' in types %}<a class="qa-btn" href="{% url 'biens_ui:ajouter' 'construction' %}"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg> Créer un projet</a>{% endif %}
+        <a class="qa-btn" href="/dashboard/clients/"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0M16 5a3.5 3.5 0 0 1 0 7"/></svg> Voir mes clients</a>
+        <a class="qa-btn" href="{% url 'company_profile_edit' %}"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg> Modifier mon entreprise</a>
+      </div>
+
+      <!-- ═══ MODULES ═══ -->
+      <div class="sec-head"><h2>Vos modules</h2><span class="meta">{{ modules_data|length }} module{{ modules_data|length|pluralize }} actif{{ modules_data|length|pluralize }}</span></div>
+      {% if modules_data %}
+      <div class="mods">
+        {% for m in modules_data %}
+        <div class="modcard" data-mod="{{ m.key }}">
+          <div class="mh">
+            <div class="mi">
+              {% if m.key == 'location' %}<svg viewBox="0 0 24 24"><path d="M14 7a4 4 0 1 0-3 6l-5 5 2 2 6-6a4 4 0 0 0 0-7z"/></svg>
+              {% elif m.key == 'vente' %}<svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg>
+              {% elif m.key == 'terrain' %}<svg viewBox="0 0 24 24"><path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5"/></svg>
+              {% else %}<svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg>{% endif %}
+            </div>
+            <h3>{{ m.label }}</h3>
+          </div>
+          <div class="mod-metrics">
+            {% for val, lbl in m.metrics %}<div class="mod-metric"><b>{{ val }}</b><span>{{ lbl }}</span></div>{% endfor %}
+          </div>
+          <a class="addmod" href="{% url 'biens_ui:ajouter' m.key %}"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Ajouter</a>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="none">
+        <b>Aucune activité active</b>
+        Activez au moins une activité pour configurer votre espace.
+        <div><a class="actbar-cta" href="{% url 'onboarding' %}"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Configurer mes activités</a></div>
+      </div>
+      {% endif %}
+
+      <!-- ═══ ACTIVITÉ RÉCENTE ═══ -->
+      <div class="sec-head"><h2>Activité récente</h2></div>
+      <div class="tl-card">
+        {% if activites %}
+        <div class="tl">
+          {% for a in activites %}
+          <div class="tl-item">
+            <span class="tl-dot tl-{{ a.type }}"></span>
+            <div><b>{{ a.titre }}</b><span>{{ a.date|date:"d/m/Y à H:i" }}</span></div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p style="margin:0;color:var(--muted);font-size:13.5px">Aucune activité pour le moment. Lorsque vous publierez votre premier bien, les événements apparaîtront ici.</p>
+        {% endif %}
+      </div>
+
+      <!-- ═══ PIPELINE CRM ═══ -->
+      <div class="sec-head"><h2>Pipeline commercial</h2><a class="me-link" href="/dashboard/clients/">Voir le CRM →</a></div>
+      <div class="crm-card">
+        <div class="crm-row">
+          <div class="crm-stage"><b>{{ crm_counts.prospects }}</b><span>Prospects</span></div>
+          <div class="crm-arrow">→</div>
+          <div class="crm-stage"><b>{{ crm_counts.visites }}</b><span>Visites</span></div>
+          <div class="crm-arrow">→</div>
+          <div class="crm-stage"><b>{{ crm_counts.negociation }}</b><span>Négociation</span></div>
+          <div class="crm-arrow">→</div>
+          <div class="crm-stage"><b>{{ crm_counts.contrats }}</b><span>Clients actifs</span></div>
+        </div>
+      </div>
+
+      <!-- ═══ MESSAGES / RDV / DEVIS ═══ -->
+      <div class="sec-head"><h2>À suivre</h2></div>
+      <div class="prev-grid">
+        <div class="prev-card">
+          <div class="prev-head"><h3>Messages</h3><a href="/chat/dashboard/">Tout voir →</a></div>
+          {% for item in messages_recents %}
+          <div class="prev-item">
+            <b>{{ item.conv.demandeur.get_full_name|default:item.conv.demandeur.username }}</b>
+            <span>{% if item.dernier %}{{ item.dernier.contenu|truncatechars:60 }}{% else %}Conversation ouverte{% endif %}</span>
+          </div>
+          {% empty %}
+          <div class="prev-empty">Aucune conversation. Les messages de vos clients apparaîtront ici.</div>
+          {% endfor %}
+        </div>
+
+        <div class="prev-card">
+          <div class="prev-head"><h3>Prochains rendez-vous</h3><a href="/dashboard/rdv/">Tout voir →</a></div>
+          {% for v in rdv_prochains %}
+          <div class="prev-item">
+            <b>{{ v.bien.titre }}</b>
+            <span>{{ v.date_visite|date:"d/m à H:i" }} — {{ v.locataire.get_full_name|default:v.locataire.username }}</span>
+          </div>
+          {% empty %}
+          <div class="prev-empty">Aucun rendez-vous. <a href="/dashboard/rdv/">Programmer un rendez-vous</a></div>
+          {% endfor %}
+        </div>
+
+        {% if 'construction' in types %}
+        <div class="prev-card">
+          <div class="prev-head"><h3>Demandes de devis</h3><a href="/dashboard/devis/">Tout voir →</a></div>
+          {% for d in devis_recents %}
+          <div class="prev-item">
+            <b>{{ d.get_type_projet_display }}</b>
+            <span>{{ d.client.get_full_name|default:d.client.username }}</span>
+          </div>
+          {% empty %}
+          <div class="prev-empty">Aucune demande de devis pour le moment.</div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

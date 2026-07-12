@@ -1,0 +1,182 @@
+{% load humanize %}
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ company.name }} — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#185FA5;--primary-dark:#1A3E6A;
+    --accent:#C9A84C;--accent-light:#FFFBEB;--accent-dark:#7A5F1A;
+    --green:#3B6D11;--green-light:#EAF3DE;--green-text:#27500A;
+    --blue:#185FA5;--blue-light:#E6F1FB;--blue-text:#0C447C;
+    --text:#111;--muted:#666;--muted-2:#9aa0a6;
+    --border:#e5e7eb;--bg:#F4F6F9;--card:#fff;
+    --font-display:"Plus Jakarta Sans",system-ui,sans-serif;
+    --font-body:"Inter",system-ui,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box}
+  html{max-width:100%;overflow-x:hidden}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;font-weight:600;font-size:14px;padding:10px 17px;cursor:pointer;border:1px solid transparent;transition:.16s;font-family:var(--font-body)}
+  .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+  .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark);transform:translateY(-1px)}
+  .btn-ghost{background:var(--card);border-color:var(--border);color:var(--text);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(244,246,249,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .topbar .wrap{display:flex;align-items:center;gap:24px;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;font-size:18px;letter-spacing:-.01em}
+  .brand .mk{width:23px;height:23px}
+  .nav{display:flex;gap:2px;margin-left:6px}
+  .nav a{padding:8px 12px;border-radius:9px;color:var(--muted);font-weight:500;font-size:14px;transition:.15s}
+  .nav a:hover{color:var(--text);background:#eaedf1}
+  .spacer{flex:1}
+  .signin{font-weight:600;font-size:14px;padding:8px 10px}.signin:hover{color:var(--primary)}
+
+  .back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);font-weight:600;margin:20px 0}
+  .back:hover{color:var(--primary)}
+  .back svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.3}
+
+  .header-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:26px;display:flex;gap:20px;align-items:center;margin-bottom:26px;flex-wrap:wrap}
+  .lg-big{width:66px;height:66px;border-radius:16px;background:var(--green-light);color:var(--green);display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:26px;flex:0 0 66px;overflow:hidden}
+  .lg-big img{width:100%;height:100%;object-fit:cover}
+  .h-name{font-family:var(--font-display);font-weight:800;font-size:22px;display:flex;align-items:center;gap:8px}
+  .h-name svg{width:16px;height:16px;stroke:var(--green);fill:none;stroke-width:2.6}
+  .h-meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--muted)}
+  .tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--blue-light);color:var(--blue-text)}
+  .tag.construction{background:var(--accent-light);color:var(--accent-dark)}
+  .tags-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .badges-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .vbadge{display:inline-flex;align-items:center;gap:5px;background:var(--green-light);color:var(--green-text);padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
+  .vbadge svg{width:12px;height:12px;stroke:var(--green);fill:none;stroke-width:3}
+
+  .section-title{font-family:var(--font-display);font-weight:700;font-size:17px;margin:0 0 14px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:20px}
+
+  .zonechips{display:flex;flex-wrap:wrap;gap:8px}
+  .zone{background:var(--bg);border:1px solid var(--border);padding:6px 13px;border-radius:20px;font-size:12.5px;font-weight:500;color:var(--text)}
+
+  .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .stat-box{text-align:center;padding:16px 8px;border:1px solid var(--border);border-radius:12px}
+  .stat-box .v{font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--text)}
+  .stat-box .k{font-size:12px;color:var(--muted);margin-top:3px}
+  @media (max-width:600px){.stats-row{grid-template-columns:1fr 1fr}}
+
+  .biens-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .bien-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:.16s}
+  .bien-card:hover{border-color:var(--primary);box-shadow:0 8px 22px rgba(0,0,0,.06);transform:translateY(-2px)}
+  .bien-img{height:140px;background:#eee;background-size:cover;background-position:center}
+  .bien-body{padding:14px}
+  .bien-titre{font-weight:700;font-size:13.5px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bien-ville{font-size:12px;color:var(--muted)}
+  .bien-prix{font-family:var(--font-display);font-weight:800;font-size:14.5px;color:var(--primary);margin-top:8px}
+
+  .empty{text-align:center;padding:40px 20px;color:var(--muted)}
+
+  @media (max-width:980px){.biens-grid{grid-template-columns:repeat(2,1fr)}.nav{display:none}}
+  @media (max-width:600px){.biens-grid{grid-template-columns:1fr}.header-card{flex-direction:column;text-align:center}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="/">
+      <svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#185FA5" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/><path d="M3 21h18" stroke="#185FA5" stroke-width="1.8" stroke-linecap="round"/></svg>
+      ImmoGérer
+    </a>
+    <nav class="nav">
+      <a href="/explorer/">Explorer</a>
+      <a href="/entreprises/">Entreprises</a>
+    </nav>
+    <div class="spacer"></div>
+    {% if user.is_authenticated %}
+    <a class="btn btn-ghost" href="/dashboard/" style="font-size:13px;padding:8px 14px">Mon espace</a>
+    {% else %}
+    <a class="signin" href="/accounts/login/">Se connecter</a>
+    {% endif %}
+  </div>
+</header>
+
+<div class="wrap">
+  <a class="back" href="/entreprises/"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Retour à l'annuaire</a>
+
+  <div class="header-card">
+    <div class="lg-big">{% if company.logo %}<img src="{{ company.logo.url }}" alt="">{% else %}{{ company.name|slice:":1"|upper }}{% endif %}</div>
+    <div>
+      <div class="h-name">{{ company.name }}</div>
+      <div class="h-meta">
+        {% if company.ville %}<span>{{ company.ville }}</span>{% endif %}
+        {% if company.telephone %}<span>{{ company.telephone }}</span>{% endif %}
+        {% if company.email %}<span>{{ company.email }}</span>{% endif %}
+        {% if company.date_creation %}<span>Depuis {{ company.date_creation|date:"Y" }}</span>{% endif %}
+      </div>
+      <div class="badges-row">
+        {% if verifie %}<span class="vbadge"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Entreprise vérifiée</span>{% endif %}
+        {% if numero_rccm %}<span class="vbadge"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> RCCM vérifié</span>{% endif %}
+      </div>
+      <div class="tags-row">
+        {% for t in company.types %}<span class="tag {% if t == 'construction' %}construction{% endif %}">{{ t }}</span>{% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% if company.description %}
+  <div class="card">
+    <div class="section-title">À propos</div>
+    <p style="color:var(--muted)">{{ company.description }}</p>
+  </div>
+  {% endif %}
+
+  {% if est_construction %}
+  <div class="card" style="background:linear-gradient(135deg,#0f3d6e,#185FA5);border:none;color:#fff">
+    <div class="section-title" style="color:#fff">Projet de construction</div>
+    <p style="color:rgba(255,255,255,.85);margin-bottom:14px">Cette entreprise propose des services de construction. Consultez son profil complet pour demander un devis.</p>
+    <a href="/construction/entreprise/{{ company.id }}/" class="btn" style="background:var(--accent);color:#1c1405">Voir le profil construction →</a>
+  </div>
+  {% endif %}
+
+  {% if zones %}
+  <div class="card">
+    <div class="section-title">Zones couvertes</div>
+    <div class="zonechips">
+      {% for z in zones %}<span class="zone">{{ z }}</span>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="section-title">Statistiques</div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="v">{{ nb_biens_total }}</div><div class="k">Bien{{ nb_biens_total|pluralize }} publié{{ nb_biens_total|pluralize }}</div></div>
+      <div class="stat-box"><div class="v">{{ nb_locations }}</div><div class="k">Location{{ nb_locations|pluralize }} en cours</div></div>
+    </div>
+  </div>
+
+  <div class="section-title">Biens publiés ({{ biens|length }})</div>
+  {% if biens %}
+  <div class="biens-grid" style="margin-bottom:40px">
+    {% for b in biens %}
+    <a class="bien-card" href="/biens/{{ b.id }}/">
+      <div class="bien-img" style="{% if b.photo_principale %}background-image:url('{{ b.photo_principale.url }}'){% endif %}"></div>
+      <div class="bien-body">
+        <div class="bien-titre">{{ b.titre }}</div>
+        <div class="bien-ville">{{ b.ville|default:"" }}{% if b.commune %}, {{ b.commune }}{% endif %}</div>
+        <div class="bien-prix">{% if b.prix_mensuel %}{{ b.prix_mensuel|floatformat:0|intcomma }} FCFA/mois{% elif b.prix_vente %}{{ b.prix_vente|floatformat:0|intcomma }} FCFA{% endif %}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty" style="margin-bottom:40px">Aucun bien publié pour le moment.</div>
+  {% endif %}
+</div>
+
+</body></html>

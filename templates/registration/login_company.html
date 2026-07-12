@@ -77,6 +77,13 @@
   .submit:hover{background:var(--g-dark);transform:translateY(-1px)}
   .submit svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2}
 
+  .alert-msg{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:11px;font-size:13.5px;font-weight:600;margin-bottom:20px}
+  .alert-msg svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4;flex:0 0 16px}
+  .alert-success{background:#F0FDF4;color:#15803D;border:1px solid #86EFAC}
+  .alert-error{background:#FFF5F5;color:#B91C1C;border:1px solid #FCA5A5}
+  .alert-info,.alert-debug{background:var(--g-soft);color:var(--g-text);border:1px solid #b7d99a}
+  .alert-warning{background:#FFFBEB;color:#92400E;border:1px solid #FCD34D}
+
   .divider{display:flex;align-items:center;gap:14px;margin:22px 0;color:var(--muted-2);font-size:12.5px}
   .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border)}
   .signup{text-align:center;font-size:13.5px;color:var(--muted)}
@@ -119,7 +126,16 @@
         <p>Accédez à votre tableau de bord</p>
       </div>
 
-      <form method="post" action="/accounts/login/" novalidate>
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert-msg alert-{{ message.tags }}">
+        <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+        {{ message }}
+      </div>
+      {% endfor %}
+      {% endif %}
+
+      <form method="post" action="/accounts/login/company/" novalidate>
         {% csrf_token %}
         <input type="hidden" name="next" value="/dashboard/company/">
 
@@ -167,6 +183,15 @@
   eye.addEventListener('click', function(){
     if(pw.type === 'password'){ pw.type = 'text'; eye.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2M9.9 5.2A9.5 9.5 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.2 6.2A17 17 0 0 0 2 12s3.5 7 10 7a9.5 9.5 0 0 0 3-.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>'; }
     else { pw.type = 'password'; eye.innerHTML = '<svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>'; }
+  });
+
+  document.querySelectorAll('.alert-msg').forEach(function(el){
+    setTimeout(function(){
+      el.style.transition = 'opacity .4s ease, transform .4s ease';
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-6px)';
+      setTimeout(function(){ el.remove(); }, 400);
+    }, 4000);
   });
 </script>
 </body>

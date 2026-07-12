@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Mes paiements — ImmoGérer{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root{
+    --blue:#185FA5;--blue-dark:#1A3E6A;--blue-soft:#E7F0F9;--blue-text:#0C447C;
+    --green:#3B6D11;--green-soft:#EAF3DE;--green-text:#27500A;
+    --amber:#B45309;--amber-soft:#FEF3C7;--red:#B4441F;--red-soft:#FBEAE4;
+    --ink:#16202B;--muted:#6B7280;--muted-2:#9AA0A6;
+    --line:#E7EAEE;--line-2:#DBDFE4;--sh:0 1px 2px rgba(16,32,48,.05);--sh-lg:0 12px 32px rgba(16,32,48,.09);
+  }
+  .me-page{background:var(--ig-bg,#F4F6F9);min-height:calc(100vh - 60px);padding:28px 0 56px}
+  .me-wrap{max-width:1000px;margin:0 auto;padding:0 24px}
+  .num{font-variant-numeric:tabular-nums}
+  .hidden{display:none!important}
+
+  .greet{margin-bottom:22px}
+  .greet h1{font-family:var(--ig-font-display);font-weight:800;font-size:24px;letter-spacing:-.02em;color:var(--ink);margin:0 0 4px}
+  .greet p{color:var(--muted);font-size:13.5px;margin:0}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:10px;font:inherit;font-weight:600;font-size:13.5px;padding:9px 15px;cursor:pointer;border:1px solid transparent;transition:.15s;font-family:var(--ig-font-body);text-decoration:none}
+  .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+  .btn.primary{background:var(--blue);color:#fff}.btn.primary:hover{background:var(--blue-dark);color:#fff}
+  .btn.ghost{background:#fff;border-color:var(--line);color:var(--ink)}.btn.ghost:hover{border-color:var(--line-2)}
+  .btn.white{background:#fff;color:var(--blue-text)}.btn.white:hover{background:#f2f6fb}
+  .btn.sm{padding:7px 12px;font-size:12.5px}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 17px;box-shadow:var(--sh)}
+  .stat .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;margin-bottom:11px;font-size:16px}
+  .stat .ic.g{background:var(--green-soft)}.stat .ic.b{background:var(--blue-soft)}.stat .ic.a{background:var(--amber-soft)}.stat .ic.n{background:#eef1f4}
+  .stat .v{font-family:var(--ig-font-display);font-weight:800;font-size:19px;letter-spacing:-.02em;color:var(--ink);line-height:1.1}
+  .stat .v small{font-size:12px;font-weight:600;color:var(--muted)}
+  .stat .k{font-size:12.5px;color:var(--muted);margin-top:5px}
+  .stat .k b{color:var(--amber);font-weight:600}
+
+  .hero{background:linear-gradient(120deg,#2170bd,#185FA5 60%,#123f72);border-radius:18px;padding:24px 26px;color:#eaf2fb;margin-bottom:14px;display:grid;grid-template-columns:1fr auto;gap:22px;align-items:center;box-shadow:var(--sh-lg)}
+  .hero .lab{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#bcd4ec;font-weight:600;margin-bottom:9px}
+  .hero .biens{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .hero .biens svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:1.8}
+  .hero .biens b{font-family:var(--ig-font-display);font-weight:700;font-size:17px;color:#fff}
+  .hero .due{font-size:13.5px;color:#cfe0f2}
+  .hero .amt{font-family:var(--ig-font-display);font-weight:800;font-size:28px;color:#fff;letter-spacing:-.02em;margin-top:8px}
+  .hero .amt small{font-size:13px;font-weight:600;color:#bcd4ec}
+  .hero .cta{display:flex;flex-direction:column;gap:9px;min-width:210px}
+  .hero-ok{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:22px;text-align:center}
+  .hero-ok .ic{width:48px;height:48px;border-radius:14px;background:var(--green-soft);display:grid;place-items:center;margin:0 auto 12px}
+  .hero-ok .ic svg{width:24px;height:24px;stroke:var(--green);fill:none;stroke-width:2.2}
+  .hero-ok h3{font-family:var(--ig-font-display);font-weight:700;font-size:16px;color:var(--ink);margin-bottom:4px}
+  .hero-ok p{color:var(--muted);font-size:13px;margin:0}
+
+  .alert{display:flex;align-items:center;gap:12px;background:var(--red-soft);border:1px solid #f0c4b6;border-radius:12px;padding:12px 15px;margin-bottom:22px;flex-wrap:wrap}
+  .alert .ai{width:32px;height:32px;border-radius:9px;background:#fff;display:grid;place-items:center;flex:0 0 32px}
+  .alert .ai svg{width:17px;height:17px;stroke:var(--red);fill:none;stroke-width:2}
+  .alert p{font-size:13px;color:#7a3016;margin:0}.alert p b{color:var(--red)}
+  .alert .btn{margin-left:auto}
+
+  .sec-h{display:flex;align-items:baseline;justify-content:space-between;margin:26px 0 14px}
+  .sec-h h2{font-family:var(--ig-font-display);font-weight:700;font-size:17px;color:var(--ink)}
+  .sec-h a{font-size:13px;font-weight:600;color:var(--blue)}
+
+  .tab-bar{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+  .tab-btn{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:600;border:1.5px solid var(--line);cursor:pointer;background:#fff;color:var(--muted);transition:.14s}
+  .tab-btn.on{background:var(--green-soft);color:var(--green);border-color:var(--green)}
+
+  .invoices{display:flex;flex-direction:column;gap:12px}
+  .inv{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--sh);display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center}
+  .inv .bar{width:4px;align-self:stretch;border-radius:4px;background:var(--line-2)}
+  .inv.payee .bar{background:var(--green)}.inv.attente .bar{background:var(--amber)}.inv.retard .bar{background:var(--red)}
+  .inv .mid .ref{font-size:11.5px;color:var(--muted-2);font-weight:600;letter-spacing:.03em}
+  .inv .mid .ti{font-family:var(--ig-font-display);font-weight:700;font-size:15px;color:var(--ink);margin:2px 0 3px}
+  .inv .mid .meta{font-size:12.5px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+  .inv .right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:9px}
+  .inv .amt{font-family:var(--ig-font-display);font-weight:800;font-size:17px;color:var(--ink)}
+  .chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:5px}
+  .chip svg{width:11px;height:11px;fill:none;stroke-width:2.6}
+  .chip.payee{background:var(--green-soft);color:var(--green)}.chip.payee svg{stroke:var(--green)}
+  .chip.attente{background:var(--amber-soft);color:var(--amber)}.chip.attente svg{stroke:var(--amber)}
+  .chip.retard{background:var(--red-soft);color:var(--red)}.chip.retard svg{stroke:var(--red)}
+  .inv .rowbtns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+
+  .cols{display:grid;grid-template-columns:1fr 300px;gap:22px;align-items:start;margin-top:8px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--sh)}
+  .card h3{font-family:var(--ig-font-display);font-weight:700;font-size:15px;color:var(--ink);margin-bottom:16px;display:flex;align-items:center;gap:9px}
+  .card h3 svg{width:16px;height:16px;stroke:var(--blue);fill:none;stroke-width:2}
+
+  .tl{position:relative;padding-left:30px}
+  .tl::before{content:"";position:absolute;left:9px;top:4px;bottom:4px;width:2px;background:var(--line)}
+  .tli{position:relative;padding-bottom:18px}
+  .tli:last-child{padding-bottom:0}
+  .tli .dot{position:absolute;left:-30px;top:1px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--green);border:2px solid var(--green)}
+  .tli .dot svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:3}
+  .tli.wait .dot{background:#fff;border-color:var(--amber)}
+  .tli.wait .dot::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--amber)}
+  .tli .t{font-weight:600;font-size:13.5px;color:var(--ink)}
+  .tli .d{font-size:12px;color:var(--muted-2);margin-top:1px}
+  .tli.wait .t{color:var(--amber)}
+
+  .qa{display:flex;flex-direction:column;gap:8px}
+  .qa a{display:flex;align-items:center;gap:11px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:13.5px;font-weight:500;color:#39414A;transition:.14s}
+  .qa a:hover{border-color:var(--blue);background:var(--blue-soft);color:var(--blue-text)}
+  .qa a svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;flex:0 0 16px}
+  .qa a.danger:hover{border-color:#f0c4b6;background:var(--red-soft);color:var(--red)}
+
+  .pays{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .pay{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;background:#fff}
+  .pay .lg{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:#fff;font-family:var(--ig-font-display);font-weight:800;font-size:11px;flex:0 0 32px}
+  .pay.wave .lg{background:#1DA1F2}.pay.om .lg{background:#FF7900}.pay.mtn .lg{background:#FFCC00;color:#1c1405}.pay.cb .lg{background:#334155}
+  .pay .nm{font-weight:600;font-size:12.5px;color:var(--ink)}
+
+  .me-empty{text-align:center;padding:56px 24px;background:#fff;border:1px solid var(--line);border-radius:14px}
+  .me-empty .eic{width:56px;height:56px;border-radius:16px;background:var(--blue-soft);display:grid;place-items:center;margin:0 auto 16px}
+  .me-empty .eic svg{width:26px;height:26px;stroke:var(--blue);fill:none;stroke-width:1.5}
+  .me-empty h3{font-family:var(--ig-font-display);font-weight:700;font-size:18px;margin:0 0 6px}
+  .me-empty p{color:var(--muted);font-size:13.5px;margin:0}
+
+  .overlay{position:fixed;inset:0;background:rgba(16,24,38,.45);backdrop-filter:blur(3px);display:grid;place-items:center;padding:20px;z-index:80;opacity:0;pointer-events:none;transition:opacity .2s}
+  .overlay.open{opacity:1;pointer-events:auto}
+  .sheet{background:#fff;border-radius:18px;width:100%;max-width:440px;box-shadow:0 24px 60px rgba(0,0,0,.25);transform:translateY(10px);transition:transform .2s;max-height:92vh;overflow-y:auto}
+  .overlay.open .sheet{transform:none}
+  .sheet-h{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line)}
+  .sheet-h h3{font-family:var(--ig-font-display);font-weight:800;font-size:17px;color:var(--ink)}
+  .sheet-x{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;cursor:pointer;color:var(--muted)}
+  .sheet-x svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+  .sheet-b{padding:20px}
+  .recap{background:var(--ig-bg,#F4F6F9);border-radius:12px;padding:14px;margin-bottom:18px}
+  .recap .r{display:flex;justify-content:space-between;padding:5px 0;font-size:13.5px}
+  .recap .r .k{color:var(--muted)}.recap .r .v{font-weight:600;color:var(--ink)}
+  .recap .r.big .v{font-family:var(--ig-font-display);font-weight:800;font-size:18px;color:var(--blue)}
+  .plab{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:9px}
+  .pmethods{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px}
+  .pm{border:1.5px solid var(--line);border-radius:11px;padding:11px;display:flex;align-items:center;gap:9px;cursor:pointer;transition:.14s;font-size:13px;font-weight:600;color:#39414A}
+  .pm .lg{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:#fff;font-family:var(--ig-font-display);font-weight:800;font-size:11px;flex:0 0 30px}
+  .pm.wave .lg{background:#1DA1F2}.pm.om .lg{background:#FF7900}.pm.mtn .lg{background:#FFCC00;color:#1c1405}.pm.cb .lg{background:#334155}
+  .pm.sel{border-color:var(--blue);background:var(--blue-soft)}
+
+  .fld{margin-bottom:14px}
+  .fld label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px}
+  .fld textarea,.fld select{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:13.5px;outline:none;resize:vertical;font-family:var(--ig-font-body)}
+  .fld textarea:focus,.fld select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.12)}
+
+  @media(max-width:900px){.stats{grid-template-columns:1fr 1fr}.cols{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.hero .cta{min-width:0}}
+  @media(max-width:560px){.inv{grid-template-columns:auto 1fr}.inv .right{grid-column:1/-1;align-items:stretch;flex-direction:row;justify-content:space-between}}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="me-page">
+  <div class="me-wrap">
+
+    {% if messages %}
+    {% for message in messages %}<div style="background:#F0FDF4;border:1px solid #86EFAC;color:#15803D;border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;margin-bottom:18px">{{ message }}</div>{% endfor %}
+    {% endif %}
+
+    <div class="greet">
+      <h1>Mes paiements</h1>
+      <p>Suivi de vos factures et loyers</p>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat"><div class="ic g">💰</div><div class="v num">{{ total_paye|floatformat:0|intcomma }} <small>F</small></div><div class="k">Total payé</div></div>
+      <div class="stat"><div class="ic b">📄</div><div class="v num">{{ factures|length }}</div><div class="k">Factures{% if nb_factures_retard %} · <b>{{ nb_factures_retard }} en retard</b>{% endif %}</div></div>
+      <div class="stat"><div class="ic a">⏰</div>
+        {% if prochaine_echeance %}
+        <div class="v num">{{ prochaine_echeance.date_echéance|date:"d M" }}</div><div class="k">Prochaine échéance · {{ prochaine_echeance.montant_total|floatformat:0|intcomma }} F</div>
+        {% else %}
+        <div class="v num">—</div><div class="k">Aucune échéance à venir</div>
+        {% endif %}
+      </div>
+      <div class="stat"><div class="ic n">🏠</div><div class="v num">{{ nb_contrats_actifs }}</div><div class="k">Contrat{{ nb_contrats_actifs|pluralize }} actif{{ nb_contrats_actifs|pluralize }}</div></div>
+    </div>
+
+    <!-- PROCHAINE ÉCHÉANCE -->
+    {% if prochaine_echeance %}
+    <div class="hero">
+      <div>
+        <div class="lab">{% if prochaine_echeance.est_retard %}Paiement en retard{% else %}Prochaine échéance{% endif %}</div>
+        <div class="biens"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12M3 21h18"/></svg> <b>{{ prochaine_echeance.contrat.bien.titre }}</b></div>
+        <div class="due">{% if prochaine_echeance.paiement %}Loyer de {{ prochaine_echeance.paiement.mois|date:"F Y" }} · {% endif %}échéance le {{ prochaine_echeance.date_echéance|date:"d F Y" }}</div>
+        <div class="amt num">{{ prochaine_echeance.montant_total|floatformat:0|intcomma }} <small>FCFA</small></div>
+      </div>
+      <div class="cta">
+        <a class="btn white" href="/dashboard/facturation/{{ prochaine_echeance.id }}/"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Voir la facture</a>
+        <button class="btn" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff" onclick="openPay('{{ prochaine_echeance.id }}','{{ prochaine_echeance.numero_facture }}','{{ prochaine_echeance.contrat.bien.titre|escapejs }}','{{ prochaine_echeance.contrat.proprietaire.get_full_name|default:prochaine_echeance.contrat.proprietaire.username|escapejs }}',{{ prochaine_echeance.montant_total|floatformat:0 }})"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Payer maintenant</button>
+        <a class="btn" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff" href="/dashboard/facturation/{{ prochaine_echeance.id }}/pdf/"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Télécharger la facture</a>
+        <a class="btn" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff" href="/chat/nouveau/{{ prochaine_echeance.contrat.bien.id }}/"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Contacter le propriétaire</a>
+      </div>
+    </div>
+    {% else %}
+    <div class="hero-ok">
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
+      <h3>Vous êtes à jour</h3>
+      <p>Aucune facture en attente pour le moment.</p>
+    </div>
+    {% endif %}
+
+    {% if total_retard %}
+    <div class="alert">
+      <span class="ai"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span>
+      <p><b>{{ nb_factures_retard }} paiement{{ nb_factures_retard|pluralize }} en retard</b> pour un total de {{ total_retard|floatformat:0|intcomma }} FCFA. Réglez dès que possible ou contactez votre propriétaire.</p>
+    </div>
+    {% endif %}
+
+    {% if factures %}
+    <div class="sec-h"><h2>Mes factures</h2><a href="/dashboard/facturation/factures.zip">Tout télécharger</a></div>
+    <div class="tab-bar">
+      <button class="tab-btn on" onclick="filtrer(this,'tous')">Toutes ({{ factures|length }})</button>
+      <button class="tab-btn" onclick="filtrer(this,'en_attente')">En attente</button>
+      <button class="tab-btn" onclick="filtrer(this,'retard')">En retard</button>
+      <button class="tab-btn" onclick="filtrer(this,'payee')">Payées</button>
+    </div>
+
+    <div class="invoices">
+      {% for f in factures %}
+      <div class="inv fact-item {% if f.est_retard %}retard{% elif f.statut == 'payee' %}payee{% else %}attente{% endif %}"
+           data-statut="{{ f.statut }}" data-retard="{% if f.est_retard %}oui{% else %}non{% endif %}">
+        <div class="bar"></div>
+        <a class="mid" href="/dashboard/facturation/{{ f.id }}/" style="text-decoration:none;color:inherit">
+          <div class="ref">FACTURE N°{{ f.numero_facture }}</div>
+          <div class="ti">{{ f.contrat.bien.titre|truncatechars:36 }}{% if f.paiement %} — Loyer {{ f.paiement.mois|date:"F Y" }}{% endif %}</div>
+          <div class="meta">
+            <span><svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Échéance {{ f.date_echéance|date:"d/m/Y" }}</span>
+            {% if f.statut == 'payee' and f.date_paiement %}<span>Payée le {{ f.date_paiement|date:"d/m/Y" }}</span>{% endif %}
+          </div>
+        </a>
+        <div class="right">
+          <div class="amt num">{{ f.montant_total|floatformat:0|intcomma }} <small style="font-weight:400;color:var(--muted)">F</small></div>
+          <span class="chip {% if f.est_retard %}retard{% elif f.statut == 'payee' %}payee{% else %}attente{% endif %}">
+            {% if f.est_retard %}En retard{% else %}{{ f.get_statut_display }}{% endif %}
+          </span>
+          <div class="rowbtns">
+            <a href="/dashboard/facturation/{{ f.id }}/" class="btn ghost sm">Voir la facture</a>
+            {% if f.statut == 'payee' %}
+            <a href="/dashboard/facturation/{{ f.id }}/pdf/" class="btn ghost sm"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Quittance</a>
+            {% else %}
+            <button class="btn primary sm" onclick="openPay('{{ f.id }}','{{ f.numero_facture }}','{{ f.contrat.bien.titre|escapejs }}','{{ f.contrat.proprietaire.get_full_name|default:f.contrat.proprietaire.username|escapejs }}',{{ f.montant_total|floatformat:0 }})">Payer</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- TIMELINE + CÔTÉ -->
+    <div class="cols">
+      {% if timeline %}
+      <div class="card">
+        <h3><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg> Vie de votre contrat — {{ contrat_ref.bien.titre|truncatechars:28 }}</h3>
+        <div class="tl">
+          {% for ev in timeline %}
+          <div class="tli {% if ev.attente %}wait{% endif %}">
+            <span class="dot">{% if not ev.attente %}<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{% endif %}</span>
+            <div class="t">{{ ev.titre }}</div>
+            <div class="d">{{ ev.date|date:"d F Y" }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <h3><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg> Actions rapides</h3>
+          <div class="qa">
+            <a href="/dashboard/facturation/factures.zip"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Télécharger mes factures</a>
+            <a href="/dashboard/facturation/factures.zip?filtre=payees"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg> Télécharger mes quittances</a>
+            <a href="/dashboard/contrats/"><svg viewBox="0 0 24 24"><path d="M6 2h9l3 3v17H6z"/><path d="M9 12h6M9 16h6"/></svg> Voir mes contrats</a>
+            <a href="/chat/"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Contacter mon propriétaire</a>
+            {% if prochaine_echeance %}
+            <a href="#" class="danger" onclick="openIssue('{{ prochaine_echeance.id }}');return false"><svg viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg> Signaler une difficulté de paiement</a>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card">
+          <h3><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Moyens de paiement acceptés</h3>
+          <div class="pays">
+            <div class="pay wave"><span class="lg">W</span><span class="nm">Wave</span></div>
+            <div class="pay om"><span class="lg">OM</span><span class="nm">Orange Money</span></div>
+            <div class="pay mtn"><span class="lg">MTN</span><span class="nm">MTN MoMo</span></div>
+            <div class="pay cb"><span class="lg">CB</span><span class="nm">Carte bancaire</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% else %}
+    <div class="me-empty">
+      <div class="eic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+      <h3>Aucune facture</h3>
+      <p>Vos factures apparaîtront ici dès qu'un contrat sera actif.</p>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- MODAL PAIEMENT -->
+<div class="overlay" id="payOverlay">
+  <div class="sheet">
+    <div class="sheet-h"><h3>Signaler mon paiement</h3><button class="sheet-x" onclick="closePay()"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <form method="post" action="/dashboard/facturation/signaler-paiement/" id="payForm">
+      {% csrf_token %}
+      <input type="hidden" name="facture_id" id="pFactureId">
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <div class="sheet-b">
+        <div class="recap">
+          <div class="r"><span class="k">Bien</span><span class="v" id="pBien"></span></div>
+          <div class="r"><span class="k">Propriétaire</span><span class="v" id="pOwner"></span></div>
+          <div class="r"><span class="k">Référence</span><span class="v" id="pRef"></span></div>
+          <div class="r big"><span class="k">Montant</span><span class="v num" id="pAmt"></span></div>
+        </div>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px" id="pHelp">Effectuez le paiement via le moyen choisi, puis confirmez ci-dessous — la facture sera marquée payée immédiatement et le propriétaire notifié.</p>
+        <div class="plab">Moyen de paiement</div>
+        <div class="pmethods" id="pmethods">
+          <div class="pm wave" data-m="Wave"><span class="lg">W</span> Wave</div>
+          <div class="pm om" data-m="Orange Money"><span class="lg">OM</span> Orange Money</div>
+          <div class="pm mtn" data-m="MTN MoMo"><span class="lg">MTN</span> MTN MoMo</div>
+          <div class="pm cb" data-m="Carte bancaire"><span class="lg">CB</span> Carte</div>
+        </div>
+        <input type="hidden" name="moyen_paiement" id="pMoyen">
+        <button type="submit" class="btn primary" style="width:100%;padding:12px" id="payGo" disabled>Confirmer le paiement</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL SIGNALER UNE DIFFICULTÉ DE PAIEMENT -->
+<div class="overlay" id="issueOverlay">
+  <div class="sheet">
+    <div class="sheet-h"><h3>Signaler une difficulté</h3><button type="button" class="sheet-x" onclick="closeIssue()"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <form method="post" action="/dashboard/facturation/signaler-probleme/">
+      {% csrf_token %}
+      <input type="hidden" name="facture_id" id="iFactureId">
+      <div class="sheet-b">
+        <p style="color:var(--muted);font-size:13.5px;margin-bottom:16px">Expliquez votre situation au propriétaire. Il pourra vous proposer un arrangement (report d'échéance, paiement en deux fois…).</p>
+        <div class="fld">
+          <label>Type de demande</label>
+          <select name="type_demande">
+            <option value="je_ne_peux_pas_payer">Je ne peux pas payer à temps</option>
+            <option value="report_echeance">Demander un report d'échéance</option>
+            <option value="paiement_echelonne">Payer en plusieurs fois</option>
+            <option value="autre">Autre problème</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label>Message</label>
+          <textarea name="message" rows="3" placeholder="Ex : Bonjour, je pourrai régler le loyer le 10 août. Merci de votre compréhension."></textarea>
+        </div>
+        <button type="submit" class="btn primary" style="width:100%;padding:12px">Envoyer au propriétaire</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  var payOverlay=document.getElementById('payOverlay');
+  function openPay(factureId,ref,bien,owner,amount){
+    document.getElementById('pFactureId').value=factureId;
+    document.getElementById('pRef').textContent=ref;
+    document.getElementById('pBien').textContent=bien;
+    document.getElementById('pOwner').textContent=owner;
+    document.getElementById('pAmt').textContent=amount.toLocaleString('fr-FR').replace(/ |,/g,' ')+' FCFA';
+    document.getElementById('pMoyen').value='';
+    document.getElementById('payGo').disabled=true;
+    document.querySelectorAll('#pmethods .pm').forEach(function(p){p.classList.remove('sel');});
+    payOverlay.classList.add('open');
+  }
+  function closePay(){ payOverlay.classList.remove('open'); }
+  var payForm=document.getElementById('payForm');
+  var SIGNALER_URL='/dashboard/facturation/signaler-paiement/';
+  var STRIPE_URL='{% url "stripe_creer_session" %}';
+  document.querySelectorAll('#pmethods .pm').forEach(function(p){
+    p.addEventListener('click',function(){
+      document.querySelectorAll('#pmethods .pm').forEach(function(x){x.classList.remove('sel');});
+      p.classList.add('sel');
+      document.getElementById('pMoyen').value=p.dataset.m;
+      document.getElementById('payGo').disabled=false;
+      if (p.dataset.m === 'Carte bancaire') {
+        payForm.action = STRIPE_URL;
+        document.getElementById('payGo').textContent = 'Payer par carte →';
+        document.getElementById('pHelp').textContent = 'Vous allez être redirigé vers une page de paiement sécurisée Stripe.';
+      } else {
+        payForm.action = SIGNALER_URL;
+        document.getElementById('payGo').textContent = 'Confirmer le paiement';
+        document.getElementById('pHelp').textContent = 'Effectuez le paiement via le moyen choisi, puis confirmez ci-dessous — la facture sera marquée payée immédiatement et le propriétaire notifié.';
+      }
+    });
+  });
+  var issueOverlay=document.getElementById('issueOverlay');
+  function openIssue(factureId){
+    document.getElementById('iFactureId').value=factureId;
+    issueOverlay.classList.add('open');
+  }
+  function closeIssue(){ issueOverlay.classList.remove('open'); }
+
+  document.querySelectorAll('.overlay').forEach(function(o){ o.addEventListener('click',function(e){ if(e.target===o) o.classList.remove('open'); }); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ closePay(); closeIssue(); } });
+
+  function filtrer(btn, filtre) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    document.querySelectorAll('.fact-item').forEach(el => {
+      if (filtre === 'tous') { el.style.display = ''; return; }
+      if (filtre === 'retard') { el.style.display = el.dataset.retard === 'oui' ? '' : 'none'; return; }
+      if (filtre === 'en_attente') { el.style.display = (el.dataset.statut === 'generee' || el.dataset.statut === 'envoyee') && el.dataset.retard !== 'oui' ? '' : 'none'; return; }
+      el.style.display = el.dataset.statut === filtre ? '' : 'none';
+    });
+  }
+</script>
+{% endblock %}

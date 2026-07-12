@@ -1,0 +1,72 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Demandes de devis — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head><body>
+<div class="app">
+{% with active_page='devis' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+<button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="Rechercher…"></div>
+  <div class="tspacer"></div>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+<div class="pg-head">
+  <h1>Demandes de devis</h1>
+  <p>Projets de construction soumis par vos clients</p>
+</div>
+
+{% if projets %}
+{% for p in projets %}
+<div class="card">
+  <div style="display:flex;align-items:flex-start;gap:16px">
+    <div style="width:46px;height:46px;border-radius:12px;background:var(--blue-light);display:grid;place-items:center;flex:0 0 46px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.7"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+        <span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#111">{{ p.client.get_full_name|default:p.client.username }}</span>
+        <span class="badge {% if p.statut == 'en_attente' %}b-amber{% elif p.statut == 'accepte' %}b-green{% elif p.statut == 'refuse' %}b-red{% else %}b-blue{% endif %}">{{ p.get_statut_display }}</span>
+        {% if p.urgence %}<span class="badge b-red">Urgent</span>{% endif %}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:12px">
+        <div style="background:var(--bg);border-radius:8px;padding:9px 12px">
+          <div style="font-size:10.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px">Type</div>
+          <div style="font-weight:600;font-size:13px">{{ p.get_type_projet_display }}</div>
+        </div>
+        {% if p.superficie %}
+        <div style="background:var(--bg);border-radius:8px;padding:9px 12px">
+          <div style="font-size:10.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px">Superficie</div>
+          <div style="font-weight:600;font-size:13px">{{ p.superficie }} m²</div>
+        </div>
+        {% endif %}
+        {% if p.budget_client %}
+        <div style="background:var(--bg);border-radius:8px;padding:9px 12px">
+          <div style="font-size:10.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px">Budget</div>
+          <div style="font-weight:600;font-size:13px">{{ p.budget_client|floatformat:0 }} FCFA</div>
+        </div>
+        {% endif %}
+        <div style="background:var(--bg);border-radius:8px;padding:9px 12px">
+          <div style="font-size:10.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px">Reçu le</div>
+          <div style="font-weight:600;font-size:13px">{{ p.cree_le|date:"d/m/Y" }}</div>
+        </div>
+      </div>
+      {% if p.description %}
+      <div style="font-size:13px;color:#555;background:var(--bg);border-radius:9px;padding:10px 13px;margin-bottom:12px;line-height:1.6">{{ p.description|truncatechars:200 }}</div>
+      {% endif %}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="/construction/projet/{{ p.id }}/" style="background:var(--green);color:#fff;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600">Voir le projet complet</a>
+        <a href="/dashboard/client/{{ p.client.id }}/" style="background:var(--blue-light);color:var(--primary);border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600">Fiche client</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="card"><div class="empty"><b>Aucune demande de devis</b>Les formulaires de devis soumis par vos clients apparaîtront ici.</div></div>
+{% endif %}
+
+</div>
+</div>
+</div>
+</body></html>

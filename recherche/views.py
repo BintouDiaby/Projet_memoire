@@ -165,3 +165,40 @@ def ui_index(request):
         'api_url': '/api/recherche/'
     }
     return render(request, 'recherche/index.html', context)
+
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+
+
+@login_required
+def mes_favoris(request):
+    """Liste des biens que le locataire a mis en favoris."""
+    favoris = (
+        BienFavori.objects.filter(utilisateur=request.user)
+        .select_related('bien', 'bien__proprietaire__company')
+        .order_by('-date_ajout')
+    )
+    return render(request, 'recherche/mes_favoris.html', {'favoris': favoris})
+
+
+@login_required
+def favori_toggle(request, bien_id):
+    """Ajoute ou retire un bien des favoris de l'utilisateur connecté."""
+    if request.method != 'POST':
+        return redirect('biens_ui:detail', pk=bien_id)
+
+    favori = BienFavori.objects.filter(utilisateur=request.user, bien_id=bien_id).first()
+    if favori:
+        favori.delete()
+        est_favori = False
+    else:
+        BienFavori.objects.create(utilisateur=request.user, bien_id=bien_id)
+        est_favori = True
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        from django.http import JsonResponse
+        return JsonResponse({'ok': True, 'est_favori': est_favori})
+
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or '/explorer/'
+    return redirect(next_url)

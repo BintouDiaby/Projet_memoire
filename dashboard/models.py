@@ -337,3 +337,49 @@ class ConfigurationDashboard(models.Model):
     
     def __str__(self):
         return f"Config Dashboard - {self.utilisateur.username}"
+
+
+class Notification(models.Model):
+    """Notification unifiée : chaque action utilisateur (message, visite,
+    devis, réclamation, paiement...) passe par `NotificationService.send()`
+    (dashboard/services.py) au lieu de créer directement des lignes ici.
+
+    Ne remplace pas `facturation.Notification` (envois email/SMS programmés)
+    ni `construction.NotificationConstruction` (déjà branchée sur ses propres
+    templates) — c'est le point d'entrée pour tout ce qui est nouveau.
+    """
+
+    class Type(models.TextChoices):
+        MESSAGE = 'message', 'Nouveau message'
+        VISITE = 'visite', 'Visite'
+        RESERVATION = 'reservation', 'Réservation'
+        DEVIS = 'devis', 'Devis'
+        RECLAMATION = 'reclamation', 'Réclamation'
+        PAIEMENT = 'paiement', 'Paiement'
+        CONTRAT = 'contrat', 'Contrat'
+        SYSTEME = 'systeme', 'Système'
+
+    destinataire = models.ForeignKey(
+        Utilisateur, on_delete=models.CASCADE, related_name='notifications_recues'
+    )
+    expediteur = models.ForeignKey(
+        Utilisateur, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='notifications_envoyees'
+    )
+    type_notification = models.CharField(max_length=20, choices=Type.choices)
+    titre = models.CharField(max_length=255)
+    message = models.TextField(blank=True, default='')
+    lien = models.CharField(max_length=255, blank=True, default='')
+    lue = models.BooleanField(default=False)
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Notification'
+        verbose_name_plural = 'Notifications'
+        ordering = ['-date_creation']
+        indexes = [
+            models.Index(fields=['destinataire', 'lue']),
+        ]
+
+    def __str__(self):
+        return f"{self.titre} → {self.destinataire.username}"

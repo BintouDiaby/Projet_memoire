@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Construction — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--primary:#185FA5;--accent:#C9A84C;--green:#3B6D11;--green-light:#EAF3DE;--text:#111;--muted:#666;--border:#e5e7eb;--bg:#F4F6F9;--card:#fff;--r:14px;--font-display:"Plus Jakarta Sans",system-ui,sans-serif;--font-body:"Inter",system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);font-size:14.5px;line-height:1.55}
+  a{text-decoration:none;color:inherit}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;font-weight:600;font-size:14px;padding:10px 18px;cursor:pointer;border:1px solid transparent;transition:.16s;font-family:var(--font-body)}
+  .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+  .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px)}
+  .btn-ghost{background:var(--card);border-color:var(--border);color:var(--text)}.btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+
+  /* Topbar */
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(244,246,249,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .topbar .wrap{display:flex;align-items:center;gap:20px;height:62px}
+  .brand{font-family:var(--font-display);font-weight:800;font-size:18px;display:flex;align-items:center;gap:9px}
+  .brand svg{width:22px;height:22px}
+  .nav{display:flex;gap:2px;margin-left:8px}
+  .nav a{padding:7px 12px;border-radius:9px;color:var(--muted);font-weight:500;font-size:14px;transition:.15s}
+  .nav a:hover,.nav a.active{color:var(--text);background:#eaedf1}
+  .spacer{flex:1}
+
+  /* Hero */
+  .hero{padding:52px 0 36px;background:linear-gradient(135deg,#0f3d6e 0%,#185FA5 60%,#1e7bc4 100%);color:#fff}
+  .hero-inner{display:grid;grid-template-columns:1fr 340px;gap:40px;align-items:center}
+  .hero-eye{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:12px}
+  .hero h1{font-family:var(--font-display);font-weight:800;font-size:clamp(28px,4vw,46px);line-height:1.05;letter-spacing:-.025em}
+  .hero h1 em{font-style:normal;color:var(--accent)}
+  .hero p{margin-top:16px;font-size:16px;color:rgba(255,255,255,.8);max-width:38em}
+  .hero-stats{display:flex;gap:28px;margin-top:24px}
+  .hero-stat .val{font-family:var(--font-display);font-weight:800;font-size:28px;line-height:1}
+  .hero-stat .lab{font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
+  .hero-cta{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:24px}
+  .hero-cta p{font-size:14px;color:rgba(255,255,255,.8);margin-bottom:14px}
+  .hero-cta .btn{background:var(--accent);color:#1c1405;border:none;width:100%;justify-content:center}
+
+  /* Section */
+  .section{padding:48px 0}
+  .sec-eye{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .sec-h2{font-family:var(--font-display);font-weight:700;font-size:24px;letter-spacing:-.015em;margin:8px 0 24px}
+
+  /* Company cards */
+  .companies{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+  .company-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:24px;transition:.16s;display:flex;flex-direction:column}
+  .company-card:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(24,95,165,.1);border-color:var(--primary)}
+  .cc-head{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+  .cc-logo{width:52px;height:52px;border-radius:13px;background:var(--green-light);color:var(--green);display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:20px;flex:0 0 52px}
+  .cc-name{font-family:var(--font-display);font-weight:700;font-size:17px}
+  .cc-verified{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--green);margin-top:3px}
+  .cc-verified svg{width:13px;height:13px;stroke:var(--green);fill:none;stroke-width:2.5}
+  .cc-rating{font-size:14px;color:var(--accent);font-weight:700;margin-left:auto}
+  .cc-specs{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;flex:1}
+  .cc-spec{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .cc-spec svg{width:14px;height:14px;stroke:var(--green);fill:none;stroke-width:2.2;flex-shrink:0}
+  .cc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:14px;border-top:1px solid var(--border)}
+  .cc-meta{font-size:12px;color:var(--muted)}
+
+  /* Avantages */
+  .avantages{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:24px}
+  .av-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;text-align:center}
+  .av-icon{width:48px;height:48px;border-radius:13px;background:var(--green-light);display:grid;place-items:center;margin:0 auto 12px}
+  .av-icon svg{width:22px;height:22px;stroke:var(--green);fill:none;stroke-width:1.8}
+  .av-title{font-family:var(--font-display);font-weight:700;font-size:14px;margin-bottom:6px}
+  .av-desc{font-size:13px;color:var(--muted)}
+
+  .empty{text-align:center;padding:60px 20px;color:var(--muted)}
+  .empty svg{width:48px;height:48px;stroke:#d1d5db;fill:none;stroke-width:1.2;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto}
+
+  footer{border-top:1px solid var(--border);padding:24px 0;color:var(--muted);font-size:13px}
+  footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+  footer nav{display:flex;gap:16px}footer a:hover{color:var(--primary)}
+
+  @media(max-width:900px){.companies{grid-template-columns:1fr}.hero-inner{grid-template-columns:1fr}.hero-cta{display:none}.avantages{grid-template-columns:1fr 1fr}}
+  @media(max-width:600px){.avantages{grid-template-columns:1fr}.hero-stats{gap:18px}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#185FA5" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/></svg>
+      ImmoGérer
+    </a>
+    <nav class="nav">
+      <a href="/explorer/">Explorer</a>
+      <a href="/explorer/?tab=vente">Acheter</a>
+      <a href="/explorer/?tab=locations">Louer</a>
+      <a href="/construction/" class="active">Construction</a>
+    </nav>
+    <div class="spacer"></div>
+    {% if request.user.is_authenticated %}
+    <a class="btn btn-ghost" href="/construction/mes-projets/" style="font-size:13px;padding:8px 14px">Mes projets</a>
+    <a class="btn btn-ghost" href="/dashboard/" style="font-size:13px;padding:8px 14px">Mon espace</a>
+    {% else %}
+    <a href="/accounts/login/" style="font-weight:600;font-size:14px;padding:8px 10px;color:var(--muted)">Se connecter</a>
+    <a class="btn btn-primary" href="/choisir-profil/" style="font-size:13px">Commencer</a>
+    {% endif %}
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-inner">
+      <div>
+        <div class="hero-eye">Service certifié · Côte d'Ivoire</div>
+        <h1>Construisez votre maison avec des <em>entreprises vérifiées</em></h1>
+        <p>Villas, duplex, immeubles, locaux commerciaux — des entreprises certifiées RCCM pour tous vos projets de construction à Abidjan et en Côte d'Ivoire.</p>
+        <div class="hero-stats">
+          <div class="hero-stat"><div class="val">{{ entreprises|length }}</div><div class="lab">Entreprises partenaires</div></div>
+          <div class="hero-stat"><div class="val">100%</div><div class="lab">Entreprises vérifiées</div></div>
+          <div class="hero-stat"><div class="val">Gratuit</div><div class="lab">Demande de devis</div></div>
+        </div>
+      </div>
+      <div class="hero-cta">
+        <p>Vous avez déjà un terrain ?<br>Obtenez plusieurs devis gratuitement.</p>
+        <a class="btn" href="#entreprises">Voir les entreprises</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AVANTAGES -->
+<section class="section" style="padding-bottom:20px">
+  <div class="wrap">
+    <div class="avantages">
+      <div class="av-card">
+        <div class="av-icon"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
+        <div class="av-title">Entreprises vérifiées</div>
+        <div class="av-desc">Chaque entreprise partenaire a fourni son RCCM et ses références vérifiées.</div>
+      </div>
+      <div class="av-card">
+        <div class="av-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="av-title">Suivi de chantier</div>
+        <div class="av-desc">Suivez l'avancement de votre projet étape par étape directement dans l'application.</div>
+      </div>
+      <div class="av-card">
+        <div class="av-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15h6"/></svg></div>
+        <div class="av-title">Devis gratuit</div>
+        <div class="av-desc">Soumettez votre projet et recevez des propositions de plusieurs entreprises.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LISTE ENTREPRISES -->
+<section class="section" id="entreprises">
+  <div class="wrap">
+    <div class="sec-eye">Entreprises partenaires</div>
+    <div class="sec-h2">Choisissez votre entreprise de construction</div>
+
+    {% if entreprises %}
+    <div class="companies">
+      {% for item in entreprises %}
+      {% with c=item.company p=item.profil %}
+      <div class="company-card">
+        <div class="cc-head">
+          <div class="cc-logo">{{ c.name|slice:":1" }}</div>
+          <div>
+            <div class="cc-name">{{ c.name }}</div>
+            <div class="cc-verified"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Entreprise vérifiée</div>
+          </div>
+          <div class="cc-rating">
+            {% if p %}{% with note=p.note_moyenne %}
+            {% for i in "12345" %}{% if forloop.counter <= note|floatformat:"0"|add:"0" %}★{% else %}☆{% endif %}{% endfor %}
+            {{ note }}
+            {% endwith %}{% else %}★ 4.5{% endif %}
+          </div>
+        </div>
+
+        <div class="cc-specs">
+          {% if p and p.specialites %}
+          {% for spec in p.specialites %}
+          <div class="cc-spec"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{{ spec }}</div>
+          {% endfor %}
+          {% else %}
+          <div class="cc-spec"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Construction de villas</div>
+          <div class="cc-spec"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Construction de duplex</div>
+          <div class="cc-spec"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Renovation</div>
+          {% endif %}
+        </div>
+
+        <div class="cc-foot">
+          <div class="cc-meta">
+            {% if p and p.annee_creation %}Depuis {{ p.annee_creation }} · {% endif %}
+            {% if p %}{{ p.nb_projets_realises }} projets{% else %}Entreprise partenaire{% endif %}
+          </div>
+          <a class="btn btn-primary" href="/construction/entreprise/{{ c.id }}/" style="font-size:13px;padding:8px 16px">Voir le profil</a>
+        </div>
+      </div>
+      {% endwith %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty">
+      <svg viewBox="0 0 24 24"><path d="M5 21V7h8v14M13 11h6v10M3 21h18M16 4l3 1"/></svg>
+      <p>Aucune entreprise de construction disponible pour le moment.</p>
+      <p style="margin-top:8px;font-size:13px">Revenez bientôt ou <a href="/accounts/login/" style="color:var(--primary)">créez un compte entreprise</a>.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>ImmoGérer · Construction · Abidjan, Côte d'Ivoire</span>
+    <nav><a href="/explorer/">Explorer</a><a href="/construction/">Construction</a><a href="/accounts/login/">Se connecter</a></nav>
+  </div>
+</footer>
+</body>
+</html>

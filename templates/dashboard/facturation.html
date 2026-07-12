@@ -1,0 +1,189 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Facturation — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+.kpi-box{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;display:flex;flex-direction:column;gap:6px}
+.kpi-label{font-size:11.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.09em;font-weight:600}
+.kpi-val{font-family:var(--font-display);font-weight:800;font-size:24px;color:#111;line-height:1}
+.kpi-sub{font-size:12px;color:var(--muted)}
+.kpi-box.kpi-green .kpi-val{color:var(--green)}
+.kpi-box.kpi-amber .kpi-val{color:#B45309}
+.kpi-box.kpi-red .kpi-val{color:#B91C1C}
+.kpi-box.kpi-blue .kpi-val{color:var(--primary)}
+
+.tab-bar{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.tab-btn{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:600;border:1.5px solid var(--border);cursor:pointer;background:var(--card);color:var(--muted);transition:.14s}
+.tab-btn.on{background:var(--green-light);color:var(--green);border-color:var(--green)}
+
+.fact-table{width:100%;border-collapse:collapse}
+.fact-table thead th{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted-2);padding:8px 12px;text-align:left;border-bottom:2px solid var(--border);font-weight:600}
+.fact-table tbody tr{border-bottom:1px solid #f3f4f6;transition:.12s}
+.fact-table tbody tr:hover{background:#f9fafb}
+.fact-table tbody td{padding:12px 12px;font-size:13.5px;vertical-align:middle}
+.fact-table tbody tr:last-child{border-bottom:none}
+
+.num{font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--primary)}
+.name-cell{font-weight:600;color:#111;font-size:13.5px}
+.sub-cell{font-size:11.5px;color:var(--muted);margin-top:1px}
+.amt{font-family:var(--font-display);font-weight:700;font-size:14px;color:#111;white-space:nowrap}
+.due-ok{font-size:12px;color:var(--green);font-weight:600}
+.due-late{font-size:12px;color:#B91C1C;font-weight:600}
+.due-normal{font-size:12px;color:var(--muted)}
+
+.btn-pay{background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.14s}
+.btn-pay:hover{background:var(--green-dark)}
+.btn-paid{background:var(--green-light);color:var(--green);border-radius:8px;padding:6px 13px;font-size:12px;font-weight:700;white-space:nowrap}
+.btn-annulee{background:#f3f4f6;color:var(--muted);border-radius:8px;padding:6px 13px;font-size:12px;font-weight:600}
+
+.section-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;overflow-x:auto}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='facturation' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+  <button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="Rechercher une facture…" oninput="filtrerRecherche(this.value)" id="search-input"></div>
+  <div class="tspacer"></div>
+  <a class="addbtn" href="/dashboard/paiements/export/" style="background:#fff;color:var(--text);border:1.5px solid var(--border)"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exporter CSV</a>
+  <a class="addbtn" href="/dashboard/rapport-mensuel/pdf/" style="background:#fff;color:var(--text);border:1.5px solid var(--border)"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Rapport PDF</a>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+
+<div class="pg-head">
+  <h1>Facturation</h1>
+  <p>Factures générées automatiquement chaque 1er du mois pour vos contrats actifs</p>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid">
+  <div class="kpi-box kpi-green">
+    <div class="kpi-label">Encaissé</div>
+    <div class="kpi-val">{{ total_encaisse|floatformat:0 }}</div>
+    <div class="kpi-sub">FCFA payés</div>
+  </div>
+  <div class="kpi-box kpi-amber">
+    <div class="kpi-label">En attente</div>
+    <div class="kpi-val">{{ total_en_attente|floatformat:0 }}</div>
+    <div class="kpi-sub">FCFA à collecter</div>
+  </div>
+  <div class="kpi-box kpi-red">
+    <div class="kpi-label">En retard</div>
+    <div class="kpi-val">{{ total_retard|floatformat:0 }}</div>
+    <div class="kpi-sub">FCFA échéance dépassée</div>
+  </div>
+  <div class="kpi-box kpi-blue">
+    <div class="kpi-label">Rappels à envoyer</div>
+    <div class="kpi-val">{{ nb_rappels }}</div>
+    <div class="kpi-sub">rappels programmés en attente</div>
+  </div>
+</div>
+
+{% if factures %}
+
+<!-- Filtres onglets -->
+<div class="tab-bar">
+  <button class="tab-btn on" onclick="filtrer(this,'tous')">Toutes ({{ factures|length }})</button>
+  <button class="tab-btn" onclick="filtrer(this,'en_attente')">En attente</button>
+  <button class="tab-btn" onclick="filtrer(this,'retard')">En retard</button>
+  <button class="tab-btn" onclick="filtrer(this,'payee')">Payées</button>
+</div>
+
+<div class="section-card">
+<table class="fact-table">
+  <thead>
+    <tr>
+      <th>Numéro</th>
+      <th>Locataire</th>
+      <th>Bien</th>
+      <th>Mois</th>
+      <th>Montant</th>
+      <th>Échéance</th>
+      <th>Statut</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="factures-tbody">
+  {% for f in factures %}
+  <tr class="fact-row" data-statut="{{ f.statut }}" data-retard="{% if f.est_retard %}oui{% else %}non{% endif %}" data-search="{{ f.numero_facture|lower }} {{ f.contrat.locataire.get_full_name|lower }} {{ f.contrat.bien.titre|lower }}" style="cursor:pointer" onclick="window.location='/dashboard/facturation/{{ f.id }}/'">
+    <td><div class="num">{{ f.numero_facture }}</div></td>
+    <td>
+      <div class="name-cell">{{ f.contrat.locataire.get_full_name|default:f.contrat.locataire.username|default:"—" }}</div>
+      <div class="sub-cell">{{ f.contrat.locataire.email|default:"" }}</div>
+    </td>
+    <td>
+      <div class="name-cell">{{ f.contrat.bien.titre|truncatechars:28 }}</div>
+      <div class="sub-cell">{{ f.contrat.bien.ville|default:"" }}{% if f.contrat.bien.commune %}, {{ f.contrat.bien.commune }}{% endif %}</div>
+    </td>
+    <td>
+      {% if f.paiement %}<span style="font-size:13px;font-weight:600;color:#111">{{ f.paiement.mois|date:"F Y" }}</span>{% else %}—{% endif %}
+    </td>
+    <td><div class="amt">{{ f.montant_total|floatformat:0 }} <span style="font-size:11px;font-weight:400;color:var(--muted)">FCFA</span></div></td>
+    <td>
+      {% if f.est_retard %}
+        <div class="due-late">⚠ {{ f.date_echéance|date:"d/m/Y" }}</div>
+      {% elif f.statut == 'payee' %}
+        <div class="due-ok">✓ {{ f.date_paiement|date:"d/m/Y"|default:f.date_echéance|date:"d/m/Y" }}</div>
+      {% else %}
+        <div class="due-normal">{{ f.date_echéance|date:"d/m/Y" }}</div>
+      {% endif %}
+    </td>
+    <td>
+      <span class="badge {% if f.statut == 'payee' %}b-green{% elif f.statut == 'annulee' %}b-muted{% elif f.est_retard %}b-red{% elif f.statut == 'envoyee' %}b-blue{% else %}b-amber{% endif %}">
+        {% if f.est_retard %}Retard{% else %}{{ f.get_statut_display }}{% endif %}
+      </span>
+    </td>
+    <td>
+      {% if f.statut == 'payee' %}
+        <span class="btn-paid">✓ Payée</span>
+      {% elif f.statut == 'annulee' %}
+        <span class="btn-annulee">Annulée</span>
+      {% else %}
+        <form method="post" style="margin:0" onclick="event.stopPropagation()">
+          {% csrf_token %}
+          <input type="hidden" name="facture_id" value="{{ f.id }}">
+          <input type="hidden" name="action" value="marquer_payee">
+          <button type="submit" class="btn-pay">Marquer payée</button>
+        </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% else %}
+<div class="card">
+  <div class="empty">
+    <b>Aucune facture générée</b>
+    Les factures sont créées automatiquement le 1er du mois pour chaque contrat actif.<br>
+    <a href="/dashboard/contrats/" style="color:var(--green);font-weight:600;margin-top:8px;display:inline-block">→ Voir mes contrats</a>
+  </div>
+</div>
+{% endif %}
+
+</div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .app -->
+
+<script>
+function filtrer(btn, filtre) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.fact-row').forEach(tr => {
+    if (filtre === 'tous') { tr.style.display = ''; return; }
+    if (filtre === 'retard') { tr.style.display = (tr.dataset.retard === 'oui') ? '' : 'none'; return; }
+    if (filtre === 'en_attente') { tr.style.display = (tr.dataset.statut === 'generee' || tr.dataset.statut === 'brouillon') ? '' : 'none'; return; }
+    tr.style.display = (tr.dataset.statut === filtre) ? '' : 'none';
+  });
+}
+function filtrerRecherche(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.fact-row').forEach(tr => {
+    tr.style.display = tr.dataset.search.includes(q) ? '' : 'none';
+  });
+}
+</script>
+</body></html>

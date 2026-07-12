@@ -2,14 +2,147 @@
 
 {% block title %}{{ title }} — Immobilier{% endblock %}
 
+{% block extra_head %}
+<style>
+  .bf-section { margin-bottom: 26px; }
+  .bf-section:last-of-type { margin-bottom: 0; }
+  .bf-section h2 { font-family: var(--ig-font-display, "Plus Jakarta Sans", sans-serif); font-weight: 700; font-size: 15px; margin: 0 0 14px; color: #111; }
+  .bf-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .bf-field { margin-bottom: 14px; flex: 1; min-width: 200px; }
+  .bf-field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #111; }
+  .bf-field .text-danger { display: block; font-size: 12px; margin-top: 4px; }
+  .bf-preview { width: 100%; max-width: 220px; border-radius: 10px; margin-bottom: 10px; display: block; }
+  .bf-actions { display: flex; gap: 10px; padding-top: 18px; border-top: 1px solid #e5e7eb; margin-top: 6px; }
+</style>
+{% endblock %}
+
 {% block content %}
   <div class="card p-4">
-    <h1>{{ title }}</h1>
+    <h1 class="mb-4">{{ title }}</h1>
     <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
-      {{ form.as_p }}
-      <button class="btn btn-primary" type="submit">Enregistrer</button>
-      <a class="btn btn-secondary" href="/biens/">Annuler</a>
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="bf-section">
+        <h2>Informations générales</h2>
+        <div class="bf-field">
+          <label for="{{ form.titre.id_for_label }}">Titre de l'annonce</label>
+          {{ form.titre }}
+          {% if form.titre.errors %}<span class="text-danger">{{ form.titre.errors|join:", " }}</span>{% endif %}
+        </div>
+        <div class="bf-field">
+          <label for="{{ form.description.id_for_label }}">Description</label>
+          {{ form.description }}
+          {% if form.description.errors %}<span class="text-danger">{{ form.description.errors|join:", " }}</span>{% endif %}
+        </div>
+        <div class="bf-field">
+          <label for="{{ form.photo_principale.id_for_label }}">Photo principale</label>
+          {% if form.instance.photo_principale %}
+          <img class="bf-preview" src="{{ form.instance.photo_principale.url }}" alt="">
+          {% endif %}
+          {{ form.photo_principale }}
+          {% if form.photo_principale.errors %}<span class="text-danger">{{ form.photo_principale.errors|join:", " }}</span>{% endif %}
+        </div>
+        <div class="bf-row">
+          <div class="bf-field">
+            <label for="{{ form.type_bien.id_for_label }}">Type de bien</label>
+            {{ form.type_bien }}
+            {% if form.type_bien.errors %}<span class="text-danger">{{ form.type_bien.errors|join:", " }}</span>{% endif %}
+          </div>
+          <div class="bf-field">
+            <label for="{{ form.transaction_type.id_for_label }}">Type d'opération</label>
+            {{ form.transaction_type }}
+          </div>
+          <div class="bf-field">
+            <label for="{{ form.statut.id_for_label }}">Statut</label>
+            {{ form.statut }}
+          </div>
+        </div>
+      </div>
+
+      <div class="bf-section">
+        <h2>Localisation</h2>
+        <div class="bf-field">
+          <label for="{{ form.adresse.id_for_label }}">Adresse</label>
+          {{ form.adresse }}
+          {% if form.adresse.errors %}<span class="text-danger">{{ form.adresse.errors|join:", " }}</span>{% endif %}
+        </div>
+        <div class="bf-row">
+          <div class="bf-field">
+            <label for="{{ form.quartier.id_for_label }}">Quartier</label>
+            {{ form.quartier }}
+          </div>
+          <div class="bf-field">
+            <label for="{{ form.commune.id_for_label }}">Commune</label>
+            {{ form.commune }}
+          </div>
+          <div class="bf-field">
+            <label for="{{ form.ville.id_for_label }}">Ville</label>
+            {{ form.ville }}
+            {% if form.ville.errors %}<span class="text-danger">{{ form.ville.errors|join:", " }}</span>{% endif %}
+          </div>
+        </div>
+        <div class="bf-row">
+          <div class="bf-field">
+            <label for="{{ form.latitude.id_for_label }}">Latitude</label>
+            {{ form.latitude }}
+            <small class="text-muted">Optionnel — permet d'afficher ce bien sur les cartes.</small>
+            {% if form.latitude.errors %}<span class="text-danger">{{ form.latitude.errors|join:", " }}</span>{% endif %}
+          </div>
+          <div class="bf-field">
+            <label for="{{ form.longitude.id_for_label }}">Longitude</label>
+            {{ form.longitude }}
+            {% if form.longitude.errors %}<span class="text-danger">{{ form.longitude.errors|join:", " }}</span>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="bf-section">
+        <h2>Caractéristiques</h2>
+        <div class="bf-row">
+          <div class="bf-field">
+            <label for="{{ form.surface_m2.id_for_label }}">Surface (m²)</label>
+            {{ form.surface_m2 }}
+            {% if form.surface_m2.errors %}<span class="text-danger">{{ form.surface_m2.errors|join:", " }}</span>{% endif %}
+          </div>
+          <div class="bf-field">
+            <label for="{{ form.nombre_chambres.id_for_label }}">Chambres</label>
+            {{ form.nombre_chambres }}
+            {% if form.nombre_chambres.errors %}<span class="text-danger">{{ form.nombre_chambres.errors|join:", " }}</span>{% endif %}
+          </div>
+          <div class="bf-field">
+            <label for="{{ form.nombre_salles_bain.id_for_label }}">Salles de bain</label>
+            {{ form.nombre_salles_bain }}
+            {% if form.nombre_salles_bain.errors %}<span class="text-danger">{{ form.nombre_salles_bain.errors|join:", " }}</span>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="bf-section">
+        <h2>Prix</h2>
+        <div class="bf-row">
+          <div class="bf-field">
+            <label for="{{ form.prix_mensuel.id_for_label }}">Loyer mensuel (F CFA)</label>
+            {{ form.prix_mensuel }}
+            <small class="text-muted">Pour une location — laissez à 0 si le bien est uniquement en vente.</small>
+          </div>
+          <div class="bf-field">
+            <label for="{{ form.prix_vente.id_for_label }}">Prix de vente (F CFA)</label>
+            {{ form.prix_vente }}
+          </div>
+          <div class="bf-field">
+            <label for="{{ form.prix_depot_garantie.id_for_label }}">Dépôt de garantie (F CFA)</label>
+            {{ form.prix_depot_garantie }}
+          </div>
+        </div>
+      </div>
+
+      <div class="bf-actions">
+        <button class="btn btn-primary" type="submit">Enregistrer</button>
+        <a class="btn btn-secondary" href="/biens/">Annuler</a>
+      </div>
     </form>
   </div>
 {% endblock %}

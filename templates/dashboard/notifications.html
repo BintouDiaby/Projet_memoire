@@ -1,0 +1,56 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Notifications — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head><body>
+<div class="app">
+{% with active_page='notifications' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+<button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="Rechercher…"></div>
+  <div class="tspacer"></div>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+<div class="pg-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap">
+  <div>
+    <h1>Notifications</h1>
+    <p>Messages non lus, visites en attente et mises à jour</p>
+  </div>
+  {% if notifs %}
+  <form method="post" action="{% url 'notifications_marquer_toutes_lues' %}">
+    {% csrf_token %}
+    <button type="submit" style="background:none;border:1.5px solid var(--border);border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer">Tout marquer comme lu</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if notifs %}
+<div class="card">
+  {% for n in notifs %}
+  <div class="row">
+    <div style="width:38px;height:38px;border-radius:10px;flex:0 0 38px;display:grid;place-items:center;{% if n.type == 'message' %}background:var(--blue-light){% elif n.type == 'rdv' %}background:var(--amber-bg){% else %}background:var(--orange-light){% endif %}">
+      {% if n.type == 'message' %}
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      {% elif n.type == 'rdv' %}
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--amber-tx)" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      {% else %}
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.8"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg>
+      {% endif %}
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:{% if not n.lue %}700{% else %}500{% endif %};font-size:13.5px;color:#111">{{ n.titre }}</div>
+      <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.detail }}</div>
+    </div>
+    <div style="font-size:11.5px;color:var(--muted-2);white-space:nowrap;flex-shrink:0">il y a {{ n.date|timesince }}</div>
+    <a href="{{ n.mark_url|default:n.lien }}" style="background:var(--green-light);color:var(--green);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;flex-shrink:0;white-space:nowrap">Voir →</a>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="empty"><b>Tout est à jour</b>Aucune notification en attente.</div></div>
+{% endif %}
+
+</div>
+</div>
+</div>
+</body></html>

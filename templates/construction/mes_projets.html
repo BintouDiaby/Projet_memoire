@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mes projets de construction — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--primary:#185FA5;--accent:#C9A84C;--green:#3B6D11;--green-light:#EAF3DE;--text:#111;--muted:#666;--border:#e5e7eb;--bg:#F4F6F9;--card:#fff;--r:14px;--font-display:"Plus Jakarta Sans",system-ui,sans-serif;--font-body:"Inter",system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);font-size:14.5px;line-height:1.55}
+  a{text-decoration:none;color:inherit}
+  .wrap{max-width:940px;margin:0 auto;padding:0 24px}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;font-weight:600;font-size:13.5px;padding:9px 16px;cursor:pointer;border:1px solid transparent;transition:.16s;font-family:var(--font-body)}
+  .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{filter:brightness(1.08)}
+  .btn-ghost{background:var(--card);border-color:var(--border);color:var(--muted)}.btn-ghost:hover{color:var(--primary);border-color:var(--primary)}
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(244,246,249,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .topbar .wrap{display:flex;align-items:center;gap:16px;height:60px;max-width:1100px}
+  .brand{font-family:var(--font-display);font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px}
+  .spacer{flex:1}
+
+  .page-hero{padding:36px 0 28px;border-bottom:1px solid var(--border);margin-bottom:32px}
+  .page-hero h1{font-family:var(--font-display);font-weight:800;font-size:28px;letter-spacing:-.02em}
+  .page-hero p{color:var(--muted);margin-top:6px}
+
+  /* Stats strip */
+  .stats-strip{display:flex;gap:16px;margin-bottom:28px;flex-wrap:wrap}
+  .stat-pill{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 18px;flex:1;min-width:120px;text-align:center}
+  .stat-pill .v{font-family:var(--font-display);font-weight:800;font-size:24px;line-height:1}
+  .stat-pill .l{font-size:12px;color:var(--muted);margin-top:4px}
+
+  /* Project cards */
+  .projets{display:flex;flex-direction:column;gap:16px}
+  .projet-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;transition:.16s;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start}
+  .projet-card:hover{box-shadow:0 6px 24px rgba(24,95,165,.08);border-color:rgba(24,95,165,.2)}
+  .pc-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .pc-icon{width:44px;height:44px;border-radius:11px;background:var(--green-light);display:grid;place-items:center;font-size:20px;flex:0 0 44px}
+  .pc-title{font-family:var(--font-display);font-weight:700;font-size:16px}
+  .pc-sub{font-size:13px;color:var(--muted);margin-top:2px}
+  .pc-meta{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+  .pc-meta-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+  .pc-meta-item svg{width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:2}
+  .statut-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em}
+  .statut-badge.en_attente{background:#FEF3C7;color:#92400E}
+  .statut-badge.devis_envoye{background:#DBEAFE;color:#1E40AF}
+  .statut-badge.accepte{background:var(--green-light);color:var(--green)}
+  .statut-badge.en_cours{background:#EDE9FE;color:#5B21B6}
+  .statut-badge.termine{background:var(--green-light);color:var(--green)}
+  .statut-badge.annule{background:#FEE2E2;color:#991B1B}
+
+  /* Progress bar */
+  .progress-wrap{margin-top:6px}
+  .progress-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+  .progress-label .pct{font-weight:700;color:var(--primary)}
+  .progress-track{height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--green),#5cb527);border-radius:99px;transition:width .6s ease}
+
+  /* Etapes mini */
+  .etapes-mini{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+  .em{font-size:11.5px;padding:3px 9px;border-radius:99px;font-weight:600}
+  .em.termine{background:var(--green-light);color:var(--green)}
+  .em.en_cours{background:#EDE9FE;color:#5B21B6}
+  .em.a_venir{background:#f3f4f6;color:#9ca3af}
+
+  .empty{text-align:center;padding:70px 20px}
+  .empty svg{width:52px;height:52px;stroke:#d1d5db;fill:none;stroke-width:1.2;display:block;margin:0 auto 16px}
+  .empty p{color:var(--muted);margin-bottom:20px}
+
+  footer{border-top:1px solid var(--border);padding:20px 0;color:var(--muted);font-size:13px;margin-top:40px;text-align:center}
+
+  @media(max-width:700px){.projet-card{grid-template-columns:1fr}.stats-strip{flex-wrap:wrap}.stat-pill{min-width:calc(50% - 8px)}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap" style="max-width:1100px">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#185FA5" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/></svg>
+      ImmoGérer
+    </a>
+    <div class="spacer"></div>
+    <a class="btn btn-ghost" href="/construction/">Trouver une entreprise</a>
+    <a class="btn btn-ghost" href="/dashboard/">Mon espace</a>
+  </div>
+</header>
+
+<div class="wrap" style="padding-top:0;padding-bottom:60px">
+  <div class="page-hero">
+    <h1>Mes projets de construction</h1>
+    <p>Suivez l'avancement de vos projets et échangez avec les entreprises.</p>
+  </div>
+
+  {% if projets %}
+  <!-- STATS -->
+  <div class="stats-strip">
+    <div class="stat-pill">
+      <div class="v">{{ projets|length }}</div>
+      <div class="l">Projets total</div>
+    </div>
+    <div class="stat-pill">
+      <div class="v" style="color:#5B21B6">{% with n=0 %}{% for p in projets %}{% if p.statut == 'en_cours' %}{{ forloop.counter|add:"-1" }}{% endif %}{% endfor %}{% endwith %}
+        {{ projets|length|add:0 }}
+      </div>
+      <div class="l">En cours</div>
+    </div>
+    <div class="stat-pill">
+      <div class="v" style="color:var(--green)">
+        {% with t=0 %}{% for p in projets %}{% if p.statut == 'termine' %}+{% endif %}{% endfor %}{% endwith %}
+      </div>
+      <div class="l">Terminés</div>
+    </div>
+  </div>
+
+  <div class="projets">
+    {% for projet in projets %}
+    <div class="projet-card">
+      <div>
+        <div class="pc-head">
+          <div class="pc-icon">
+            {% if projet.type_projet == 'villa' %}🏡
+            {% elif projet.type_projet == 'duplex' %}🏘
+            {% elif projet.type_projet == 'immeuble' %}🏢
+            {% elif projet.type_projet == 'magasin' %}🏪
+            {% elif projet.type_projet == 'bureau' %}🏬
+            {% elif projet.type_projet == 'renovation' %}🔨
+            {% else %}🏗{% endif %}
+          </div>
+          <div>
+            <div class="pc-title">{{ projet.get_type_projet_display }}</div>
+            <div class="pc-sub">{{ projet.entreprise.name }}</div>
+          </div>
+        </div>
+
+        <div class="pc-meta">
+          {% if projet.localisation_terrain %}
+          <div class="pc-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            {{ projet.localisation_terrain }}
+          </div>
+          {% endif %}
+          {% if projet.superficie %}
+          <div class="pc-meta-item">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            {{ projet.superficie }} m²
+          </div>
+          {% endif %}
+          <div class="pc-meta-item">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            {{ projet.cree_le|date:"d M Y" }}
+          </div>
+        </div>
+
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>Avancement</span>
+            <span class="pct">{{ projet.pourcentage_avancement }}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:{{ projet.pourcentage_avancement }}%"></div>
+          </div>
+        </div>
+
+        {% if projet.etapes.all %}
+        <div class="etapes-mini">
+          {% for etape in projet.etapes.all %}
+          <span class="em {{ etape.statut }}">{{ etape.nom }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+        <span class="statut-badge {{ projet.statut }}">{{ projet.get_statut_display }}</span>
+        <a class="btn btn-primary" href="/construction/projet/{{ projet.id }}/">Voir le suivi</a>
+        {% if projet.conversations.all %}
+        {% for conv in projet.conversations.all %}
+        <a class="btn btn-ghost" href="/chat/{{ conv.id }}/" style="font-size:12.5px;padding:7px 12px">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Messages
+        </a>
+        {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty">
+    <svg viewBox="0 0 24 24"><path d="M5 21V7h8v14M13 11h6v10M3 21h18M16 4l3 1"/></svg>
+    <p>Vous n'avez pas encore de projet de construction.</p>
+    <a class="btn btn-primary" href="/construction/">Trouver une entreprise de construction</a>
+  </div>
+  {% endif %}
+</div>
+
+<footer><div class="wrap">ImmoGérer · Mes projets de construction</div></footer>
+</body>
+</html>

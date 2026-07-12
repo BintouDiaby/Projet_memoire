@@ -6,7 +6,15 @@ import uuid
 
 class Facture(models.Model):
     """Modèle pour les factures générées automatiquement"""
-    
+
+    class ModePaiement(models.TextChoices):
+        WAVE         = 'wave',         'Wave'
+        ORANGE_MONEY = 'orange_money', 'Orange Money'
+        MTN          = 'mtn',          'MTN MoMo'
+        CARTE        = 'carte',        'Carte bancaire'
+        ESPECES      = 'especes',      'Espèces'
+        VIREMENT     = 'virement',     'Virement bancaire'
+
     class Statut(models.TextChoices):
         BROUILLON = 'brouillon', 'Brouillon'
         GENEREE = 'generee', 'Générée'
@@ -45,6 +53,10 @@ class Facture(models.Model):
     # Statut et fichier
     statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.BROUILLON)
     fichier_pdf = models.FileField(upload_to='factures/pdf/', blank=True, null=True)
+
+    # Paiement
+    mode_paiement = models.CharField(max_length=20, choices=ModePaiement.choices, blank=True, null=True)
+    reference_transaction = models.CharField(max_length=50, blank=True, null=True)
     
     # Suivi
     tentatives_envoi = models.IntegerField(default=0)

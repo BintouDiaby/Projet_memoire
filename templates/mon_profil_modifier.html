@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier mon profil — ImmoGérer{% endblock %}
+
+{% block extra_head %}
+<style>
+  .me-page { background: var(--ig-bg, #F4F6F9); min-height: calc(100vh - 60px); padding: 28px 0 56px; }
+  .me-wrap  { max-width: 620px; margin: 0 auto; padding: 0 24px; }
+
+  .me-greeting { margin-bottom: 22px; }
+  .me-greeting h1 { font-family: var(--ig-font-display); font-weight: 800; font-size: 22px; margin: 0 0 6px; color: #111; }
+
+  .me-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px; margin-bottom: 18px; }
+  .me-card h3 { font-family: var(--ig-font-display); font-weight: 700; font-size: 14.5px; color: #111; margin: 0 0 16px; }
+
+  .fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .fld { margin-bottom: 16px; }
+  .fld.full { grid-column: 1/-1; }
+  .fld label { display: block; font-size: 12.5px; font-weight: 600; color: #374151; margin-bottom: 7px; }
+  .fld input, .fld textarea {
+    width: 100%; padding: 10px 13px; border: 1.5px solid #e5e7eb; border-radius: 10px;
+    font-size: 13.5px; font-family: var(--ig-font-body); color: #111; transition: .14s;
+  }
+  .fld input:focus, .fld textarea:focus { outline: none; border-color: #185FA5; }
+  .fld textarea { resize: vertical; min-height: 90px; }
+
+  .form-actions { display: flex; gap: 10px; margin-top: 8px; }
+  .ig-btn-full { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; font-weight: 600; font-size: 13.5px; padding: 11px 20px; cursor: pointer; border: none; text-decoration: none; transition: .15s; font-family: var(--ig-font-body); }
+  .ig-btn-full.primary { background: #185FA5; color: #fff; }
+  .ig-btn-full.primary:hover { background: #1A3E6A; color: #fff; }
+  .ig-btn-full.ghost { background: #fff; border: 1px solid #e5e7eb; color: #111; }
+  .ig-btn-full.ghost:hover { border-color: #185FA5; color: #185FA5; }
+
+  @media (max-width: 560px) { .fgrid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="me-page">
+  <div class="me-wrap">
+
+    <div class="me-greeting">
+      <h1>Modifier mon profil</h1>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="me-card">
+        <h3>Informations personnelles</h3>
+        <div class="fgrid">
+          <div class="fld"><label>Prénom</label><input type="text" name="first_name" value="{{ user.first_name }}"></div>
+          <div class="fld"><label>Nom</label><input type="text" name="last_name" value="{{ user.last_name }}"></div>
+          <div class="fld"><label>Téléphone</label><input type="text" name="telephone" value="{{ user.telephone|default:'' }}"></div>
+          <div class="fld"><label>Ville</label><input type="text" name="ville" value="{{ user.ville|default:'' }}"></div>
+          <div class="fld full"><label>À propos</label><textarea name="bio" placeholder="Présentez-vous en quelques mots…">{{ user.bio|default:'' }}</textarea></div>
+        </div>
+      </div>
+
+      <div class="me-card">
+        <h3>Préférences de recherche</h3>
+        <div class="fgrid">
+          <div class="fld"><label>Ville préférée</label><input type="text" name="localisation_preferee" value="{{ profile.localisation_preferee|default:'' }}"></div>
+          <div class="fld"><label>Budget mensuel max (FCFA)</label><input type="number" step="1" name="budget_max_mensuel" value="{{ profile.budget_max_mensuel|floatformat:0|default:'' }}"></div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="ig-btn-full primary">Enregistrer</button>
+        <a href="{% url 'mon_profil' %}" class="ig-btn-full ghost">Annuler</a>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

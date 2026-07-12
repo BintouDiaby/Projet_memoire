@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi projet — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--primary:#185FA5;--accent:#C9A84C;--green:#3B6D11;--green-light:#EAF3DE;--purple:#5B21B6;--text:#111;--muted:#666;--border:#e5e7eb;--bg:#F4F6F9;--card:#fff;--r:14px;--font-display:"Plus Jakarta Sans",system-ui,sans-serif;--font-body:"Inter",system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);font-size:14.5px;line-height:1.55}
+  a{text-decoration:none;color:inherit}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 24px}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;font-weight:600;font-size:13.5px;padding:9px 16px;cursor:pointer;border:1px solid transparent;transition:.16s;font-family:var(--font-body)}
+  .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+  .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{filter:brightness(1.08)}
+  .btn-ghost{background:var(--card);border-color:var(--border);color:var(--muted)}.btn-ghost:hover{color:var(--primary);border-color:var(--primary)}
+  .btn-green{background:var(--green);color:#fff}.btn-green:hover{filter:brightness(1.1)}
+
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(244,246,249,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .topbar .wrap{display:flex;align-items:center;gap:16px;height:60px;max-width:1100px}
+  .brand{font-family:var(--font-display);font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px}
+  .spacer{flex:1}
+
+  /* Header projet */
+  .projet-header{background:linear-gradient(135deg,#0f3d6e,#185FA5);color:#fff;padding:28px 0}
+  .ph-inner{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start}
+  .ph-breadcrumb{font-size:12.5px;color:rgba(255,255,255,.6);margin-bottom:10px}
+  .ph-breadcrumb a{color:rgba(255,255,255,.6)}.ph-breadcrumb a:hover{color:#fff}
+  .ph-title{font-family:var(--font-display);font-weight:800;font-size:24px;line-height:1.08;margin-bottom:8px}
+  .ph-sub{font-size:14px;color:rgba(255,255,255,.75)}
+  .ph-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .statut-badge{display:inline-flex;align-items:center;font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em}
+  .statut-badge.en_attente{background:#FEF3C7;color:#92400E}
+  .statut-badge.devis_envoye{background:#DBEAFE;color:#1E40AF}
+  .statut-badge.accepte{background:#D1FAE5;color:#065F46}
+  .statut-badge.en_cours{background:#EDE9FE;color:var(--purple)}
+  .statut-badge.termine{background:#D1FAE5;color:#065F46}
+  .statut-badge.annule{background:#FEE2E2;color:#991B1B}
+
+  /* Avancement globale */
+  .avancement-strip{background:rgba(255,255,255,.1);border-radius:12px;padding:16px 20px;margin-top:16px}
+  .av-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .av-label span{font-size:13px;color:rgba(255,255,255,.8)}
+  .av-label strong{font-family:var(--font-display);font-weight:800;font-size:22px}
+  .av-track{height:10px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden}
+  .av-fill{height:100%;background:linear-gradient(90deg,#5cb527,var(--accent));border-radius:99px;transition:width .8s ease}
+
+  /* Layout */
+  .body-grid{display:grid;grid-template-columns:1fr 340px;gap:24px;padding:28px 0}
+
+  /* Timeline */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:18px}
+  .card:last-child{margin-bottom:0}
+  .card-title{font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:18px;display:flex;align-items:center;gap:9px}
+  .card-title svg{width:17px;height:17px;stroke:var(--primary);fill:none;stroke-width:2}
+
+  .timeline{position:relative;padding-left:36px}
+  .timeline::before{content:'';position:absolute;left:11px;top:0;bottom:0;width:2px;background:var(--border)}
+  .tl-item{position:relative;padding-bottom:24px}
+  .tl-item:last-child{padding-bottom:0}
+  .tl-dot{position:absolute;left:-36px;top:3px;width:24px;height:24px;border-radius:50%;border:2px solid var(--border);background:var(--card);display:grid;place-items:center;z-index:1}
+  .tl-dot.termine{background:var(--green);border-color:var(--green)}
+  .tl-dot.en_cours{background:var(--purple);border-color:var(--purple)}
+  .tl-dot svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.5}
+  .tl-dot.a_venir{background:#f9fafb}
+  .tl-dot.a_venir .dot-inner{width:8px;height:8px;border-radius:50%;background:#d1d5db}
+  .tl-nom{font-weight:700;font-size:14.5px;display:flex;align-items:center;gap:8px}
+  .tl-sub{font-size:12.5px;color:var(--muted);margin-top:3px;display:flex;gap:12px;flex-wrap:wrap}
+  .tl-sub span{display:flex;align-items:center;gap:5px}
+  .tl-sub svg{width:12px;height:12px;stroke:var(--muted);fill:none;stroke-width:2}
+  .tl-notes{margin-top:8px;font-size:13px;color:#374151;background:#f8fafc;border-radius:8px;padding:8px 12px;border-left:3px solid var(--border)}
+  .tl-form{margin-top:10px}
+  .tl-form select{font-size:13px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font-body)}
+  .etape-statut{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px}
+  .etape-statut.termine{background:var(--green-light);color:var(--green)}
+  .etape-statut.en_cours{background:#EDE9FE;color:var(--purple)}
+  .etape-statut.a_venir{background:#f3f4f6;color:#9ca3af}
+
+  /* Sidebar */
+  .sidebar{position:sticky;top:80px}
+  .info-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);font-size:13.5px}
+  .info-row:last-child{border-bottom:none}
+  .info-row .k{color:var(--muted)}
+  .info-row .v{font-weight:600;text-align:right;max-width:180px}
+
+  /* Statut changer dropdown (entreprise) */
+  .statut-select-form{display:flex;gap:8px;align-items:center}
+  .statut-select-form select{font-size:13px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font-body);flex:1}
+
+  /* Photos section */
+  .photos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .photo-item{border-radius:9px;overflow:hidden;aspect-ratio:4/3;background:#e8ecf0}
+  .photo-item img{width:100%;height:100%;object-fit:cover}
+
+  footer{border-top:1px solid var(--border);padding:20px 0;color:var(--muted);font-size:13px;margin-top:40px;text-align:center}
+
+  @media(max-width:880px){.body-grid{grid-template-columns:1fr}.sidebar{position:static}.ph-inner{grid-template-columns:1fr}.photos-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap" style="max-width:1100px">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#185FA5" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/></svg>
+      ImmoGérer
+    </a>
+    <div class="spacer"></div>
+    {% if est_client %}
+    <a class="btn btn-ghost" href="/construction/mes-projets/">← Mes projets</a>
+    {% else %}
+    <a class="btn btn-ghost" href="/construction/dashboard/">← Dashboard construction</a>
+    {% endif %}
+  </div>
+</header>
+
+<!-- PROJET HEADER -->
+<div class="projet-header">
+  <div class="wrap">
+    <div class="ph-inner">
+      <div>
+        <div class="ph-breadcrumb">
+          <a href="/construction/">Construction</a> /
+          {% if est_client %}<a href="/construction/mes-projets/">Mes projets</a>{% else %}<a href="/construction/dashboard/">Dashboard</a>{% endif %} /
+          {{ projet.get_type_projet_display }}
+        </div>
+        <div class="ph-title">
+          {% if projet.type_projet == 'villa' %}🏡{% elif projet.type_projet == 'duplex' %}🏘{% elif projet.type_projet == 'immeuble' %}🏢{% elif projet.type_projet == 'magasin' %}🏪{% elif projet.type_projet == 'bureau' %}🏬{% elif projet.type_projet == 'renovation' %}🔨{% else %}🏗{% endif %}
+          {{ projet.get_type_projet_display }}{% if projet.localisation_terrain %} · {{ projet.localisation_terrain }}{% endif %}
+        </div>
+        <div class="ph-sub">
+          {% if est_client %}{{ projet.entreprise.name }}{% else %}Client : {{ projet.client.get_full_name|default:projet.client.username }}{% endif %}
+          · Demandé le {{ projet.cree_le|date:"d M Y" }}
+        </div>
+        <div class="avancement-strip">
+          <div class="av-label">
+            <span>Avancement global du chantier</span>
+            <strong>{{ projet.pourcentage_avancement }}%</strong>
+          </div>
+          <div class="av-track">
+            <div class="av-fill" style="width:{{ projet.pourcentage_avancement }}%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="ph-actions">
+        <span class="statut-badge {{ projet.statut }}">{{ projet.get_statut_display }}</span>
+        {% if conv %}
+        <a class="btn" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.25)" href="/chat/{{ conv.id }}/">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Messages
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BODY -->
+<div class="wrap">
+  <div class="body-grid">
+
+    <!-- MAIN -->
+    <div>
+
+      <!-- TIMELINE ÉTAPES -->
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          Suivi du chantier
+        </div>
+
+        {% if etapes %}
+        <div class="timeline">
+          {% for etape in etapes %}
+          <div class="tl-item">
+            <div class="tl-dot {{ etape.statut }}">
+              {% if etape.statut == 'termine' %}
+              <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+              {% elif etape.statut == 'en_cours' %}
+              <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              {% else %}
+              <div class="dot-inner"></div>
+              {% endif %}
+            </div>
+            <div class="tl-nom">
+              {{ etape.nom }}
+              <span class="etape-statut {{ etape.statut }}">{{ etape.get_statut_display }}</span>
+            </div>
+            <div class="tl-sub">
+              {% if etape.date_prevue %}
+              <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>Prévue : {{ etape.date_prevue|date:"d M Y" }}</span>
+              {% endif %}
+              {% if etape.date_reelle %}
+              <span><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Réalisée : {{ etape.date_reelle|date:"d M Y" }}</span>
+              {% endif %}
+            </div>
+            {% if etape.notes %}
+            <div class="tl-notes">{{ etape.notes }}</div>
+            {% endif %}
+
+            {% if est_entreprise %}
+            <form class="tl-form" method="post" action="/construction/etape/{{ etape.id }}/update/">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="/construction/projet/{{ projet.id }}/">
+              <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+                <select name="statut">
+                  <option value="a_venir" {% if etape.statut == 'a_venir' %}selected{% endif %}>A venir</option>
+                  <option value="en_cours" {% if etape.statut == 'en_cours' %}selected{% endif %}>En cours</option>
+                  <option value="termine" {% if etape.statut == 'termine' %}selected{% endif %}>Terminé</option>
+                </select>
+                <button type="submit" class="btn btn-green" style="padding:7px 12px;font-size:12.5px">Mettre à jour</button>
+              </div>
+            </form>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:var(--muted);font-size:13.5px;text-align:center;padding:20px 0">Aucune étape définie pour ce projet.</p>
+        {% endif %}
+      </div>
+
+      <!-- PHOTOS DU CHANTIER -->
+      {% if photos %}
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Photos du chantier
+        </div>
+        <div class="photos-grid">
+          {% for photo in photos %}
+          <div class="photo-item">
+            {% if photo.photo %}
+            <img src="{{ photo.photo.url }}" alt="{{ photo.legende }}">
+            {% else %}
+            <div style="width:100%;height:100%;background:#e8ecf0;display:grid;place-items:center">
+              <svg style="width:28px;height:28px;stroke:#9ca3af;fill:none;stroke-width:1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- INFOS PROJET -->
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Informations
+        </div>
+        <div class="info-row"><span class="k">Type</span><span class="v">{{ projet.get_type_projet_display }}</span></div>
+        <div class="info-row"><span class="k">Entreprise</span><span class="v">{{ projet.entreprise.name }}</span></div>
+        {% if projet.localisation_terrain %}<div class="info-row"><span class="k">Localisation</span><span class="v">{{ projet.localisation_terrain }}</span></div>{% endif %}
+        {% if projet.superficie %}<div class="info-row"><span class="k">Superficie</span><span class="v">{{ projet.superficie }} m²</span></div>{% endif %}
+        <div class="info-row"><span class="k">Terrain fourni</span><span class="v">{% if projet.a_terrain %}Oui{% else %}Non{% endif %}</span></div>
+        {% if projet.budget_estime %}<div class="info-row"><span class="k">Budget estimé</span><span class="v">{{ projet.budget_estime }} FCFA</span></div>{% endif %}
+        <div class="info-row"><span class="k">Créé le</span><span class="v">{{ projet.cree_le|date:"d M Y" }}</span></div>
+      </div>
+
+      <!-- DESCRIPTION -->
+      {% if projet.description %}
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Description
+        </div>
+        <p style="font-size:13.5px;line-height:1.7;color:#374151">{{ projet.description }}</p>
+      </div>
+      {% endif %}
+
+      <!-- RDV : visible par entreprise ET client -->
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+          Rendez-vous
+        </div>
+        {% if projet.date_rdv %}
+        <div style="background:{% if projet.rdv_confirme %}#F0FDF4{% else %}#EFF6FF{% endif %};border-radius:10px;padding:12px 14px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div style="font-size:13.5px;font-weight:700;color:{% if projet.rdv_confirme %}var(--green,#16a34a){% else %}var(--primary){% endif %}">📅 {{ projet.date_rdv|date:"l d F Y à H:i" }}</div>
+            {% if projet.rdv_confirme %}
+            <span style="background:#DCFCE7;color:#15803D;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap">✓ Confirmé</span>
+            {% else %}
+            <span style="background:#FEF3C7;color:#B45309;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap">En attente de confirmation</span>
+            {% endif %}
+          </div>
+          {% if projet.notes_rdv %}<div style="font-size:13px;color:#374151;margin-top:4px">{{ projet.notes_rdv }}</div>{% endif %}
+        </div>
+        {% if est_client and not projet.rdv_confirme %}
+        <form method="post" action="/construction/projet/{{ projet.id }}/rdv/confirmer/" style="margin-bottom:14px">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;font-size:13.5px;padding:10px;background:var(--green,#16a34a);border-color:var(--green,#16a34a)">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Accepter ce rendez-vous
+          </button>
+        </form>
+        {% endif %}
+        {% endif %}
+        <form method="post" action="/construction/projet/{{ projet.id }}/rdv/">
+          {% csrf_token %}
+          <div style="margin-bottom:10px">
+            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px">
+              {% if est_entreprise %}Proposer{% else %}Modifier{% endif %} le RDV
+            </label>
+            <input type="datetime-local" name="date_rdv"
+              value="{% if projet.date_rdv %}{{ projet.date_rdv|date:'Y-m-d' }}T{{ projet.date_rdv|date:'H:i' }}{% endif %}"
+              style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13.5px;font-family:var(--font-body)">
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px">Note (lieu, détails…)</label>
+            <textarea name="notes_rdv" rows="2" placeholder="Ex : Réunion visioconférence ou sur site…"
+              style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:var(--font-body);resize:vertical">{{ projet.notes_rdv }}</textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;font-size:13.5px;padding:10px">
+            {% if est_entreprise %}
+              {% if projet.date_rdv %}
+              <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Modifier ce RDV
+              {% else %}
+              <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              Proposer ce RDV au client
+              {% endif %}
+            {% else %}
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Modifier ce RDV
+            {% endif %}
+          </button>
+        </form>
+        {% if projet.date_rdv %}
+        <form method="post" action="/construction/projet/{{ projet.id }}/rdv/annuler/" style="margin-top:8px" onsubmit="return confirm('Annuler ce rendez-vous ?');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-ghost" style="width:100%;justify-content:center;font-size:13.5px;padding:10px;color:#B91C1C;border-color:#FCA5A5">
+            <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            Annuler le RDV
+          </button>
+        </form>
+        {% endif %}
+      </div>
+
+      <!-- CHANGER STATUT (entreprise) -->
+      {% if est_entreprise %}
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Changer le statut
+        </div>
+        <form method="post" action="/construction/projet/{{ projet.id }}/statut/">
+          {% csrf_token %}
+          <div class="statut-select-form">
+            <select name="statut">
+              <option value="en_attente" {% if projet.statut == 'en_attente' %}selected{% endif %}>En attente</option>
+              <option value="devis_envoye" {% if projet.statut == 'devis_envoye' %}selected{% endif %}>Devis envoyé</option>
+              <option value="accepte" {% if projet.statut == 'accepte' %}selected{% endif %}>Accepté</option>
+              <option value="en_cours" {% if projet.statut == 'en_cours' %}selected{% endif %}>En cours</option>
+              <option value="termine" {% if projet.statut == 'termine' %}selected{% endif %}>Terminé</option>
+              <option value="annule" {% if projet.statut == 'annule' %}selected{% endif %}>Annulé</option>
+            </select>
+            <button type="submit" class="btn btn-primary" style="padding:7px 12px;white-space:nowrap">Mettre à jour</button>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+
+      <!-- CHAT -->
+      {% if conv %}
+      <div class="card" style="background:linear-gradient(135deg,#075E54,#128C7E);border:none">
+        <p style="color:rgba(255,255,255,.8);font-size:13px;margin-bottom:14px">Échangez directement avec {% if est_client %}{{ projet.entreprise.name }}{% else %}{{ projet.client.get_full_name|default:projet.client.username }}{% endif %}</p>
+        <a href="/chat/{{ conv.id }}/" class="btn" style="background:#25D366;color:#fff;width:100%;justify-content:center">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Ouvrir la conversation
+        </a>
+      </div>
+      {% endif %}
+
+    </div>
+
+  </div>
+</div>
+
+<footer><div class="wrap">ImmoGérer · Suivi de chantier</div></footer>
+</body>
+</html>

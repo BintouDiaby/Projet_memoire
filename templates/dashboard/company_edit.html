@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modifier mon entreprise — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--b:#185FA5;--b-dark:#1A3E6A;--b-soft:#E6F1FB;--border:#e5e7eb;--bg:#F4F6F9;--text:#111;--muted:#6b7280;
+    --font-display:"Plus Jakarta Sans",system-ui,sans-serif;--font-body:"Inter",system-ui,sans-serif}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14.5px;line-height:1.55}
+  a{color:var(--b);text-decoration:none}
+  .wrap{max-width:640px;margin:0 auto;padding:40px 24px}
+  .back{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:var(--muted);margin-bottom:18px}
+  .back:hover{color:var(--text)}
+  .card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:28px}
+  h1{font-family:var(--font-display);font-weight:800;font-size:21px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13.5px;margin:0 0 22px}
+  .msg{background:#F0FDF4;border:1px solid #86EFAC;color:#15803D;border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;margin-bottom:18px}
+  .row{display:flex;gap:14px;flex-wrap:wrap}
+  .field{margin-bottom:16px;flex:1;min-width:220px}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+  .field input, .field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font:inherit;font-size:14px;outline:none;transition:.15s}
+  .field input:focus, .field textarea:focus{border-color:var(--b);box-shadow:0 0 0 3px rgba(24,95,165,.12)}
+  .field textarea{resize:vertical;min-height:80px}
+  .preview{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .preview img{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--border)}
+  .cover-preview{width:100%;height:80px;border-radius:10px;object-fit:cover;border:1px solid var(--border);margin-bottom:8px;display:block}
+  .submit{width:100%;padding:12px;border:none;border-radius:11px;background:var(--b);color:#fff;font:inherit;font-weight:700;font-size:14.5px;cursor:pointer;margin-top:6px}
+  .submit:hover{background:var(--b-dark)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="/dashboard/company/">&larr; Retour au dashboard</a>
+  <div class="card">
+    <h1>Profil de l'entreprise</h1>
+    <p class="sub">Ces informations apparaissent sur votre dashboard et vos annonces publiques.</p>
+
+    {% if messages %}
+    {% for message in messages %}<div class="msg">{{ message }}</div>{% endfor %}
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      {% if company.logo %}
+      <div class="preview"><img src="{{ company.logo.url }}" alt=""><span>Logo actuel</span></div>
+      {% endif %}
+      <div class="field">
+        <label for="id_logo">Logo</label>
+        <input type="file" id="id_logo" name="logo" accept="image/*">
+      </div>
+
+      {% if company.cover_image %}
+      <img class="cover-preview" src="{{ company.cover_image.url }}" alt="">
+      {% endif %}
+      <div class="field">
+        <label for="id_cover">Photo de couverture</label>
+        <input type="file" id="id_cover" name="cover_image" accept="image/*">
+      </div>
+
+      <div class="field">
+        <label for="id_name">Nom de l'entreprise</label>
+        <input type="text" id="id_name" name="name" value="{{ company.name }}" required>
+      </div>
+
+      <div class="field">
+        <label for="id_description">Description</label>
+        <textarea id="id_description" name="description" placeholder="Présentez votre activité en quelques phrases…">{{ company.description|default:'' }}</textarea>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="id_adresse">Adresse</label>
+          <input type="text" id="id_adresse" name="adresse" value="{{ company.adresse|default:'' }}">
+        </div>
+        <div class="field">
+          <label for="id_ville">Ville</label>
+          <input type="text" id="id_ville" name="ville" value="{{ company.ville|default:'' }}">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="id_telephone">Téléphone</label>
+          <input type="text" id="id_telephone" name="telephone" value="{{ company.telephone|default:'' }}">
+        </div>
+        <div class="field">
+          <label for="id_email">Email professionnel</label>
+          <input type="email" id="id_email" name="email" value="{{ company.email|default:'' }}">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="id_rccm">Numéro RCCM / SIRET</label>
+        <input type="text" id="id_rccm" name="numero_siret_siren" value="{{ prof.numero_siret_siren|default:'' }}">
+      </div>
+
+      <button type="submit" class="submit">Enregistrer</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

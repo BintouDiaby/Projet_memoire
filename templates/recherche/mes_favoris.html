@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Mes favoris — Immobilier{% endblock %}
+
+{% block content %}
+  <h1>Mes favoris</h1>
+
+  <div class="list-group">
+    {% for f in favoris %}
+      <div class="list-group-item">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <a href="{% url 'biens_ui:detail' pk=f.bien.id %}"><strong>{{ f.bien.titre }}</strong></a><br>
+            <small class="text-muted">
+              {{ f.bien.ville }}{% if f.bien.proprietaire.company %} · {{ f.bien.proprietaire.company.name }}{% endif %}
+              · {% if f.bien.transaction_type == 'vente' %}{{ f.bien.prix_vente|default:0|floatformat:0 }} F{% else %}{{ f.bien.prix_mensuel|floatformat:0 }} F/mois{% endif %}
+            </small>
+          </div>
+          <form method="post" action="{% url 'favori_toggle' bien_id=f.bien.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="/api/recherche/mes-favoris/">
+            <button type="submit" class="btn btn-outline-danger btn-sm">Retirer</button>
+          </form>
+        </div>
+      </div>
+    {% empty %}
+      <div class="alert alert-info">Vous n'avez encore ajouté aucun bien à vos favoris. Ajoutez-en depuis <a href="/explorer/">Explorer</a>.</div>
+    {% endfor %}
+  </div>
+{% endblock %}

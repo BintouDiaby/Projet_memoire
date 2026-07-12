@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Mon profil — ImmoGérer{% endblock %}
+
+{% block extra_head %}
+<style>
+  .me-page { background: var(--ig-bg, #F4F6F9); min-height: calc(100vh - 60px); padding: 28px 0 56px; }
+  .me-wrap  { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+  .phero { background: linear-gradient(120deg,#2170bd,#185FA5 60%,#123f72); border-radius: 20px; padding: 30px 30px 26px; color: #eaf2fb; margin-bottom: 18px; box-shadow: 0 12px 32px rgba(16,32,48,.09); position: relative; overflow: hidden; }
+  .phero::before { content: ""; position: absolute; top: -60px; right: -60px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,.06); }
+  .prow { display: flex; align-items: center; gap: 18px; position: relative; flex-wrap: wrap; }
+  .pav { width: 78px; height: 78px; border-radius: 50%; background: #fff; color: #185FA5; display: grid; place-items: center; font-family: var(--ig-font-display); font-weight: 800; font-size: 26px; flex: 0 0 78px; box-shadow: 0 6px 18px rgba(0,0,0,.15); overflow: hidden; }
+  .pav img { width: 100%; height: 100%; object-fit: cover; }
+  .pname { font-family: var(--ig-font-display); font-weight: 800; font-size: 22px; color: #fff; letter-spacing: -.02em; }
+  .pbadges { display: flex; align-items: center; gap: 8px; margin-top: 7px; flex-wrap: wrap; }
+  .vbadge { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.25); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; }
+  .vbadge svg { width: 12px; height: 12px; stroke: #7CD98A; fill: none; stroke-width: 3; }
+  .psince { font-size: 12.5px; color: #bcd4ec; }
+  .pedit { margin-left: auto; flex: 0 0 auto; }
+  .ig-btn-full { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; font-weight: 600; font-size: 13px; padding: 9px 15px; cursor: pointer; border: 1px solid transparent; text-decoration: none; transition: .15s; font-family: var(--ig-font-body); }
+
+  .sec { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 22px; box-shadow: 0 1px 2px rgba(16,32,48,.05); margin-bottom: 16px; }
+  .sec h3 { font-family: var(--ig-font-display); font-weight: 700; font-size: 15.5px; color: #111; margin: 0 0 16px; display: flex; align-items: center; gap: 9px; }
+  .sec h3 svg { width: 16px; height: 16px; stroke: #185FA5; fill: none; stroke-width: 2; }
+
+  .infogrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+  .infoit .k { font-size: 11.5px; color: #9AA0A6; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; }
+  .infoit .v { font-size: 14px; color: #111; font-weight: 500; }
+
+  .about p { color: #39414A; font-size: 13.5px; line-height: 1.65; margin: 0; }
+  .about p.empty { color: #9AA0A6; font-style: italic; }
+
+  .prefs { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+  .pref { background: #E7F0F9; border-radius: 12px; padding: 14px; }
+  .pref .k { font-size: 11.5px; color: #0C447C; font-weight: 600; margin-bottom: 4px; }
+  .pref .v { font-family: var(--ig-font-display); font-weight: 700; font-size: 14.5px; color: #0C447C; }
+
+  .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+  .stat { text-align: center; padding: 16px 8px; border: 1px solid #e5e7eb; border-radius: 12px; }
+  .stat .v { font-family: var(--ig-font-display); font-weight: 800; font-size: 22px; color: #111; }
+  .stat .k { font-size: 12px; color: #6B7280; margin-top: 3px; }
+
+  .doclist { display: flex; flex-direction: column; gap: 9px; }
+  .doc { display: flex; align-items: center; gap: 12px; border: 1px solid #e5e7eb; border-radius: 11px; padding: 12px 14px; text-decoration: none; color: inherit; }
+  .doc .di { width: 34px; height: 34px; border-radius: 9px; background: #F4F6F9; display: grid; place-items: center; flex: 0 0 34px; }
+  .doc .di svg { width: 16px; height: 16px; stroke: #6B7280; fill: none; stroke-width: 1.8; }
+  .doc .t { font-weight: 600; font-size: 13.5px; color: #111; flex: 1; }
+  .doc .d { font-size: 11.5px; color: #9AA0A6; }
+  .doc .d.ok { color: #15803D; font-weight: 600; }
+
+  @media (max-width: 640px) { .infogrid, .prefs { grid-template-columns: 1fr; } .stats { grid-template-columns: 1fr 1fr; } .pedit { margin-left: 0; } }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="me-page">
+  <div class="me-wrap">
+
+    {% if messages %}
+    {% for message in messages %}<div style="background:#F0FDF4;border:1px solid #86EFAC;color:#15803D;border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;margin-bottom:18px">{{ message }}</div>{% endfor %}
+    {% endif %}
+
+    <div class="phero">
+      <div class="prow">
+        <div class="pav">
+          {% if user.photo_profil %}<img src="{{ user.photo_profil.url }}" alt="">
+          {% else %}{{ user.first_name|first|upper|default:user.username|first|upper }}{{ user.last_name|first|upper }}{% endif %}
+        </div>
+        <div>
+          <div class="pname">{{ user.get_full_name|default:user.username }}</div>
+          <div class="pbadges">
+            {% if user.documents_verifies %}
+            <span class="vbadge"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Client vérifié</span>
+            {% endif %}
+            <span class="psince">Membre depuis {{ user.date_creation|date:"Y" }}</span>
+          </div>
+        </div>
+        <div class="pedit"><a class="ig-btn-full" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff" href="{% url 'mon_profil_modifier' %}"><svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Modifier mon profil</a></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> Informations personnelles</h3>
+      <div class="infogrid">
+        <div class="infoit"><div class="k">Nom</div><div class="v">{{ user.last_name|default:"—" }}</div></div>
+        <div class="infoit"><div class="k">Prénom</div><div class="v">{{ user.first_name|default:"—" }}</div></div>
+        <div class="infoit"><div class="k">Téléphone</div><div class="v">{{ user.telephone|default:"—" }}</div></div>
+        <div class="infoit"><div class="k">Email</div><div class="v">{{ user.email|default:"—" }}</div></div>
+        <div class="infoit"><div class="k">Ville</div><div class="v">{{ user.ville|default:"—" }}</div></div>
+        <div class="infoit"><div class="k">Adresse</div><div class="v">{{ user.adresse|default:"—" }}</div></div>
+      </div>
+    </div>
+
+    <div class="sec about">
+      <h3><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg> À propos</h3>
+      {% if user.bio %}<p>{{ user.bio }}</p>{% else %}<p class="empty">Aucune présentation renseignée pour le moment.</p>{% endif %}
+    </div>
+
+    <div class="sec">
+      <h3><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg> Préférences de recherche</h3>
+      <div class="prefs">
+        <div class="pref">
+          <div class="k">Budget</div>
+          <div class="v">
+            {% if recherche.budget_min or recherche.budget_max %}{{ recherche.budget_min|floatformat:0|intcomma|default:"0" }} – {{ recherche.budget_max|floatformat:0|intcomma }} F
+            {% elif profile.budget_max_mensuel %}Jusqu'à {{ profile.budget_max_mensuel|floatformat:0|intcomma }} F
+            {% else %}Non renseigné{% endif %}
+          </div>
+        </div>
+        <div class="pref">
+          <div class="k">Type de bien</div>
+          <div class="v">{% if recherche.types_bien %}{{ recherche.types_bien|join:", " }}{% else %}Non renseigné{% endif %}</div>
+        </div>
+        <div class="pref">
+          <div class="k">Ville préférée</div>
+          <div class="v">{% if recherche.villes %}{{ recherche.villes|join:", " }}{% elif profile.localisation_preferee %}{{ profile.localisation_preferee }}{% else %}Non renseigné{% endif %}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg> Mon activité</h3>
+      <div class="stats">
+        <div class="stat"><div class="v num">{{ stats.locations }}</div><div class="k">Location{{ stats.locations|pluralize }}</div></div>
+        <div class="stat"><div class="v num">{{ stats.reservations }}</div><div class="k">Réservation{{ stats.reservations|pluralize }}</div></div>
+        <div class="stat"><div class="v num">{{ stats.favoris }}</div><div class="k">Favoris</div></div>
+        <div class="stat"><div class="v num">{{ stats.visites }}</div><div class="k">Visite{{ stats.visites|pluralize }}</div></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg> Documents</h3>
+      <div class="doclist">
+        <div class="doc">
+          <span class="di"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 9h3M15 13h3M5 20c.5-2 2-3 4-3s3.5 1 4 3"/></svg></span>
+          <span class="t">Pièce d'identité</span>
+          <span class="d {% if documents.identite_verifiee %}ok{% endif %}">{% if documents.identite_verifiee %}Vérifiée{% else %}Non vérifiée{% endif %}</span>
+        </div>
+        <a href="/dashboard/contrats/" class="doc">
+          <span class="di"><svg viewBox="0 0 24 24"><path d="M6 2h9l3 3v17H6z"/><path d="M9 12h6M9 16h6"/></svg></span>
+          <span class="t">Contrats</span>
+          <span class="d">{{ documents.nb_contrats_docs }} document{{ documents.nb_contrats_docs|pluralize }}</span>
+        </a>
+        <a href="/dashboard/facturation/" class="doc">
+          <span class="di"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
+          <span class="t">Factures</span>
+          <span class="d">{{ documents.nb_factures }} document{{ documents.nb_factures|pluralize }}</span>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

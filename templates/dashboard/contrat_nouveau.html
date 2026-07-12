@@ -1,0 +1,118 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nouveau contrat — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+.form-card{max-width:640px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text)}
+.field select,.field input,.field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font:inherit;font-size:14px;outline:none;transition:.15s;background:#fff;font-family:var(--font-body)}
+.field select:focus,.field input:focus,.field textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(24,95,165,.12)}
+.field .errs{color:#B91C1C;font-size:12.5px;margin-top:5px}
+.row2{display:flex;gap:14px}
+.row2 .field{flex:1}
+.submit-btn{width:100%;padding:12px;border:none;border-radius:11px;background:var(--primary);color:#fff;font:inherit;font-weight:700;font-size:14.5px;cursor:pointer;margin-top:6px}
+.submit-btn:hover{background:#124a82}
+.msg-ok{background:#F0FDF4;border:1px solid #86EFAC;color:#15803D;border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;margin-bottom:18px}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='contrats' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+<button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="Rechercher…"></div>
+  <div class="tspacer"></div>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+<div class="pg-head">
+  <h1>Nouveau contrat</h1>
+  <p>Créer un contrat de location entre vous et un locataire</p>
+</div>
+
+{% if messages %}
+{% for message in messages %}<div class="msg-ok">{{ message }}</div>{% endfor %}
+{% endif %}
+
+<div class="card form-card">
+  {% if not has_biens %}
+  <div class="empty">
+    <b>Aucun bien publié</b>
+    Publiez d'abord un bien avant de créer un contrat.
+    <div style="margin-top:14px"><a class="btn-sm" href="{% url 'biens_ui:publier' %}" style="font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--text)">Publier un bien</a></div>
+  </div>
+  {% elif not has_locataires %}
+  <div class="empty">
+    <b>Aucun locataire connu</b>
+    Un locataire doit d'abord vous avoir contacté ou demandé une visite avant de pouvoir créer un contrat avec lui.
+  </div>
+  {% else %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="field">
+      <label for="{{ form.bien.id_for_label }}">Bien</label>
+      {{ form.bien }}
+      {% if form.bien.errors %}<div class="errs">{{ form.bien.errors|join:", " }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="{{ form.locataire.id_for_label }}">Locataire</label>
+      {{ form.locataire }}
+      {% if form.locataire.errors %}<div class="errs">{{ form.locataire.errors|join:", " }}</div>{% endif %}
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="{{ form.date_debut.id_for_label }}">Date de début</label>
+        {{ form.date_debut }}
+        {% if form.date_debut.errors %}<div class="errs">{{ form.date_debut.errors|join:", " }}</div>{% endif %}
+      </div>
+      <div class="field">
+        <label for="{{ form.date_fin.id_for_label }}">Date de fin</label>
+        {{ form.date_fin }}
+        {% if form.date_fin.errors %}<div class="errs">{{ form.date_fin.errors|join:", " }}</div>{% endif %}
+      </div>
+    </div>
+    {% if form.non_field_errors %}<div class="errs">{{ form.non_field_errors|join:", " }}</div>{% endif %}
+
+    <div class="row2">
+      <div class="field">
+        <label for="{{ form.prix_mensuel.id_for_label }}">Loyer mensuel (F CFA)</label>
+        {{ form.prix_mensuel }}
+      </div>
+      <div class="field">
+        <label for="{{ form.charges_mensuelles.id_for_label }}">Charges mensuelles (F CFA)</label>
+        {{ form.charges_mensuelles }}
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="{{ form.prix_depot_garantie.id_for_label }}">Dépôt de garantie (F CFA)</label>
+        {{ form.prix_depot_garantie }}
+      </div>
+      <div class="field">
+        <label for="{{ form.jour_paiement.id_for_label }}">Jour de paiement (1-28)</label>
+        {{ form.jour_paiement }}
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="{{ form.nombre_mois_minimum.id_for_label }}">Durée minimum (mois)</label>
+      {{ form.nombre_mois_minimum }}
+    </div>
+
+    <div class="field">
+      <label for="{{ form.conditions_speciales.id_for_label }}">Conditions particulières (optionnel)</label>
+      {{ form.conditions_speciales }}
+    </div>
+
+    <button type="submit" class="submit-btn">Créer le contrat</button>
+  </form>
+  {% endif %}
+</div>
+
+</div>
+</div>
+</div>
+</body></html>

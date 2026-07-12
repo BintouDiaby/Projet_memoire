@@ -1,13 +1,198 @@
 {% extends "base.html" %}
+{% load humanize %}
 
-{% block title %}Contrat {{ contrat.numero_contrat }} — Immobilier{% endblock %}
+{% block title %}Contrat {{ contrat.numero_contrat }} — ImmoGérer{% endblock %}
 
-{% block content %}
-  <div class="card p-4">
-    <h1>Contrat {{ contrat.numero_contrat }}</h1>
-    <p><strong>Bien:</strong> {{ contrat.bien }}</p>
-    <p><strong>Locataire:</strong> {{ contrat.locataire }}</p>
-    <p><strong>Statut:</strong> {{ contrat.statut }}</p>
-    <p><a class="btn btn-secondary" href="/contrats/">Retour à la liste</a></p>
+{% block extra_head %}
+<style>
+  .me-page { background: var(--ig-bg, #F4F6F9); min-height: calc(100vh - 60px); padding: 28px 0 56px; }
+  .me-wrap  { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+  .ct-head { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px; margin-bottom: 18px; }
+  .ct-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .ct-num { font-size: 11.5px; color: #9aa0a6; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 4px; }
+  .ct-titre { font-family: var(--ig-font-display); font-weight: 800; font-size: 20px; color: #111; }
+
+  .badge-statut { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 4px 11px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .badge-statut::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .7; }
+  .s-ok     { background: #F0FDF4; color: #15803D; }
+  .s-warn   { background: #FFFBEB; color: #92400E; }
+  .s-danger { background: #FFF5F5; color: #B91C1C; }
+  .s-muted  { background: #F4F6F9; color: #6B7280; }
+
+  .ct-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 18px; }
+  .cmeta { padding: 12px 14px; background: #F4F6F9; border-radius: 10px; }
+  .cmeta .cl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #9aa0a6; margin-bottom: 4px; }
+  .cmeta .cv { font-weight: 700; font-size: 14px; color: #111; }
+
+  .ct-fin { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+  .ct-fin .cmeta .cv { font-family: var(--ig-font-display); font-weight: 800; font-size: 16px; }
+
+  .ct-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .ig-btn-full { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; font-weight: 600; font-size: 13.5px; padding: 10px 18px; cursor: pointer; border: none; text-decoration: none; transition: .15s; font-family: var(--ig-font-body); }
+  .ig-btn-full.primary { background: #185FA5; color: #fff; }
+  .ig-btn-full.primary:hover { background: #1A3E6A; color: #fff; }
+  .ig-btn-full.warn { background: #FFFBEB; color: #92400E; border: 1px solid #FCD34D; }
+  .ig-btn-full.warn:hover { background: #FEF3C7; color: #92400E; }
+  .ig-btn-full.ghost { background: #fff; border: 1px solid #e5e7eb; color: #111; }
+  .ig-btn-full.ghost:hover { border-color: #185FA5; color: #185FA5; }
+
+  .me-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 22px; margin-bottom: 18px; }
+  .me-card-title { font-family: var(--ig-font-display); font-weight: 700; font-size: 16px; color: #111; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+  .me-card-title .ic { width: 30px; height: 30px; border-radius: 9px; background: #E6F1FB; display: grid; place-items: center; flex: 0 0 30px; }
+  .me-card-title .ic svg { width: 15px; height: 15px; stroke: #185FA5; fill: none; stroke-width: 2; }
+
+  .edl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .edl-col h4 { font-family: var(--ig-font-display); font-weight: 700; font-size: 13.5px; color: #111; margin: 0 0 8px; }
+  .edl-empty { font-size: 13px; color: #9aa0a6; }
+  .edl-obs { font-size: 13px; color: #374151; margin-top: 8px; }
+  .edl-date { font-size: 11.5px; color: #9aa0a6; margin-left: 6px; }
+
+  .form-mini select, .form-mini input, .form-mini textarea { border: 1.5px solid #e5e7eb; border-radius: 9px; font-size: 13px; font-family: var(--ig-font-body); padding: 8px 11px; width: 100%; margin-bottom: 8px; }
+  .form-mini button { background: #185FA5; color: #fff; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: var(--ig-font-body); }
+  .form-mini button:hover { background: #1A3E6A; }
+
+  .caution-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; font-size: 13.5px; color: #374151; }
+  .caution-form { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; align-items: end; }
+  .caution-form button { grid-column: span 1; }
+
+  @media (max-width: 700px) { .ct-meta, .ct-fin, .edl-grid, .caution-form { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="me-page">
+  <div class="me-wrap">
+
+    {% if messages %}
+    {% for message in messages %}<div style="background:#F0FDF4;border:1px solid #86EFAC;color:#15803D;border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;margin-bottom:18px">{{ message }}</div>{% endfor %}
+    {% endif %}
+
+    <div class="ct-head">
+      <div class="ct-top">
+        <div>
+          <div class="ct-num">{{ contrat.numero_contrat }}</div>
+          <div class="ct-titre">{{ contrat.bien.titre|default:contrat.bien }}</div>
+        </div>
+        <span class="badge-statut {% if contrat.statut == 'en_cours' %}s-ok{% elif contrat.statut == 'termine' %}s-muted{% elif contrat.statut == 'brouillon' %}s-warn{% else %}s-danger{% endif %}">{{ contrat.get_statut_display }}</span>
+      </div>
+
+      <div class="ct-meta">
+        <div class="cmeta"><div class="cl">Locataire</div><div class="cv">{{ contrat.locataire|default:"—" }}</div></div>
+        <div class="cmeta"><div class="cl">Propriétaire</div><div class="cv">{{ contrat.proprietaire }}</div></div>
+      </div>
+
+      <div class="ct-fin">
+        <div class="cmeta"><div class="cl">Période</div><div class="cv" style="font-size:13px">{{ contrat.date_debut|date:"d/m/Y" }} → {{ contrat.date_fin|date:"d/m/Y" }}</div></div>
+        <div class="cmeta"><div class="cl">Loyer mensuel</div><div class="cv">{{ contrat.prix_mensuel|floatformat:0|intcomma }} FCFA{% if contrat.charges_mensuelles %}<span style="font-size:11px;color:#9aa0a6;font-weight:400"> + {{ contrat.charges_mensuelles|floatformat:0|intcomma }} charges</span>{% endif %}</div></div>
+        <div class="cmeta"><div class="cl">Dépôt de garantie</div><div class="cv">{{ contrat.prix_depot_garantie|floatformat:0|intcomma }} FCFA</div></div>
+      </div>
+
+      {% if contrat.conditions_speciales %}
+      <div class="cmeta" style="margin-bottom:18px"><div class="cl">Conditions particulières</div><div class="cv" style="font-weight:400;font-size:13px">{{ contrat.conditions_speciales }}</div></div>
+      {% endif %}
+
+      <div class="ct-actions">
+        <a class="ig-btn-full primary" href="{% url 'contrats_ui:suivi' pk=contrat.id %}">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          Centre de suivi
+        </a>
+        {% if contrat.fichier_contrat %}
+        <a class="ig-btn-full ghost" href="{{ contrat.fichier_contrat.url }}" target="_blank">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Télécharger le contrat (PDF)
+        </a>
+        {% endif %}
+        {% if est_locataire %}
+        <a class="ig-btn-full warn" href="/contrats/reclamation/{{ contrat.bien_id }}/">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2"><path d="M10.3 3.3 2 20h20L13.7 3.3a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r=".5" fill="#92400E"/></svg>
+          Signaler un problème
+        </a>
+        {% endif %}
+        <a class="ig-btn-full ghost" href="/contrats/">← Retour à la liste</a>
+      </div>
+    </div>
+
+    <!-- ÉTATS DES LIEUX -->
+    <div class="me-card">
+      <h2 class="me-card-title">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+        États des lieux
+      </h2>
+      <div class="edl-grid">
+        <div class="edl-col">
+          <h4>Entrée</h4>
+          {% if etat_entree %}
+          <span class="badge-statut {% if etat_entree.etat_general == 'bon' %}s-ok{% elif etat_entree.etat_general == 'moyen' %}s-warn{% else %}s-danger{% endif %}">{{ etat_entree.get_etat_general_display }}</span>
+          <span class="edl-date">{{ etat_entree.date_realisation|date:"d/m/Y" }}</span>
+          {% if etat_entree.observations %}<div class="edl-obs">{{ etat_entree.observations }}</div>{% endif %}
+          {% else %}<div class="edl-empty">Non réalisé.</div>{% endif %}
+          {% if est_proprietaire %}
+          <form method="post" action="{% url 'contrats_ui:etat_des_lieux_creer' contrat.id 'entree' %}" class="form-mini" style="margin-top:12px">
+            {% csrf_token %}
+            <select name="etat_general">
+              <option value="bon">Bon état</option>
+              <option value="moyen">État moyen</option>
+              <option value="mauvais">Mauvais état</option>
+            </select>
+            <textarea name="observations" rows="2" placeholder="Observations…">{% if etat_entree %}{{ etat_entree.observations }}{% endif %}</textarea>
+            <button type="submit">{% if etat_entree %}Mettre à jour{% else %}Enregistrer{% endif %}</button>
+          </form>
+          {% endif %}
+        </div>
+        <div class="edl-col">
+          <h4>Sortie</h4>
+          {% if etat_sortie %}
+          <span class="badge-statut {% if etat_sortie.etat_general == 'bon' %}s-ok{% elif etat_sortie.etat_general == 'moyen' %}s-warn{% else %}s-danger{% endif %}">{{ etat_sortie.get_etat_general_display }}</span>
+          <span class="edl-date">{{ etat_sortie.date_realisation|date:"d/m/Y" }}</span>
+          {% if etat_sortie.observations %}<div class="edl-obs">{{ etat_sortie.observations }}</div>{% endif %}
+          {% else %}<div class="edl-empty">Non réalisé.</div>{% endif %}
+          {% if est_proprietaire %}
+          <form method="post" action="{% url 'contrats_ui:etat_des_lieux_creer' contrat.id 'sortie' %}" class="form-mini" style="margin-top:12px">
+            {% csrf_token %}
+            <select name="etat_general">
+              <option value="bon">Bon état</option>
+              <option value="moyen">État moyen</option>
+              <option value="mauvais">Mauvais état</option>
+            </select>
+            <textarea name="observations" rows="2" placeholder="Observations…">{% if etat_sortie %}{{ etat_sortie.observations }}{% endif %}</textarea>
+            <button type="submit">{% if etat_sortie %}Mettre à jour{% else %}Enregistrer{% endif %}</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- CAUTION -->
+    <div class="me-card">
+      <h2 class="me-card-title">
+        <span class="ic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
+        Dépôt de garantie
+      </h2>
+      <div class="caution-row">
+        <span>Montant versé : <strong>{{ contrat.prix_depot_garantie|floatformat:0|intcomma }} FCFA</strong></span>
+        <span class="badge-statut {% if contrat.statut_caution == 'remboursee' %}s-ok{% elif contrat.statut_caution == 'retenue' %}s-danger{% else %}s-muted{% endif %}">{{ contrat.get_statut_caution_display }}</span>
+        {% if contrat.date_remboursement_caution %}<span style="font-size:12px;color:#9aa0a6">le {{ contrat.date_remboursement_caution|date:"d/m/Y" }}</span>{% endif %}
+      </div>
+      {% if contrat.statut_caution != 'non_traitee' %}
+      <div class="caution-row">Montant remboursé : <strong>{{ contrat.montant_caution_rembourse|floatformat:0|intcomma }} FCFA</strong></div>
+      {% if contrat.motif_retenue_caution %}<div class="edl-empty">Motif : {{ contrat.motif_retenue_caution }}</div>{% endif %}
+      {% endif %}
+
+      {% if est_proprietaire and contrat.statut_caution == 'non_traitee' %}
+      <form method="post" action="{% url 'contrats_ui:caution_traiter' contrat.id %}" class="caution-form form-mini">
+        {% csrf_token %}
+        <select name="statut_caution" style="margin-bottom:0">
+          <option value="remboursee">Rembourser intégralement</option>
+          <option value="retenue">Retenir (partiellement)</option>
+        </select>
+        <input type="number" step="0.01" name="montant_caution_rembourse" placeholder="Montant remboursé" style="margin-bottom:0">
+        <input type="text" name="motif_retenue_caution" placeholder="Motif (si retenue)" style="margin-bottom:0">
+        <button type="submit">Valider</button>
+      </form>
+      {% endif %}
+    </div>
+
   </div>
+</div>
 {% endblock %}

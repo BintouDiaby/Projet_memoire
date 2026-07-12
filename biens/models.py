@@ -40,8 +40,11 @@ class Bien(models.Model):
     
     # Localisation
     adresse = models.CharField(max_length=255)
+    quartier = models.CharField(max_length=100, blank=True, default='')
+    commune = models.CharField(max_length=100, blank=True, default='')
     ville = models.CharField(max_length=100)
-    code_postal = models.CharField(max_length=10)
+    region = models.CharField(max_length=100, blank=True, default='')
+    code_postal = models.CharField(max_length=10, blank=True, default='')
     pays = models.CharField(max_length=100, default='Côte d\'Ivoire')
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
@@ -104,7 +107,9 @@ class Bien(models.Model):
         ordering = ['-date_creation']
         indexes = [
             models.Index(fields=['statut', 'ville']),
+            models.Index(fields=['statut', 'commune']),
             models.Index(fields=['prix_mensuel']),
+            models.Index(fields=['latitude', 'longitude']),
         ]
     
     def __str__(self):
@@ -130,6 +135,13 @@ class PhotoBien(models.Model):
 
 class Visite(models.Model):
     """Modèle pour les visites de biens"""
+
+    class Statut(models.TextChoices):
+        EN_ATTENTE = 'en_attente', 'En attente'
+        CONFIRMEE  = 'confirmee',  'Confirmée'
+        REFUSEE    = 'refusee',    'Refusée'
+        ANNULEE    = 'annulee',    'Annulée'
+
     bien = models.ForeignKey(Bien, on_delete=models.CASCADE, related_name='visites')
     locataire = models.ForeignKey(
         Utilisateur,
@@ -140,12 +152,46 @@ class Visite(models.Model):
     date_visite = models.DateTimeField()
     notes = models.TextField(blank=True, null=True)
     interet = models.BooleanField(default=False)
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
     date_reservation = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         unique_together = ['bien', 'locataire', 'date_visite']
         verbose_name = 'Visite'
         verbose_name_plural = 'Visites'
-    
+
     def __str__(self):
         return f"Visite de {self.locataire.username} pour {self.bien.titre}"
+
+
+class Reservation(models.Model):
+    """Réservation d'un bien : engagement préalable du client avant la
+    signature d'un contrat (location) ou la finalisation d'une vente,
+    distinct d'une simple demande de visite."""
+
+    class Statut(models.TextChoices):
+        EN_ATTENTE = 'en_attente', 'En attente'
+        CONFIRMEE  = 'confirmee',  'Confirmée'
+        ANNULEE    = 'annulee',    'Annulée'
+
+    bien = models.ForeignKey(Bien, on_delete=models.CASCADE, related_name='reservations')
+    client = models.ForeignKey(
+        Utilisateur,
+        on_delete=models.CASCADE,
+        related_name='reservations',
+        limit_choices_to={'role': 'locataire'}
+    )
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
+    montant_acompte = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_modification = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['bien', 'client']
+        verbose_name = 'Réservation'
+        verbose_name_plural = 'Réservations'
+        ordering = ['-date_creation']
+
+    def __str__(self):
+        return f"Réservation de {self.client.username} pour {self.bien.titre}"

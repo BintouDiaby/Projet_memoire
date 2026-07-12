@@ -1,13 +1,636 @@
-{% extends "base.html" %}
+{% load humanize %}
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ bien.titre }} — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+{% if bien.latitude and bien.longitude %}
+<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+<script src="/static/vendor/leaflet/leaflet.js"></script>
+{% endif %}
+<style>
+  :root{
+    --primary:#185FA5;--primary-dark:#1A3E6A;
+    --accent:#C9A84C;--accent-light:#FFFBEB;
+    --green:#3B6D11;--green-light:#EAF3DE;--green-text:#27500A;
+    --blue:#185FA5;--blue-light:#E6F1FB;--blue-text:#0C447C;
+    --text:#111;--muted:#666;--muted-2:#9aa0a6;
+    --border:#e5e7eb;--bg:#F4F6F9;--card:#fff;
+    --warn:#B4441F;--warn-light:#FEF2F2;
+    --font-display:"Plus Jakarta Sans",system-ui,sans-serif;
+    --font-body:"Inter",system-ui,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box}
+  html{max-width:100%;overflow-x:hidden}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;font-weight:600;font-size:14px;padding:10px 17px;cursor:pointer;border:1px solid transparent;transition:.16s;font-family:var(--font-body)}
+  .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+  .btn-primary{background:var(--primary);color:#fff;width:100%;justify-content:center;padding:13px}.btn-primary:hover{background:var(--primary-dark)}
+  .btn-green{background:var(--green);color:#fff;width:100%;justify-content:center;padding:13px}.btn-green:hover{filter:brightness(.92)}
+  .btn-ghost{background:var(--card);border:1px solid var(--border);color:var(--text)}.btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+  .btn-wa{background:#25D366;color:#fff;width:100%;justify-content:center;padding:11px}.btn-wa:hover{background:#1fba57}
+  .btn-outline{background:transparent;border:1.5px solid var(--primary);color:var(--primary);width:100%;justify-content:center;padding:11px}.btn-outline:hover{background:var(--blue-light)}
 
-{% block title %}{{ bien.titre }} — Immobilier{% endblock %}
+  /* topbar */
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(244,246,249,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .topbar .wrap{display:flex;align-items:center;gap:16px;height:64px}
+  .backbtn{background:#f3f4f6;border:1.5px solid #d1d5db;border-radius:9px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;color:#374151;transition:.14s;flex-shrink:0;padding:0}
+  .backbtn:hover{background:#e5e7eb;border-color:#9ca3af;color:#111}
+  .backbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;font-size:18px;letter-spacing:-.01em}
+  .brand .mk{width:23px;height:23px}
+  .spacer{flex:1}
+  .nav{display:flex;gap:2px}
+  .nav a{padding:8px 12px;border-radius:9px;color:var(--muted);font-weight:500;font-size:14px;transition:.15s}
+  .nav a:hover{color:var(--text);background:#eaedf1}
 
-{% block content %}
-  <div class="card p-4">
-    <h1>{{ bien.titre }}</h1>
-    <p class="text-muted">{{ bien.ville }} — {{ bien.adresse }}</p>
-    <h3>{{ bien.prix_mensuel }} € / mois</h3>
-    <p>{{ bien.description }}</p>
-    <p><a class="btn btn-secondary" href="/biens/">Retour à la liste</a></p>
+  /* breadcrumb */
+  .bc{background:var(--card);border-bottom:1px solid var(--border);padding:10px 0}
+  .bc .wrap{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+  .bc a{color:var(--muted)}.bc a:hover{color:var(--primary)}
+  .bc span{color:var(--muted-2)}
+
+  /* page header */
+  .ph{background:var(--card);border-bottom:1px solid var(--border);padding:24px 0 22px}
+  .ph h1{font-family:var(--font-display);font-weight:800;font-size:24px;letter-spacing:-.02em;margin:0 0 6px;line-height:1.2}
+  .ph-loc{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:13.5px;margin-bottom:12px}
+  .ph-loc svg{width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:1.8}
+  .ph-tags{display:flex;gap:8px;flex-wrap:wrap}
+  .ph-tag{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12.5px;font-weight:600;background:var(--blue-light);color:var(--primary)}
+  .ph-tag.green{background:var(--green-light);color:var(--green-text)}
+  .ph-tag.amber{background:var(--accent-light);color:#7A5F1A}
+  .ph-tag.red{background:var(--warn-light);color:var(--warn)}
+
+  /* body layout */
+  .prop-body{padding:28px 0 60px}
+  .prop-layout{display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start}
+
+  /* left main */
+  .prop-main{display:flex;flex-direction:column;gap:0}
+  .prop-section{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px 24px;margin-bottom:16px}
+  .prop-section h2{font-family:var(--font-display);font-weight:700;font-size:16px;margin:0 0 16px;display:flex;align-items:center;gap:8px}
+  .prop-section h2 svg{width:16px;height:16px;stroke:var(--primary);fill:none;stroke-width:2}
+
+  /* photo */
+  .prop-photo{position:relative;height:320px;border-radius:var(--r);overflow:hidden;margin-bottom:16px;background:radial-gradient(120% 120% at 70% 0%,#1c66ad,#15528f)}
+  .prop-photo img{width:100%;height:100%;object-fit:cover}
+  .prop-photo .no-img{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .prop-photo .no-img svg{width:100px;height:100px;stroke:#dfe9f4;fill:none;stroke-width:1.2}
+  .prop-photo .grid-bg{position:absolute;inset:0;opacity:.45;background-image:linear-gradient(rgba(201,168,76,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.15) 1px,transparent 1px);background-size:20px 20px;mask-image:radial-gradient(120% 100% at 60% 30%,#000 50%,transparent 100%)}
+
+  /* status badge on photo */
+  .prop-photo .status-tag{position:absolute;top:14px;left:14px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:5px 12px;border-radius:8px;background:rgba(255,255,255,.95);color:var(--primary);z-index:2}
+  .prop-photo .status-tag.vente{color:#7A5F1A}
+  .prop-photo .status-tag.terrain{color:var(--green)}
+
+  /* char grid */
+  .char-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .char{background:var(--bg);border-radius:10px;padding:13px 14px;display:flex;flex-direction:column;gap:3px}
+  .char span{font-size:11.5px;color:var(--muted);font-weight:500}
+  .char b{font-size:15px;font-weight:700;color:var(--text)}
+
+  /* equipment */
+  .equip-list{display:flex;flex-wrap:wrap;gap:8px}
+  .equip-tag{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:20px;font-size:12.5px;font-weight:500;color:var(--text)}
+  .equip-tag::before{content:"✓";color:var(--green);font-weight:700;font-size:11px}
+
+  /* description */
+  .prop-desc{color:var(--text);line-height:1.7;white-space:pre-wrap;font-size:14.5px}
+
+  /* map */
+  #prop-map{height:280px;border-radius:10px;overflow:hidden}
+
+  /* right sidebar */
+  .prop-sidebar{display:flex;flex-direction:column;gap:16px;position:sticky;top:80px}
+  .sidebar-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px}
+  .sidebar-card h3{font-family:var(--font-display);font-weight:700;font-size:14px;margin:0 0 14px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-size:11px}
+
+  /* price */
+  .price-main{font-family:var(--font-display);font-weight:800;font-size:28px;color:var(--text);line-height:1;margin-bottom:4px}
+  .price-main small{font-size:14px;color:var(--muted);font-weight:500}
+  .price-sub{font-size:12.5px;color:var(--muted);margin-bottom:16px}
+  .price-detail{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--border);font-size:13px}
+  .price-detail span{color:var(--muted)}
+  .price-detail b{font-weight:600}
+  .price-divider{margin:16px 0 14px;border:none;border-top:1px solid var(--border)}
+
+  /* form */
+  .visit-form{display:flex;flex-direction:column;gap:10px}
+  .visit-form label{font-size:12.5px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px}
+  .visit-form input[type="datetime-local"],.visit-form textarea{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:10px 12px;font-family:var(--font-body);font-size:13.5px;outline:none;transition:.14s;background:var(--bg);color:var(--text)}
+  .visit-form input[type="datetime-local"]:focus,.visit-form textarea:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(24,95,165,.08)}
+  .visit-form textarea{resize:vertical;min-height:70px}
+
+  /* alerts in sidebar */
+  .alert-ok{background:var(--green-light);border:1px solid #c6e0ae;border-radius:10px;padding:12px 14px;font-size:13px;color:var(--green-text);display:flex;align-items:flex-start;gap:8px}
+  .alert-ok svg{width:16px;height:16px;stroke:var(--green);fill:none;stroke-width:2.5;flex:0 0 16px;margin-top:1px}
+  .alert-err{background:var(--warn-light);border:1px solid #fecaca;border-radius:10px;padding:12px 14px;font-size:13px;color:var(--warn);display:flex;align-items:flex-start;gap:8px}
+  .alert-err svg{width:16px;height:16px;stroke:var(--warn);fill:none;stroke-width:2;flex:0 0 16px;margin-top:1px}
+  .alert-info{background:var(--blue-light);border:1px solid #bdd7f5;border-radius:10px;padding:12px 14px;font-size:13px;color:var(--blue-text);display:flex;align-items:flex-start;gap:8px}
+  .alert-info svg{width:16px;height:16px;stroke:var(--primary);fill:none;stroke-width:2;flex:0 0 16px;margin-top:1px}
+
+  /* owner card */
+  .owner-ava{width:44px;height:44px;border-radius:12px;background:var(--blue-light);display:grid;place-items:center;flex:0 0 44px}
+  .owner-ava svg{width:22px;height:22px;stroke:var(--primary);fill:none;stroke-width:1.8}
+  .owner-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .owner-name{font-weight:700;font-size:14.5px}
+  .owner-since{font-size:12px;color:var(--muted);margin-top:1px}
+  .owner-vf{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--green);font-weight:600;margin-top:3px}
+  .owner-vf svg{width:12px;height:12px;stroke:var(--green);fill:none;stroke-width:2.5}
+  .contact-login{text-align:center;padding:4px 0 8px;font-size:13px;color:var(--muted)}
+  .contact-login a{color:var(--primary);font-weight:600}
+
+  /* prop actions for admin/owner */
+  .owner-actions{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+
+  /* similar properties */
+  .similaires{padding:0 0 60px}
+  .similaires .stitle{font-family:var(--font-display);font-weight:800;font-size:20px;letter-spacing:-.02em;margin:0 0 18px}
+  .listings{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .lc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:.16s;display:flex;flex-direction:column}
+  .lc:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(24,95,165,.10)}
+  .lc .vis{height:130px;position:relative;display:grid;place-items:center;background:radial-gradient(120% 120% at 70% 0%,#1c66ad,#15528f);overflow:hidden}
+  .lc .vis img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .lc .vis .grid{position:absolute;inset:0;opacity:.4;background-image:linear-gradient(rgba(201,168,76,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.15) 1px,transparent 1px);background-size:20px 20px}
+  .lc .vis svg.house{position:relative;width:60px;height:60px;stroke:#dfe9f4;fill:none;stroke-width:1.4}
+  .lc .tag{position:absolute;top:8px;left:8px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.93);color:var(--primary)}
+  .lc .tag.vente{color:#7A5F1A}
+  .lc .b{padding:12px 14px 14px;flex:1;display:flex;flex-direction:column}
+  .lc .t{font-weight:600;font-size:14px;line-height:1.3}
+  .lc .loc{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:4px}
+  .lc .loc svg{width:11px;height:11px;stroke:var(--muted);fill:none;stroke-width:1.8}
+  .lc .foot{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:10px;gap:6px}
+  .lc .price{font-family:var(--font-display);font-weight:700;font-size:15px}
+  .lc .price small{font-size:11px;color:var(--muted);font-weight:500}
+  .lc .see{font-size:12.5px;font-weight:600;color:var(--primary);white-space:nowrap}
+
+  footer{border-top:1px solid var(--border);padding:24px 0 36px;color:var(--muted);font-size:13px;margin-top:8px}
+  footer .wrap{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;align-items:center}
+  footer .fnav{display:flex;gap:18px;flex-wrap:wrap}
+  footer a:hover{color:var(--primary)}
+
+  @media(max-width:900px){.prop-layout{grid-template-columns:1fr}.prop-sidebar{position:static}.listings{grid-template-columns:repeat(2,1fr)}.char-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:600px){.listings{grid-template-columns:1fr}.char-grid{grid-template-columns:1fr 1fr}.ph h1{font-size:20px}}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="wrap">
+    <a href="/explorer/" class="backbtn" title="Retour" onclick="if(window.history.length>1){history.back();return false;}">
+      <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    </a>
+    <a class="brand" href="/">
+      <svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#185FA5" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/><path d="M3 21h18" stroke="#185FA5" stroke-width="1.8" stroke-linecap="round"/></svg>
+      ImmoGérer
+    </a>
+    <nav class="nav">
+      <a href="/explorer/">Explorer</a>
+      <a href="/explorer/?tab=vente">Acheter</a>
+      <a href="/explorer/?tab=locations">Louer</a>
+    </nav>
+    <div class="spacer"></div>
+    {% if user.is_authenticated %}
+    <span style="font-size:13px;color:var(--muted);font-weight:500">{{ user.get_full_name|default:user.username }}</span>
+    <a class="btn btn-ghost" href="/chat/" style="font-size:13px;padding:8px 12px" title="Mes messages">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;vertical-align:middle"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Messages
+    </a>
+    <a class="btn btn-ghost" href="/dashboard/" style="font-size:13px;padding:8px 14px">Mon espace</a>
+    <form method="post" action="{% url 'logout' %}" style="margin:0">
+      {% csrf_token %}
+      <button type="submit" style="background:none;border:1px solid var(--border);border-radius:9px;font-size:13px;font-weight:500;padding:8px 13px;cursor:pointer;color:var(--muted);font-family:var(--font-body);transition:.14s" onmouseover="this.style.borderColor='#dc2626';this.style.color='#dc2626'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">Déconnexion</button>
+    </form>
+    {% else %}
+    <a href="/accounts/login/" style="font-weight:600;font-size:14px;padding:8px 10px;color:var(--muted)">Se connecter</a>
+    <a class="btn" style="background:var(--accent);color:#1c1405;font-size:14px;padding:9px 16px;border-radius:10px;font-weight:700" href="/choisir-profil/">Commencer gratuitement</a>
+    {% endif %}
   </div>
-{% endblock %}
+</header>
+
+<!-- BREADCRUMB -->
+<div class="bc">
+  <div class="wrap">
+    <a href="/explorer/">Explorer</a>
+    <span>›</span>
+    {% if bien.transaction_type == 'vente' %}
+    <a href="/explorer/?tab=vente">Vente</a>
+    {% elif bien.type_bien == 'terrain' %}
+    <a href="/explorer/?tab=terrains">Terrains</a>
+    {% elif bien.type_bien == 'bureau' %}
+    <a href="/explorer/?tab=bureaux">Bureaux</a>
+    {% elif bien.type_bien in 'magasin,boutique,local_commercial,entrepot' %}
+    <a href="/explorer/?tab=magasins">Magasins</a>
+    {% else %}
+    <a href="/explorer/?tab=locations">Locations</a>
+    {% endif %}
+    <span>›</span>
+    <span>{{ bien.titre|truncatechars:40 }}</span>
+  </div>
+</div>
+
+<!-- PAGE HEADER -->
+<div class="ph">
+  <div class="wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <h1 style="margin:0">{{ bien.titre }}</h1>
+      {% if request.user.is_authenticated %}
+      <form method="post" action="{% url 'favori_toggle' bien_id=bien.id %}" style="margin:0">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="/biens/{{ bien.id }}/">
+        <button type="submit" class="btn {% if est_favori %}btn-danger{% else %}btn-outline-secondary{% endif %}" style="white-space:nowrap">
+          {% if est_favori %}♥ Retirer des favoris{% else %}♡ Ajouter aux favoris{% endif %}
+        </button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="ph-loc">
+      <svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      {% if bien.commune %}{{ bien.commune }}{% if bien.quartier %}, {{ bien.quartier }}{% endif %} — {% endif %}{{ bien.ville }}{% if bien.adresse %}, {{ bien.adresse }}{% endif %}
+    </div>
+    <div class="ph-tags">
+      <span class="ph-tag">{{ bien.get_type_bien_display }}</span>
+      <span class="ph-tag">{{ bien.surface_m2|floatformat:0 }} m²</span>
+      {% if bien.nombre_chambres > 0 %}<span class="ph-tag">{{ bien.nombre_chambres }} chambre{{ bien.nombre_chambres|pluralize }}</span>{% endif %}
+      {% if bien.nombre_salles_bain > 0 %}<span class="ph-tag">{{ bien.nombre_salles_bain }} sdb</span>{% endif %}
+      {% if bien.animaux_autorises %}<span class="ph-tag green">Animaux OK</span>{% endif %}
+      {% if bien.statut == 'disponible' %}<span class="ph-tag green">Disponible</span>
+      {% elif bien.statut == 'loue' %}<span class="ph-tag red">Loué</span>
+      {% elif bien.statut == 'maintenance' %}<span class="ph-tag amber">Maintenance</span>{% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- BODY -->
+<div class="prop-body">
+  <div class="wrap">
+    <div class="prop-layout">
+
+      <!-- ═══════════════ COLONNE GAUCHE ═══════════════ -->
+      <div class="prop-main">
+
+        <!-- PHOTO -->
+        <div class="prop-photo">
+          {% if bien.photo_principale %}
+          <img src="{{ bien.photo_principale.url }}" alt="{{ bien.titre }}">
+          {% else %}
+          <div class="grid-bg"></div>
+          <div class="no-img">
+            {% if bien.type_bien == 'terrain' %}
+            <svg viewBox="0 0 24 24"><path d="M3 20h18M5 20l2-7h10l2 7M8 13l4-6 4 6"/><circle cx="12" cy="17" r="1"/></svg>
+            {% elif bien.type_bien == 'bureau' %}
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            {% elif bien.type_bien in 'magasin,boutique,local_commercial' %}
+            <svg viewBox="0 0 24 24"><path d="M4 21V9h16v12M4 9l2-4h12l2 4M8 21v-6h3v6M14 15h3v6"/></svg>
+            {% else %}
+            <svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6M8 11h2M14 11h2"/></svg>
+            {% endif %}
+          </div>
+          {% endif %}
+          {% if bien.transaction_type == 'vente' %}
+          <span class="status-tag vente">Vente</span>
+          {% elif bien.transaction_type == 'both' %}
+          <span class="status-tag vente">Location & Vente</span>
+          {% else %}
+          <span class="status-tag">Location</span>
+          {% endif %}
+        </div>
+
+        <!-- DESCRIPTION -->
+        {% if bien.description %}
+        <div class="prop-section">
+          <h2><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Description</h2>
+          <p class="prop-desc">{{ bien.description }}</p>
+        </div>
+        {% endif %}
+
+        <!-- CARACTÉRISTIQUES -->
+        <div class="prop-section">
+          <h2><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Caractéristiques</h2>
+          <div class="char-grid">
+            <div class="char"><span>Type</span><b>{{ bien.get_type_bien_display }}</b></div>
+            <div class="char"><span>Surface</span><b>{{ bien.surface_m2|floatformat:0 }} m²</b></div>
+            {% if bien.nombre_chambres > 0 %}<div class="char"><span>Chambres</span><b>{{ bien.nombre_chambres }}</b></div>{% endif %}
+            {% if bien.nombre_salles_bain > 0 %}<div class="char"><span>Salle de bain</span><b>{{ bien.nombre_salles_bain }}</b></div>{% endif %}
+            {% if bien.nombre_etages > 1 %}<div class="char"><span>Étages</span><b>{{ bien.nombre_etages }}</b></div>{% endif %}
+            <div class="char"><span>Loyer mensuel</span><b>{{ bien.prix_mensuel|floatformat:0|intcomma }} F</b></div>
+            {% if bien.prix_depot_garantie %}<div class="char"><span>Dépôt de garantie</span><b>{{ bien.prix_depot_garantie|floatformat:0|intcomma }} F</b></div>{% endif %}
+            {% if bien.charges_incluses %}<div class="char"><span>Charges</span><b>{{ bien.charges_incluses|floatformat:0|intcomma }} F/mois</b></div>{% endif %}
+            {% if bien.prix_vente %}<div class="char"><span>Prix de vente</span><b>{{ bien.prix_vente|floatformat:0|intcomma }} F</b></div>{% endif %}
+            {% if bien.animaux_autorises %}<div class="char"><span>Animaux</span><b>Autorisés</b></div>{% endif %}
+            {% if bien.fumeurs_acceptes %}<div class="char"><span>Fumeurs</span><b>Acceptés</b></div>{% endif %}
+          </div>
+        </div>
+
+        <!-- ÉQUIPEMENTS -->
+        {% if bien.equipements %}
+        <div class="prop-section">
+          <h2><svg viewBox="0 0 24 24"><path d="M12 2l3.1 6.3L22 9.3l-5 4.9 1.2 6.8L12 18l-6.2 3 1.2-6.8L2 9.3l6.9-1L12 2z"/></svg>Équipements</h2>
+          <div class="equip-list">
+            {% for eq in bien.equipements %}
+            <span class="equip-tag">{{ eq }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- LOCALISATION -->
+        <div class="prop-section">
+          <h2><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>Localisation</h2>
+          <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:{% if bien.latitude and bien.longitude %}16px{% else %}0{% endif %}">
+            {% if bien.adresse %}<div><span style="font-size:12px;color:var(--muted)">Adresse</span><br><b>{{ bien.adresse }}</b></div>{% endif %}
+            {% if bien.quartier %}<div><span style="font-size:12px;color:var(--muted)">Quartier</span><br><b>{{ bien.quartier }}</b></div>{% endif %}
+            {% if bien.commune %}<div><span style="font-size:12px;color:var(--muted)">Commune</span><br><b>{{ bien.commune }}</b></div>{% endif %}
+            <div><span style="font-size:12px;color:var(--muted)">Ville</span><br><b>{{ bien.ville }}</b></div>
+            {% if bien.pays %}<div><span style="font-size:12px;color:var(--muted)">Pays</span><br><b>{{ bien.pays }}</b></div>{% endif %}
+          </div>
+          {% if bien.latitude and bien.longitude %}
+          <div id="prop-map"></div>
+          {% endif %}
+        </div>
+
+      </div><!-- end prop-main -->
+
+      <!-- ═══════════════ SIDEBAR ═══════════════ -->
+      <div class="prop-sidebar">
+
+        <!-- PRIX -->
+        <div class="sidebar-card">
+          <h3>Prix</h3>
+          {% if bien.transaction_type == 'vente' and bien.prix_vente %}
+          <div class="price-main">{{ bien.prix_vente|floatformat:0|intcomma }} <small>F</small></div>
+          <div class="price-sub">Prix de vente</div>
+          {% else %}
+          <div class="price-main">{{ bien.prix_mensuel|floatformat:0|intcomma }} <small>F/mois</small></div>
+          <div class="price-sub">Loyer mensuel</div>
+          {% endif %}
+
+          {% if bien.prix_depot_garantie %}
+          <div class="price-detail"><span>Dépôt de garantie</span><b>{{ bien.prix_depot_garantie|floatformat:0|intcomma }} F</b></div>
+          {% endif %}
+          {% if bien.charges_incluses %}
+          <div class="price-detail"><span>Charges incluses</span><b>{{ bien.charges_incluses|floatformat:0|intcomma }} F/mois</b></div>
+          {% endif %}
+          {% if bien.prix_vente and bien.transaction_type == 'both' %}
+          <div class="price-detail"><span>Prix de vente</span><b>{{ bien.prix_vente|floatformat:0|intcomma }} F</b></div>
+          {% endif %}
+
+          <hr class="price-divider">
+
+          {% if est_gestionnaire %}
+          <div class="alert-info">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            <div>C'est votre bien — {{ nb_visites_en_attente }} demande{{ nb_visites_en_attente|pluralize }} de visite et {{ nb_reservations_en_attente }} réservation{{ nb_reservations_en_attente|pluralize }} en attente.</div>
+          </div>
+          <a class="btn btn-ghost" href="{% url 'biens_ui:gerer' pk=bien.id %}" style="margin-top:10px">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            Gérer ce bien
+          </a>
+
+          {% elif visite_ok %}
+          <div class="alert-ok">
+            <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+            <div><b>Demande envoyée !</b><br>Le propriétaire vous contactera sous 24h.</div>
+          </div>
+
+          {% elif visite_erreur %}
+          <div class="alert-err" style="margin-bottom:10px">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            {{ visite_erreur }}
+          </div>
+          <form method="post" class="visit-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="demander_visite">
+            <div>
+              <label>Date et heure souhaitées</label>
+              <input type="datetime-local" name="date_visite" required>
+            </div>
+            <div>
+              <label>Message (facultatif)</label>
+              <textarea name="notes" placeholder="Ex : Je souhaite visiter le week-end…"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" style="width:16px;height:16px"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              Demander une visite
+            </button>
+          </form>
+
+          {% elif visite_existante %}
+          <div class="alert-info" style="margin-bottom:10px">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            <div>Visite demandée le <b>{{ visite_existante.date_reservation|date:"d/m/Y" }}</b>.<br>
+            {% if visite_existante.date_visite %}Pour le <b>{{ visite_existante.date_visite|date:"d/m/Y à H:i" }}</b>.{% endif %}</div>
+          </div>
+
+          {% elif user.is_authenticated %}
+          {% if bien.statut == 'disponible' %}
+          <form method="post" class="visit-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="demander_visite">
+            <div>
+              <label>Date et heure souhaitées</label>
+              <input type="datetime-local" name="date_visite" required>
+            </div>
+            <div>
+              <label>Message (facultatif)</label>
+              <textarea name="notes" placeholder="Ex : Je souhaite visiter le week-end, disponible le matin…"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" style="width:16px;height:16px"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              Demander une visite
+            </button>
+          </form>
+
+          {% if reservation_existante %}
+          <div class="alert-info" style="margin-top:10px">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            Réservation {{ reservation_existante.get_statut_display|lower }} — le {{ reservation_existante.date_creation|date:"d/m/Y" }}.
+          </div>
+          {% else %}
+          <form method="post" action="{% url 'biens_ui:reserver' bien.id %}" style="margin-top:10px">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-ghost" style="width:100%">
+              <svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M9 12l2 2 4-4"/><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/></svg>
+              Réserver ce bien
+            </button>
+          </form>
+          {% endif %}
+          {% else %}
+          <div class="alert-info">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            Ce bien n'est plus disponible à la réservation.
+          </div>
+          {% endif %}
+
+          {% else %}
+          <div class="contact-login">Connectez-vous pour demander une visite ou contacter le propriétaire.</div>
+          <a class="btn btn-primary" href="/accounts/login/?next=/biens/{{ bien.id }}/">
+            <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            Se connecter
+          </a>
+          <div style="margin:10px 0;text-align:center;font-size:12.5px;color:var(--muted-2)">— ou —</div>
+          <a class="btn btn-outline" href="/choisir-profil/">Créer un compte gratuit</a>
+          {% endif %}
+        </div>
+
+        <!-- BOUTON CONSTRUCTION (terrains uniquement) -->
+        {% if bien.type_bien == 'terrain' %}
+        <div class="sidebar-card" style="background:linear-gradient(135deg,#0f3d6e,#185FA5);border:none;color:#fff">
+          <div style="font-size:13px;color:rgba(255,255,255,.8);margin-bottom:12px;line-height:1.5">
+            <strong style="color:#fff;font-family:var(--font-display);font-size:15px">Construisez sur ce terrain</strong><br>
+            Obtenez des devis gratuits d'entreprises de construction vérifiées.
+          </div>
+          {% if user.is_authenticated %}
+          <a href="/construction/?terrain={{ bien.id }}" class="btn" style="background:var(--accent);color:#1c1405;width:100%;justify-content:center;font-size:14px;padding:12px;font-weight:700">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><path d="M5 21V7h8v14M13 11h6v10M3 21h18M16 4l3 1"/></svg>
+            Construire sur ce terrain
+          </a>
+          {% else %}
+          <a href="/accounts/login/?next=/construction/?terrain={{ bien.id }}" class="btn" style="background:var(--accent);color:#1c1405;width:100%;justify-content:center;font-size:14px;padding:12px;font-weight:700">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><path d="M5 21V7h8v14M13 11h6v10M3 21h18M16 4l3 1"/></svg>
+            Construire sur ce terrain
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- PROPRIÉTAIRE / AGENCE -->
+        <div class="sidebar-card">
+          <h3>Propriétaire / Agence</h3>
+          <div class="owner-row">
+            <div class="owner-ava">
+              <svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/><rect x="9" y="13" width="6" height="8"/></svg>
+            </div>
+            <div>
+              <div class="owner-name">
+                {% if bien.proprietaire.company %}{{ bien.proprietaire.company.name }}
+                {% else %}{{ bien.proprietaire.get_full_name|default:bien.proprietaire.username }}{% endif %}
+              </div>
+              {% if bien.proprietaire.company %}
+              <div class="owner-vf">
+                <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                Agence vérifiée
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if user.is_authenticated %}
+            {% if user != bien.proprietaire %}
+            <a class="btn btn-primary" href="/chat/nouveau/{{ bien.id }}/" style="margin-bottom:8px">
+              <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Discuter avec le propriétaire
+            </a>
+            {% endif %}
+
+            {% if bien.proprietaire.telephone %}
+            <a class="btn btn-wa" href="https://wa.me/225{{ bien.proprietaire.telephone|cut:' '|cut:'-'|cut:'+'|cut:'00225' }}" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+              WhatsApp · {{ bien.proprietaire.telephone }}
+            </a>
+            {% else %}
+            <div style="font-size:13px;color:var(--muted);text-align:center;padding:8px 0">
+              Aucun numéro renseigné.<br>Utilisez la messagerie ou la demande de visite.
+            </div>
+            {% endif %}
+
+            {% if user == bien.proprietaire or user.is_staff or user.role == 'gestionnaire' %}
+            <div class="owner-actions">
+              <a class="btn btn-ghost" href="/dashboard/biens/">
+                <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                Retour à mes biens
+              </a>
+              <a class="btn btn-ghost" href="{% url 'biens_ui:edit' pk=bien.id %}">
+                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Modifier ce bien
+              </a>
+              <a class="btn btn-ghost" href="{% url 'biens_ui:delete' pk=bien.id %}" style="color:var(--warn);border-color:var(--warn)">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                Supprimer
+              </a>
+            </div>
+            {% endif %}
+
+          {% else %}
+          <div class="contact-login">
+            <a href="/accounts/login/?next=/biens/{{ bien.id }}/">Connectez-vous</a> pour voir les coordonnées du propriétaire.
+          </div>
+          {% endif %}
+        </div>
+
+      </div><!-- end sidebar -->
+    </div><!-- end prop-layout -->
+  </div>
+</div>
+
+<!-- BIENS SIMILAIRES -->
+{% if biens_similaires %}
+<div class="similaires">
+  <div class="wrap">
+    <p class="stitle">Biens similaires</p>
+    <div class="listings">
+      {% for b in biens_similaires %}
+      <article class="lc">
+        <div class="vis">
+          {% if b.photo_principale %}<img src="{{ b.photo_principale.url }}" alt="{{ b.titre }}" loading="lazy">
+          {% else %}<div class="grid"></div><svg class="house" viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6M8 11h2M14 11h2"/></svg>{% endif %}
+          {% if b.transaction_type == 'vente' %}<span class="tag vente">Vente</span>
+          {% else %}<span class="tag">Location</span>{% endif %}
+        </div>
+        <div class="b">
+          <div class="t">{{ b.titre }}</div>
+          <div class="loc">
+            <svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            {% if b.commune %}{{ b.commune }}{% else %}{{ b.ville }}{% endif %}
+          </div>
+          <div class="foot">
+            <div class="price">{{ b.prix_mensuel|floatformat:0|intcomma }} <small>F/mois</small></div>
+            <a class="see" href="{% url 'biens_ui:detail' pk=b.id %}">Voir →</a>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <span>© 2026 ImmoGérer — Côte d'Ivoire</span>
+    <div class="fnav">
+      <a href="/explorer/">Explorer</a>
+      <a href="/explorer/?tab=vente">Acheter</a>
+      <a href="/explorer/?tab=terrains">Terrains</a>
+      {% if user.is_authenticated %}<a href="/dashboard/">Mon espace</a>
+      {% else %}<a href="/accounts/login/">Se connecter</a>{% endif %}
+    </div>
+  </div>
+</footer>
+
+{% load l10n %}
+{% if bien.latitude and bien.longitude %}
+<script>
+(function() {
+  var map = L.map('prop-map').setView([{{ bien.latitude|unlocalize }}, {{ bien.longitude|unlocalize }}], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(map);
+  var marker = L.marker([{{ bien.latitude|unlocalize }}, {{ bien.longitude|unlocalize }}]).addTo(map);
+  marker.bindPopup('<strong>{{ bien.titre|escapejs }}</strong>{% if bien.commune %}<br>{{ bien.commune|escapejs }}{% endif %}').openPopup();
+})();
+</script>
+{% endif %}
+</body>
+</html>

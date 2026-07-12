@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Confirmer mon email — ImmoGérer{% endblock %}
+
+{% block body %}
+<div style="min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;background:#F4F6F9;padding:24px">
+  <div style="max-width:400px;width:100%;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:36px 32px;text-align:center;box-shadow:0 12px 32px rgba(16,32,48,.09)">
+
+    {% if request.user.email_verifie %}
+    <div style="width:56px;height:56px;border-radius:16px;background:#EAF3DE;display:grid;place-items:center;margin:0 auto 18px">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:20px;margin:0 0 8px;color:#111">Email confirmé</h1>
+    <p style="color:#6B7280;font-size:14px;margin:0 0 24px">Votre adresse email {{ request.user.email }} a été vérifiée.</p>
+    <a href="/dashboard/" style="display:inline-block;background:#185FA5;color:#fff;padding:11px 24px;border-radius:10px;font-weight:600;font-size:14px;text-decoration:none">Aller à mon espace</a>
+
+    {% else %}
+    <div style="width:56px;height:56px;border-radius:16px;background:#E6F1FB;display:grid;place-items:center;margin:0 auto 18px">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    </div>
+    <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:20px;margin:0 0 8px;color:#111">Confirmez votre email</h1>
+    <p style="color:#6B7280;font-size:14px;margin:0 0 24px">Entrez le code à 6 chiffres envoyé à <b>{{ request.user.email }}</b>.</p>
+
+    {% if erreur %}
+    <div style="background:#FEF2F2;border:1px solid #fecaca;color:#B4441F;border-radius:10px;padding:11px 14px;font-size:13px;font-weight:600;margin-bottom:16px">{{ erreur }}</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <input type="text" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="000000"
+        style="width:100%;text-align:center;letter-spacing:.5em;font-size:24px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;padding:14px;border:1.5px solid #e5e7eb;border-radius:10px;outline:none;margin-bottom:16px" required>
+      <button type="submit" style="width:100%;background:#185FA5;color:#fff;padding:12px;border:none;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;margin-bottom:12px">Confirmer</button>
+    </form>
+
+    <form method="post" action="{% url 'renvoyer_confirmation' %}">
+      {% csrf_token %}
+      <button type="submit" style="background:none;border:none;color:#185FA5;font-weight:600;text-decoration:underline;cursor:pointer;font-size:13px">Renvoyer le code</button>
+    </form>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

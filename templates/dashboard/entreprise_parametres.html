@@ -1,0 +1,278 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Paramètres — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+.settings{display:grid;grid-template-columns:220px 1fr;gap:22px;align-items:start}
+.settnav{position:sticky;top:20px;display:flex;flex-direction:column;gap:2px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:8px}
+.settnav button{display:flex;align-items:center;gap:10px;text-align:left;padding:9px 11px;border-radius:9px;border:none;background:none;color:var(--muted);font-weight:500;font-size:13.5px;cursor:pointer;width:100%;font-family:var(--font-body)}
+.settnav button svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;flex:0 0 16px}
+.settnav button:hover{background:#f4f5f2;color:var(--ink)}
+.settnav button.active{background:var(--green-light);color:var(--green-text);font-weight:700}
+.settnav .sep{height:1px;background:var(--border);margin:6px 4px}
+
+.panel{display:none}
+.panel.active{display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;box-shadow:var(--sh);margin-bottom:16px}
+.card h3{font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink);margin-bottom:3px}
+.card .sub{font-size:13px;color:var(--muted);margin-bottom:18px}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fld{margin-bottom:14px}
+.fld label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.fld input,.fld textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font:inherit;font-size:13.5px;outline:none;background:#fff;color:var(--ink)}
+.fld input:focus,.fld textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(59,109,17,.12)}
+.fld textarea{resize:vertical}
+.fld .err{color:#B91C1C;font-size:12px;margin-top:5px}
+.foot{display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--border);margin-top:4px;padding-top:16px}
+.preview{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.preview img{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--border)}
+.cover-preview{width:100%;height:80px;border-radius:10px;object-fit:cover;border:1px solid var(--border);margin-bottom:8px;display:block}
+
+.btnx{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:10px;font:inherit;font-weight:600;font-size:13.5px;padding:9px 15px;cursor:pointer;border:1px solid transparent;transition:.15s;text-decoration:none}
+.btnx.primary{background:var(--green);color:#fff}.btnx.primary:hover{background:var(--green-dark)}
+.btnx.ghost{background:#fff;border-color:var(--border);color:var(--text)}.btnx.ghost:hover{border-color:var(--border-2)}
+.btnx.danger{background:#fff;border-color:#f0c4b6;color:#B4441F}.btnx.danger:hover{background:#FBEAE4}
+.btnx.sm{padding:7px 12px;font-size:12.5px}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chipsel{border:1.5px solid var(--border);border-radius:20px;padding:7px 14px;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:6px}
+.chipsel svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.4}
+.chipsel.on{background:var(--green-light);border-color:var(--green);color:var(--green-text)}
+
+.vstatus{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:14px}
+.vstatus.ok{background:var(--green-light)}
+.vstatus.pending{background:var(--amber-bg)}
+.vstatus .vi{width:40px;height:40px;border-radius:11px;background:#fff;display:grid;place-items:center;flex:0 0 40px}
+.vstatus .vi svg{width:20px;height:20px;fill:none;stroke-width:2}
+.vstatus.ok .vi svg{stroke:var(--green)}
+.vstatus.pending .vi svg{stroke:var(--amber-tx)}
+.vstatus .t{font-family:var(--font-display);font-weight:700;font-size:14.5px}
+.vstatus.ok .t{color:var(--green-text)}
+.vstatus.pending .t{color:var(--amber-tx)}
+.vstatus .d{font-size:12.5px;color:var(--text);margin-top:1px}
+
+.nrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.nrow:last-child{border-bottom:none}
+.nrow .lbl{font-size:13.5px;color:var(--text)}
+.sw{position:relative;width:38px;height:22px;flex:0 0 38px}
+.sw input{opacity:0;width:0;height:0}
+.sw .tr{position:absolute;inset:0;background:var(--border-2);border-radius:20px;cursor:pointer;transition:.15s}
+.sw .tr::before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.sw input:checked + .tr{background:var(--green)}
+.sw input:checked + .tr::before{transform:translateX(16px)}
+
+.sess{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.sess:last-child{border-bottom:none}
+.sess .di{width:36px;height:36px;border-radius:10px;background:var(--bg);display:grid;place-items:center;flex:0 0 36px}
+.sess .di svg{width:17px;height:17px;stroke:var(--muted);fill:none;stroke-width:1.8}
+.sess .info{flex:1}
+.sess .t{font-weight:600;font-size:13.5px;color:var(--ink)}
+.sess .d{font-size:12px;color:var(--muted-2)}
+.sess .tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--green-light);color:var(--green-text)}
+
+.dz{border:1px solid #f0c4b6;background:#FBEAE4;border-radius:14px;padding:18px 20px;margin-top:6px}
+.dz h4{font-family:var(--font-display);font-weight:700;font-size:14px;color:#B4441F;margin-bottom:4px}
+.dz p{font-size:12.5px;color:#7a3016;margin-bottom:12px}
+
+@media(max-width:900px){.settings{grid-template-columns:1fr}.settnav{position:static;flex-direction:row;overflow-x:auto}.settnav button{white-space:nowrap}.grid2{grid-template-columns:1fr}}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='parametres' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+  <button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tspacer"></div>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+
+<div class="pg-head" style="margin-bottom:22px">
+  <h1 style="font-family:var(--font-display);font-weight:800;font-size:24px;margin:0 0 4px;color:var(--ink)">Paramètres de l'entreprise</h1>
+  <p style="margin:0;color:var(--muted);font-size:13.5px">Ceci définit comment fonctionne votre compte — votre fiche publique se trouve dans <a href="/dashboard/entreprise/profil/" style="color:var(--green);font-weight:600">Mon profil</a>.</p>
+</div>
+
+{% if messages %}
+{% for message in messages %}
+<div style="background:{% if message.tags == 'error' %}#FEF2F2{% else %}#F0FDF4{% endif %};border:1px solid {% if message.tags == 'error' %}#FCA5A5{% else %}#86EFAC{% endif %};color:{% if message.tags == 'error' %}#B91C1C{% else %}#15803D{% endif %};border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;margin-bottom:18px">{{ message }}</div>
+{% endfor %}
+{% endif %}
+
+<div class="settings">
+
+  <div class="settnav">
+    <button class="active" data-tab="infos"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/></svg> Informations</button>
+    <button data-tab="services"><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg> Services</button>
+    <button data-tab="verif"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg> Vérification</button>
+    <button data-tab="notifs"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 21h4"/></svg> Notifications</button>
+    <div class="sep"></div>
+    <button data-tab="securite"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Sécurité</button>
+  </div>
+
+  <div class="settcontent">
+
+    <!-- INFORMATIONS -->
+    <div class="panel active" id="p-infos">
+      <div class="card">
+        <h3>Informations de l'entreprise</h3>
+        <div class="sub">Nom, description et coordonnées — visibles sur votre fiche publique.</div>
+        <form method="post" action="/dashboard/entreprise/modifier/" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="/dashboard/entreprise/parametres/">
+
+          {% if company.logo %}<div class="preview"><img src="{{ company.logo.url }}" alt=""><span style="font-size:12.5px;color:var(--muted)">Logo actuel</span></div>{% endif %}
+          <div class="fld"><label>Logo</label><input type="file" name="logo" accept="image/*"></div>
+
+          {% if company.cover_image %}<img class="cover-preview" src="{{ company.cover_image.url }}" alt="">{% endif %}
+          <div class="fld"><label>Photo de couverture</label><input type="file" name="cover_image" accept="image/*"></div>
+
+          <div class="fld"><label>Nom</label><input type="text" name="name" value="{{ company.name }}" required></div>
+          <div class="fld"><label>Description</label><textarea name="description" rows="3">{{ company.description|default:'' }}</textarea></div>
+          <div class="grid2">
+            <div class="fld"><label>Adresse</label><input type="text" name="adresse" value="{{ company.adresse|default:'' }}"></div>
+            <div class="fld"><label>Ville</label><input type="text" name="ville" value="{{ company.ville|default:'' }}"></div>
+          </div>
+          <div class="grid2">
+            <div class="fld"><label>Téléphone</label><input type="text" name="telephone" value="{{ company.telephone|default:'' }}"></div>
+            <div class="fld"><label>Email professionnel</label><input type="email" name="email" value="{{ company.email|default:'' }}"></div>
+          </div>
+          <div class="foot"><button type="submit" class="btnx primary"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Enregistrer</button></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- SERVICES -->
+    <div class="panel" id="p-services">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="services">
+        <div class="card">
+          <h3>Services proposés</h3>
+          <div class="sub">Détermine les modules visibles sur votre tableau de bord.</div>
+          <div class="chips">
+            {% for s in services %}
+            <label class="chipsel {% if s.active %}on{% endif %}" onclick="this.classList.toggle('on'); this.querySelector('input').checked = this.classList.contains('on')">
+              <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> {{ s.label }}
+              <input type="checkbox" name="services" value="{{ s.key }}" {% if s.active %}checked{% endif %} style="display:none">
+            </label>
+            {% endfor %}
+          </div>
+          <div class="foot"><button type="submit" class="btnx primary">Enregistrer</button></div>
+        </div>
+      </form>
+    </div>
+
+    <!-- VERIFICATION -->
+    <div class="panel" id="p-verif">
+      <div class="card">
+        {% if documents_verifies %}
+        <div class="vstatus ok">
+          <span class="vi"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+          <div><div class="t">Entreprise vérifiée</div><div class="d">Vos documents ont été validés par l'équipe ImmoGérer.</div></div>
+        </div>
+        {% else %}
+        <div class="vstatus pending">
+          <span class="vi"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5l3 2"/></svg></span>
+          <div><div class="t">Vérification en attente</div><div class="d">Renseignez votre numéro RCCM dans "Informations" pour accélérer la vérification.</div></div>
+        </div>
+        {% endif %}
+        {% if profile.numero_siret_siren %}
+        <p style="margin-top:16px;font-size:13.5px;color:var(--text)">Numéro RCCM enregistré : <b>{{ profile.numero_siret_siren }}</b></p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="panel" id="p-notifs">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="notifications">
+        <div class="card">
+          <h3>Notifications</h3>
+          <div class="sub">Activez ou désactivez les notifications dans l'application par catégorie.</div>
+          {% for n in notif_prefs %}
+          <div class="nrow">
+            <span class="lbl">{{ n.label }}</span>
+            <label class="sw"><input type="checkbox" name="notif_{{ n.key }}" {% if n.active %}checked{% endif %}><span class="tr"></span></label>
+          </div>
+          {% endfor %}
+          <div class="foot"><button type="submit" class="btnx primary">Enregistrer</button></div>
+        </div>
+      </form>
+    </div>
+
+    <!-- SECURITE -->
+    <div class="panel" id="p-securite">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="password">
+        <div class="card">
+          <h3>Mot de passe</h3>
+          <div class="grid2">
+            <div class="fld"><label>Mot de passe actuel</label>{{ password_form.old_password }}
+              {% if password_form.old_password.errors %}<div class="err">{{ password_form.old_password.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="fld"></div>
+            <div class="fld"><label>Nouveau mot de passe</label>{{ password_form.new_password1 }}
+              {% if password_form.new_password1.errors %}<div class="err">{{ password_form.new_password1.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="fld"><label>Confirmer le nouveau mot de passe</label>{{ password_form.new_password2 }}
+              {% if password_form.new_password2.errors %}<div class="err">{{ password_form.new_password2.errors|join:", " }}</div>{% endif %}
+            </div>
+          </div>
+          <div class="foot"><button type="submit" class="btnx primary">Changer le mot de passe</button></div>
+        </div>
+      </form>
+
+      <div class="card">
+        <h3>Sessions actives</h3>
+        <div class="sub">Les connexions actuellement ouvertes sur votre compte.</div>
+        {% for s in sessions %}
+        <div class="sess">
+          <span class="di"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+          <div class="info">
+            <div class="t">{% if s.is_current %}Cette session{% else %}Session{% endif %}</div>
+            <div class="d">Expire le {{ s.expire_date|date:"d/m/Y à H:i" }}</div>
+          </div>
+          {% if s.is_current %}<span class="tag">Cet appareil</span>
+          {% else %}
+          <form method="post" style="margin:0">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="revoke_session">
+            <input type="hidden" name="session_key" value="{{ s.key }}">
+            <button type="submit" class="btnx ghost sm">Déconnecter</button>
+          </form>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="dz">
+        <h4>Fermer le compte entreprise</h4>
+        <p>Nécessite la clôture de tous les contrats actifs. Cette action est définitive.</p>
+        <form method="post" onsubmit="return confirm('Cette action est irréversible. Continuer ?');">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="delete_account">
+          <div class="fld" style="max-width:280px"><label>Tapez SUPPRIMER pour confirmer</label><input type="text" name="confirm_text" placeholder="SUPPRIMER"></div>
+          <button type="submit" class="btnx danger sm">Fermer le compte</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .app -->
+
+<script>
+document.querySelectorAll('.settnav button[data-tab]').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.querySelectorAll('.settnav button[data-tab]').forEach(function(x){ x.classList.remove('active'); });
+    document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+    b.classList.add('active');
+    document.getElementById('p-' + b.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body></html>

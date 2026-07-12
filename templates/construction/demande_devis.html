@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demande de devis — {{ company.name }} — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--primary:#185FA5;--accent:#C9A84C;--green:#3B6D11;--green-light:#EAF3DE;--text:#111;--muted:#666;--border:#e5e7eb;--bg:#F4F6F9;--card:#fff;--r:14px;--font-display:"Plus Jakarta Sans",system-ui,sans-serif;--font-body:"Inter",system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);font-size:14.5px;line-height:1.55;min-height:100vh}
+  a{text-decoration:none;color:inherit}
+  .wrap{max-width:780px;margin:0 auto;padding:0 24px}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;font-weight:600;font-size:14px;padding:11px 20px;cursor:pointer;border:1px solid transparent;transition:.16s;font-family:var(--font-body)}
+  .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+  .btn-primary{background:var(--primary);color:#fff;width:100%;justify-content:center;font-size:15px;padding:13px}.btn-primary:hover{filter:brightness(1.08)}
+  .btn-ghost{background:var(--card);border-color:var(--border);color:var(--muted)}.btn-ghost:hover{color:var(--primary);border-color:var(--primary)}
+
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(244,246,249,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .topbar .wrap{display:flex;align-items:center;gap:16px;height:60px;max-width:1100px}
+  .brand{font-family:var(--font-display);font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px}
+  .spacer{flex:1}
+
+  .page-header{padding:32px 0 24px;border-bottom:1px solid var(--border);margin-bottom:28px}
+  .ph-company{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+  .ph-logo{width:52px;height:52px;border-radius:13px;background:var(--green-light);color:var(--green);display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:20px;flex:0 0 52px}
+  .ph-company-info h2{font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:2px}
+  .ph-company-info span{font-size:12px;color:var(--muted)}
+  h1{font-family:var(--font-display);font-weight:800;font-size:26px;letter-spacing:-.02em;line-height:1.08}
+  .page-subtitle{font-size:14.5px;color:var(--muted);margin-top:8px}
+
+  /* Terrain alert */
+  .terrain-alert{background:var(--green-light);border:1px solid #b7d99b;border-radius:12px;padding:14px 16px;margin-bottom:24px;display:flex;align-items:center;gap:12px}
+  .terrain-alert svg{width:18px;height:18px;stroke:var(--green);fill:none;stroke-width:2;flex-shrink:0}
+  .terrain-alert span{font-size:13.5px;color:#2a5209;font-weight:500}
+
+  /* Form */
+  .form-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:28px;margin-bottom:20px}
+  .form-section-title{font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;color:var(--primary)}
+  .form-section-title svg{width:17px;height:17px;stroke:var(--primary);fill:none;stroke-width:2}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  .form-group{margin-bottom:16px}
+  .form-group:last-child{margin-bottom:0}
+  label{display:block;font-weight:600;font-size:13px;margin-bottom:6px;color:#374151}
+  label .req{color:#dc2626;margin-left:3px}
+  label .opt{font-weight:400;color:var(--muted);font-size:12px;margin-left:4px}
+  input[type=text],input[type=number],textarea,select{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:var(--font-body);color:var(--text);background:#fff;outline:none;transition:.15s}
+  input:focus,textarea:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(24,95,165,.08)}
+  textarea{resize:vertical;min-height:110px}
+  select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+
+  /* Radio terrain */
+  .radio-group{display:flex;gap:12px}
+  .radio-opt{flex:1;position:relative}
+  .radio-opt input{position:absolute;opacity:0;width:0;height:0}
+  .radio-opt label{display:flex;align-items:center;justify-content:center;gap:9px;padding:11px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:.15s;font-size:14px;font-weight:500;margin:0}
+  .radio-opt label svg{width:17px;height:17px;stroke:var(--muted);fill:none;stroke-width:2}
+  .radio-opt input:checked + label{border-color:var(--primary);background:rgba(24,95,165,.06);color:var(--primary)}
+  .radio-opt input:checked + label svg{stroke:var(--primary)}
+
+  /* Type projet chips */
+  .type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .type-chip{position:relative}
+  .type-chip input{position:absolute;opacity:0;width:0;height:0}
+  .type-chip label{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:14px 10px;border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:.15s;font-size:13px;font-weight:600;margin:0;text-align:center;background:#fff}
+  .type-chip label .icon{font-size:22px}
+  .type-chip input:checked + label{border-color:var(--primary);background:rgba(24,95,165,.06);color:var(--primary)}
+  .type-chip input:checked + label .icon{filter:none}
+
+  .erreur{background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:12px 16px;color:#dc2626;font-size:13.5px;font-weight:500;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+  .erreur svg{width:16px;height:16px;stroke:#dc2626;fill:none;stroke-width:2;flex-shrink:0}
+
+  footer{border-top:1px solid var(--border);padding:20px 0;color:var(--muted);font-size:13px;margin-top:40px;text-align:center}
+
+  @media(max-width:600px){.form-row{grid-template-columns:1fr}.type-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap" style="max-width:1100px">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#185FA5" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/></svg>
+      ImmoGérer
+    </a>
+    <a href="/construction/entreprise/{{ company.id }}/" style="font-size:13px;color:var(--muted);font-weight:500">← {{ company.name }}</a>
+    <div class="spacer"></div>
+    <a class="btn btn-ghost" href="/construction/" style="font-size:13px;padding:8px 14px">Construction</a>
+  </div>
+</header>
+
+<div class="wrap" style="padding-top:32px;padding-bottom:60px">
+
+  <div class="page-header">
+    <div class="ph-company">
+      <div class="ph-logo">{{ company.name|slice:":1" }}</div>
+      <div class="ph-company-info">
+        <h2>{{ company.name }}</h2>
+        <span>Entreprise vérifiée · Construction</span>
+      </div>
+    </div>
+    <h1>Demande de devis</h1>
+    <p class="page-subtitle">Décrivez votre projet — vous recevrez une réponse personnalisée de {{ company.name }} dans les 48h.</p>
+  </div>
+
+  {% if terrain_lie %}
+  <div class="terrain-alert">
+    <svg viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+    <span>Terrain lié : <strong>{{ terrain_lie.titre }}</strong> — {{ terrain_lie.ville }}</span>
+  </div>
+  {% endif %}
+
+  {% if erreur %}
+  <div class="erreur">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    {{ erreur }}
+  </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    {% if terrain_lie %}<input type="hidden" name="terrain_id" value="{{ terrain_lie.id }}">{% endif %}
+
+    <!-- TYPE DE PROJET -->
+    <div class="form-card">
+      <div class="form-section-title">
+        <svg viewBox="0 0 24 24"><path d="M5 21V7h8v14M13 11h6v10M3 21h18"/></svg>
+        Type de projet
+      </div>
+      <div class="type-grid">
+        {% for val, label in types %}
+        <div class="type-chip">
+          <input type="radio" name="type_projet" id="tp_{{ val }}" value="{{ val }}"
+            {% if post.type_projet == val or not post and val == 'villa' %}checked{% endif %} required>
+          <label for="tp_{{ val }}">
+            <span class="icon">{% if val == 'villa' %}🏡{% elif val == 'duplex' %}🏘{% elif val == 'immeuble' %}🏢{% elif val == 'magasin' %}🏪{% elif val == 'bureau' %}🏬{% elif val == 'renovation' %}🔨{% else %}🏗{% endif %}</span>
+            {{ label }}
+          </label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- INFORMATIONS DU TERRAIN -->
+    <div class="form-card">
+      <div class="form-section-title">
+        <svg viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
+        Terrain
+      </div>
+
+      <div class="form-group">
+        <label>Avez-vous déjà un terrain ? <span class="req">*</span></label>
+        <div class="radio-group">
+          <div class="radio-opt">
+            <input type="radio" name="a_terrain" id="terrain_oui" value="oui" {% if post.a_terrain == 'oui' or terrain_lie %}checked{% endif %}>
+            <label for="terrain_oui">
+              <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+              Oui, j'ai un terrain
+            </label>
+          </div>
+          <div class="radio-opt">
+            <input type="radio" name="a_terrain" id="terrain_non" value="non" {% if not terrain_lie and post.a_terrain != 'oui' %}checked{% endif %}>
+            <label for="terrain_non">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Non, je n'ai pas encore de terrain
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="localisation">Localisation du projet <span class="opt">(ville / quartier)</span></label>
+        <input type="text" id="localisation" name="localisation" placeholder="Ex: Cocody Riviera 3, Abidjan" value="{{ post.localisation|default:'' }}">
+      </div>
+    </div>
+
+    <!-- DIMENSIONS & BUDGET -->
+    <div class="form-card">
+      <div class="form-section-title">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Dimensions & Budget
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin:0">
+          <label for="superficie">Superficie souhaitée <span class="opt">(m²)</span></label>
+          <input type="number" id="superficie" name="superficie" placeholder="Ex: 200" min="10" max="10000" value="{{ post.superficie|default:'' }}">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label for="budget">Budget estimé <span class="opt">(FCFA)</span></label>
+          <input type="number" id="budget" name="budget" placeholder="Ex: 50000000" min="0" value="{{ post.budget|default:'' }}">
+        </div>
+      </div>
+    </div>
+
+    <!-- DESCRIPTION -->
+    <div class="form-card">
+      <div class="form-section-title">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Description du projet
+      </div>
+      <div class="form-group">
+        <label for="description">Décrivez votre projet en détail <span class="req">*</span></label>
+        <textarea id="description" name="description" placeholder="Nombre de pièces, style architectural souhaité, contraintes particulières, délai souhaité..." required>{{ post.description|default:'' }}</textarea>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+      <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      Envoyer la demande de devis
+    </button>
+
+    <p style="font-size:12.5px;color:var(--muted);text-align:center;margin-top:14px">
+      Votre demande sera transmise à {{ company.name }} et vous serez notifié(e) dès qu'ils répondent.
+    </p>
+  </form>
+
+</div>
+
+<footer><div class="wrap">ImmoGérer · Demande de devis · {{ company.name }}</div></footer>
+</body>
+</html>

@@ -43,6 +43,16 @@ class Contrat(models.Model):
     prix_mensuel = models.DecimalField(max_digits=10, decimal_places=2)
     prix_depot_garantie = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     charges_mensuelles = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    # Remboursement de la caution (à la fin du contrat)
+    class StatutCaution(models.TextChoices):
+        NON_TRAITEE = 'non_traitee', 'Non traitée'
+        RETENUE = 'retenue', 'Retenue (partiellement ou totalement)'
+        REMBOURSEE = 'remboursee', 'Remboursée'
+    statut_caution = models.CharField(max_length=20, choices=StatutCaution.choices, default=StatutCaution.NON_TRAITEE)
+    montant_caution_rembourse = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    motif_retenue_caution = models.TextField(blank=True, default='')
+    date_remboursement_caution = models.DateField(blank=True, null=True)
     
     # Conditions
     nombre_mois_minimum = models.IntegerField(default=12)
@@ -166,3 +176,66 @@ class DocumentContrat(models.Model):
     
     def __str__(self):
         return f"{self.get_type_document_display()} - {self.contrat.numero_contrat}"
+
+
+class Reclamation(models.Model):
+    class Statut(models.TextChoices):
+        OUVERTE  = 'ouverte',  'Ouverte'
+        EN_COURS = 'en_cours', 'En cours'
+        RESOLUE  = 'resolue',  'Résolue'
+        FERMEE   = 'fermee',   'Fermée'
+
+    class Priorite(models.TextChoices):
+        NORMALE = 'normale', 'Normale'
+        URGENTE = 'urgente', 'Urgente'
+
+    bien = models.ForeignKey(
+        'biens.Bien', on_delete=models.CASCADE, related_name='reclamations'
+    )
+    locataire = models.ForeignKey(
+        Utilisateur, on_delete=models.CASCADE, related_name='reclamations_envoyees'
+    )
+    titre = models.CharField(max_length=200)
+    description = models.TextField()
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.OUVERTE)
+    priorite = models.CharField(max_length=20, choices=Priorite.choices, default=Priorite.NORMALE)
+    reponse = models.TextField(blank=True)
+    cree_le = models.DateTimeField(auto_now_add=True)
+    mis_a_jour_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Réclamation'
+        verbose_name_plural = 'Réclamations'
+        ordering = ['-cree_le']
+
+    def __str__(self):
+        return f"{self.titre} — {self.locataire.username}"
+
+
+class EtatDesLieux(models.Model):
+    """État des lieux d'entrée ou de sortie, réalisé pour un contrat."""
+
+    class Type(models.TextChoices):
+        ENTREE = 'entree', "Entrée"
+        SORTIE = 'sortie', "Sortie"
+
+    class EtatGeneral(models.TextChoices):
+        BON = 'bon', 'Bon état'
+        MOYEN = 'moyen', 'État moyen'
+        MAUVAIS = 'mauvais', 'Mauvais état'
+
+    contrat = models.ForeignKey(Contrat, on_delete=models.CASCADE, related_name='etats_des_lieux')
+    type_etat = models.CharField(max_length=10, choices=Type.choices)
+    etat_general = models.CharField(max_length=10, choices=EtatGeneral.choices, default=EtatGeneral.BON)
+    observations = models.TextField(blank=True, default='')
+    realise_par = models.ForeignKey(Utilisateur, on_delete=models.SET_NULL, null=True, related_name='etats_des_lieux_realises')
+    date_realisation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'État des lieux'
+        verbose_name_plural = 'États des lieux'
+        ordering = ['-date_realisation']
+        unique_together = ['contrat', 'type_etat']
+
+    def __str__(self):
+        return f"État des lieux ({self.get_type_etat_display()}) — {self.contrat.numero_contrat}"

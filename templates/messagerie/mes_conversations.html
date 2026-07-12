@@ -1,0 +1,194 @@
+<!--
+  mes_conversations.html — Rendu par messagerie\views.py::mes_conversations.
+  Données réelles issues de _conversations_sidebar (même calcul que le volet
+  gauche de conversation.html). Recherche et filtres appliqués côté client
+  (JS), pas de requête serveur additionnelle.
+-->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Messages — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#185FA5;--blue-dark:#1A3E6A;--blue-soft:#E7F0F9;--blue-text:#0C447C;
+    --green:#3B6D11;--green-soft:#EAF3DE;--green-text:#27500A;
+    --amber:#B45309;--amber-soft:#FEF3C7;--red:#B4441F;--red-soft:#FBEAE4;
+    --purple:#6D4AAE;--purple-soft:#EFE8FA;
+    --ink:#16202B;--text:#39414A;--muted:#6B7280;--muted-2:#9AA0A6;
+    --line:#E7EAEE;--line-2:#DBDFE4;--bg:#F4F6F9;--card:#FFFFFF;
+    --sh:0 1px 2px rgba(16,32,48,.05);--sh-lg:0 12px 32px rgba(16,32,48,.09);
+    --fdisp:"Plus Jakarta Sans",system-ui,sans-serif;--fbody:"Inter",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--fbody);background:var(--bg);color:var(--text);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  button{font:inherit}
+
+  .nav{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav-in{max-width:640px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:12px;height:58px}
+  .back{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;cursor:pointer;color:var(--muted);flex-shrink:0}
+  .back:hover{border-color:var(--line-2);color:var(--ink)}.back svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2}
+  .navtitle{font-family:var(--fdisp);font-weight:800;font-size:17px;color:var(--ink);flex:1}
+  .navbtn{font-size:12.5px;font-weight:600;color:var(--blue);background:var(--blue-soft);padding:7px 13px;border-radius:9px}
+
+  .wrap{max-width:640px;margin:0 auto;padding:16px 20px 40px}
+
+  /* recherche */
+  .search{position:relative;margin-bottom:12px}
+  .search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--muted-2);fill:none;stroke-width:2}
+  .search input{width:100%;padding:11px 14px 11px 38px;border:1.5px solid var(--line);border-radius:12px;font:inherit;font-size:13.5px;outline:none;background:#fff}
+  .search input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+
+  /* filtres */
+  .filters{display:flex;gap:7px;margin-bottom:16px;overflow-x:auto}
+  .fchip{padding:7px 14px;border-radius:20px;border:1.5px solid var(--line);background:#fff;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
+  .fchip.sel{background:var(--blue);border-color:var(--blue);color:#fff}
+  .fchip .n{background:rgba(255,255,255,.25);border-radius:10px;padding:1px 6px;font-size:10.5px}
+  .fchip:not(.sel) .n{background:var(--bg);color:var(--muted-2)}
+
+  .convlist{display:flex;flex-direction:column;gap:8px}
+  .conv{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;box-shadow:var(--sh);transition:.14s;position:relative}
+  .conv:hover{border-color:var(--blue);box-shadow:0 4px 14px rgba(24,95,165,.1);transform:translateY(-1px)}
+  .conv.unread{border-color:var(--blue-soft);background:linear-gradient(90deg,var(--blue-soft) 0%,#fff 6%)}
+
+  .avatar{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;font-family:var(--fdisp);font-weight:800;font-size:15px;color:#fff;flex:0 0 46px;position:relative;text-transform:uppercase}
+  .avatar.b1{background:linear-gradient(135deg,#2170bd,#185FA5)}
+  .avatar.b2{background:linear-gradient(135deg,#2a9660,#1F7A4E)}
+  .avatar.b3{background:linear-gradient(135deg,#c07d2f,#B45309)}
+  .avatar.b4{background:linear-gradient(135deg,#8a5fc9,#6D4AAE)}
+
+  .cinfo{flex:1;min-width:0}
+  .ctop{display:flex;align-items:center;gap:8px}
+  .cname{font-weight:700;font-size:13.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cverif{width:13px;height:13px;stroke:var(--green);fill:none;stroke-width:3;flex:0 0 13px}
+  .cbien{font-size:11.5px;color:var(--muted-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+  .cprev{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}
+  .cprev.unread{color:var(--ink);font-weight:600}
+  .cprev.placeholder{font-style:italic;color:var(--muted-2)}
+
+  .cmeta{text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+  .ctime{font-size:11px;color:var(--muted-2)}
+  .badge{background:var(--blue);color:#fff;border-radius:20px;min-width:19px;height:19px;font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px}
+  .phase{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em}
+  .phase.commercial{background:var(--amber-soft);color:var(--amber)}
+  .phase.locataire{background:var(--blue-soft);color:var(--blue-text)}
+  .phase.sav{background:var(--purple-soft);color:var(--purple)}
+
+  .newchip{font-size:10.5px;font-weight:700;color:var(--blue);background:var(--blue-soft);padding:3px 9px;border-radius:20px}
+
+  .empty{text-align:center;padding:70px 20px}
+  .empty .eic{width:60px;height:60px;border-radius:16px;background:var(--blue-soft);display:grid;place-items:center;margin:0 auto 16px}
+  .empty .eic svg{width:26px;height:26px;stroke:var(--blue);fill:none;stroke-width:1.6}
+  .empty h3{font-family:var(--fdisp);font-weight:700;font-size:17px;color:var(--ink);margin-bottom:6px}
+  .empty p{color:var(--muted);font-size:13.5px;margin-bottom:18px}
+  .empty a{background:var(--blue);color:#fff;padding:10px 22px;border-radius:10px;font-weight:600;font-size:13.5px;display:inline-block}
+  .noresult{display:none;text-align:center;padding:40px 20px;color:var(--muted-2);font-size:13.5px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-in">
+    <button class="back" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+    <div class="navtitle">Messages</div>
+    <a class="navbtn" href="/explorer/">Explorer</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  {% if convs_data %}
+  <div class="search">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="text" id="searchInput" placeholder="Rechercher une conversation ou un bien…" oninput="filtrer()">
+  </div>
+
+  <div class="filters">
+    <button class="fchip sel" data-filtre="tous" onclick="setFiltre(this,'tous')">Tous <span class="n">{{ convs_data|length }}</span></button>
+    <button class="fchip" data-filtre="non_lus" onclick="setFiltre(this,'non_lus')">Non lus <span class="n">{{ nb_non_lus_total }}</span></button>
+    <button class="fchip" data-filtre="locations" onclick="setFiltre(this,'locations')">Locations</button>
+    <button class="fchip" data-filtre="ventes" onclick="setFiltre(this,'ventes')">Ventes / Terrains</button>
+  </div>
+
+  <div class="convlist" id="convlist">
+    {% for item in convs_data %}
+    <a class="conv{% if item.nb_non_lus %} unread{% endif %}"
+       href="/chat/{{ item.conv.id }}/"
+       data-search="{{ item.nom_affiche|lower }} {{ item.sujet_lieu|lower }}"
+       data-nonlu="{% if item.nb_non_lus %}1{% else %}0{% endif %}"
+       data-categorie="{{ item.categorie|default:'' }}">
+      <div class="avatar {{ item.avatar_class }}">{{ item.nom_affiche|first }}</div>
+      <div class="cinfo">
+        <div class="ctop">
+          <span class="cname">{{ item.nom_affiche }}</span>
+          {% if item.verifie %}<svg class="cverif" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{% endif %}
+        </div>
+        {% if item.sujet_lieu %}<div class="cbien">{{ item.sujet_lieu|truncatechars:50 }}</div>{% endif %}
+        {% if item.dernier %}
+        <div class="cprev {% if item.nb_non_lus %}unread{% endif %}">
+          {% if item.dernier.expediteur == request.user %}Vous : {% endif %}{{ item.dernier.contenu|truncatechars:55 }}
+        </div>
+        {% else %}
+        <div class="cprev placeholder">Démarrez la conversation</div>
+        {% endif %}
+      </div>
+      <div class="cmeta">
+        {% if item.dernier %}
+        <span class="ctime">{{ item.dernier.cree_le|date:"d M" }}</span>
+        {% else %}
+        <span class="newchip">Nouveau</span>
+        {% endif %}
+        {% if item.nb_non_lus %}
+        <span class="badge">{{ item.nb_non_lus }}</span>
+        {% else %}
+        <span class="phase {{ item.conv.phase }}">{{ item.conv.get_phase_display }}</span>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  <div class="noresult" id="noresult">Aucune conversation ne correspond à votre recherche.</div>
+
+  {% else %}
+  <div class="empty">
+    <div class="eic"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+    <h3>Aucune conversation</h3>
+    <p>Vous n'avez pas encore échangé avec un propriétaire ou une entreprise.</p>
+    <a href="/explorer/">Trouver un bien</a>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+  var filtreActif = 'tous';
+  function setFiltre(btn, f) {
+    filtreActif = f;
+    document.querySelectorAll('.fchip').forEach(function(c){ c.classList.remove('sel'); });
+    btn.classList.add('sel');
+    filtrer();
+  }
+  function filtrer() {
+    var q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+    var items = document.querySelectorAll('#convlist .conv');
+    var visibles = 0;
+    items.forEach(function(el) {
+      var matchSearch = !q || el.dataset.search.indexOf(q) !== -1;
+      var matchFiltre = filtreActif === 'tous'
+        || (filtreActif === 'non_lus' && el.dataset.nonlu === '1')
+        || (filtreActif === 'locations' && el.dataset.categorie === 'locations')
+        || (filtreActif === 'ventes' && el.dataset.categorie === 'ventes');
+      var visible = matchSearch && matchFiltre;
+      el.style.display = visible ? '' : 'none';
+      if (visible) visibles++;
+    });
+    document.getElementById('noresult').style.display = visibles === 0 ? 'block' : 'none';
+  }
+</script>
+</body>
+</html>

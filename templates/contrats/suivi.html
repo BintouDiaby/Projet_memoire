@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ contrat.bien.titre }} — Suivi du contrat — ImmoGérer{% endblock %}
+
+{% block extra_head %}
+<style>
+  .me-page { background: var(--ig-bg, #F4F6F9); min-height: calc(100vh - 60px); padding: 22px 0 56px; }
+  .me-wrap  { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+
+  .bienhero { position: relative; border-radius: 18px; overflow: hidden; margin-bottom: 14px; box-shadow: 0 12px 32px rgba(16,32,48,.09); height: 140px; display: flex; align-items: flex-end; background: linear-gradient(120deg,#2170bd,#185FA5 55%,#123f72); }
+  .bienhero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg,rgba(0,0,0,.45),transparent 60%); }
+  .bienhero .bin { position: relative; z-index: 1; padding: 16px 22px; color: #fff; display: flex; align-items: flex-end; justify-content: space-between; width: 100%; }
+  .bienhero .t { font-family: var(--ig-font-display); font-weight: 800; font-size: 20px; }
+  .bienhero .l { font-size: 12.5px; color: #dce8f5; margin-top: 2px; }
+  .bstatus { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.3); padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; color: #fff; }
+
+  .summ2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .scard { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 16px 18px; }
+  .scard .lab { font-size: 11px; font-weight: 700; color: #9AA0A6; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+
+  .entrow { display: flex; align-items: center; gap: 12px; }
+  .entav { width: 42px; height: 42px; border-radius: 11px; background: #EAF3DE; color: #27500A; display: grid; place-items: center; font-family: var(--ig-font-display); font-weight: 800; font-size: 14px; flex: 0 0 42px; overflow: hidden; }
+  .entav img { width: 100%; height: 100%; object-fit: cover; }
+  .entname { font-weight: 700; font-size: 14.5px; color: #111; }
+  .entverif { font-size: 11.5px; color: #27500A; }
+  .entbtns { display: flex; gap: 7px; margin-top: 12px; flex-wrap: wrap; }
+
+  .ctrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .ctnum { font-weight: 700; font-size: 14.5px; color: #111; }
+  .ctdates { font-size: 12px; color: #6B7280; margin-top: 2px; }
+  .progbar { height: 7px; background: #F4F6F9; border-radius: 20px; overflow: hidden; margin-top: 6px; }
+  .progbar .fill { height: 100%; background: #185FA5; border-radius: 20px; }
+  .progtxt { font-size: 11.5px; color: #6B7280; margin-top: 5px; display: flex; justify-content: space-between; }
+
+  .chip { font-size: 11px; font-weight: 700; padding: 4px 11px; border-radius: 20px; }
+  .chip.ok { background: #EAF3DE; color: #27500A; } .chip.wait { background: #FEF3C7; color: #B45309; } .chip.late { background: #FBEAE4; color: #B4441F; } .chip.muted { background: #F4F6F9; color: #6B7280; }
+
+  .tabbar { display: flex; gap: 2px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 5px; margin-bottom: 16px; overflow-x: auto; }
+  .tabbtn { padding: 9px 15px; border-radius: 8px; border: none; background: none; color: #6B7280; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; font-family: var(--ig-font-body); }
+  .tabbtn:hover { color: #111; }
+  .tabbtn.active { background: #E7F0F9; color: #0C447C; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px 22px; margin-bottom: 14px; }
+  .card h3 { font-family: var(--ig-font-display); font-weight: 700; font-size: 15px; color: #111; margin: 0 0 14px; }
+
+  .journal { position: relative; padding-left: 26px; }
+  .journal::before { content: ""; position: absolute; left: 8px; top: 4px; bottom: 4px; width: 2px; background: #e5e7eb; }
+  .jitem { position: relative; padding-bottom: 16px; }
+  .jitem:last-child { padding-bottom: 0; }
+  .jitem .jdot { position: absolute; left: -26px; top: 2px; width: 17px; height: 17px; border-radius: 50%; background: #fff; border: 2px solid #e5e7eb; display: grid; place-items: center; font-size: 9px; }
+  .jitem.done .jdot { border-color: #3B6D11; background: #EAF3DE; }
+  .jitem.msg .jdot { border-color: #6D4AAE; background: #EFE8FA; }
+  .jitem.pay .jdot { border-color: #185FA5; background: #E7F0F9; }
+  .jitem .jt { font-size: 13.5px; color: #111; font-weight: 500; }
+  .jitem .jd { font-size: 11.5px; color: #9AA0A6; margin-top: 1px; }
+
+  .nextpay { display: flex; align-items: center; gap: 14px; background: #E7F0F9; border-radius: 12px; padding: 14px 16px; flex-wrap: wrap; }
+  .nextpay .np-t { font-weight: 700; font-size: 13.5px; color: #0C447C; }
+  .nextpay .np-d { font-size: 12px; color: #39414A; }
+
+  .ig-btn-full { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; font-weight: 600; font-size: 13px; padding: 9px 15px; cursor: pointer; border: 1px solid transparent; text-decoration: none; transition: .15s; font-family: var(--ig-font-body); }
+  .ig-btn-full.primary { background: #185FA5; color: #fff; margin-left: auto; }
+  .ig-btn-full.primary:hover { background: #1A3E6A; color: #fff; }
+  .ig-btn-full.ghost { background: #fff; border: 1px solid #e5e7eb; color: #39414A; }
+  .ig-btn-full.ghost:hover { border-color: #DBDFE4; }
+  .ig-btn-full.sm { padding: 7px 12px; font-size: 12.5px; }
+  .ig-btn-full.full { width: 100%; }
+
+  .factop { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; }
+  .factimg { width: 60px; height: 60px; border-radius: 12px; background: linear-gradient(135deg,#2170bd,#185FA5); flex: 0 0 60px; }
+  .factt { font-family: var(--ig-font-display); font-weight: 700; font-size: 15px; color: #111; }
+  .factref { font-size: 11.5px; color: #9AA0A6; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; padding: 5px 12px; border-radius: 20px; margin-left: auto; }
+  .badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .mit { padding: 12px 14px; background: #F4F6F9; border-radius: 10px; }
+  .mit .k { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #9AA0A6; margin-bottom: 4px; }
+  .mit .v { font-weight: 700; font-size: 13.5px; color: #111; }
+  .penalty { font-size: 12.5px; color: #6B7280; background: #F4F6F9; border-radius: 10px; padding: 10px 13px; margin-bottom: 16px; }
+  .actions4 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+
+  .plist { display: flex; flex-direction: column; gap: 2px; }
+  .prow { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-bottom: 1px solid #e5e7eb; }
+  .prow:last-child { border-bottom: none; }
+  .prow .m { font-size: 13.5px; color: #111; font-weight: 600; }
+
+  .msgprev { background: #F4F6F9; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+  .msgprev .who { font-weight: 700; font-size: 13px; color: #111; margin-bottom: 3px; }
+  .msgprev .txt { font-size: 12.5px; color: #39414A; }
+
+  .rlist { display: flex; flex-direction: column; gap: 10px; }
+  .ritem { border: 1px solid #e5e7eb; border-radius: 11px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+  .ritem .t { font-weight: 600; font-size: 13.5px; color: #111; flex: 1; }
+  .ritem .d { font-size: 11.5px; color: #9AA0A6; }
+
+  .me-empty { text-align: center; padding: 30px 10px; color: #6B7280; }
+  .me-empty .t { font-weight: 600; font-size: 13.5px; color: #111; margin-bottom: 4px; }
+  .me-empty .d { font-size: 12.5px; }
+
+  @media (max-width:640px) { .summ2 { grid-template-columns: 1fr; } .meta { grid-template-columns: 1fr; } .actions4 { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="me-page">
+  <div class="me-wrap">
+
+    {% if messages %}
+    {% for message in messages %}<div style="background:#F0FDF4;border:1px solid #86EFAC;color:#15803D;border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;margin-bottom:18px">{{ message }}</div>{% endfor %}
+    {% endif %}
+
+    <div class="bienhero">
+      <div class="bin">
+        <div><div class="t">{{ contrat.bien.titre }}</div><div class="l">{{ contrat.bien.commune|default:contrat.bien.ville }}</div></div>
+        <span class="bstatus">{{ contrat.get_statut_display }}</span>
+      </div>
+    </div>
+
+    <div class="summ2">
+      <div class="scard">
+        {% if est_locataire %}
+        <div class="lab">Entreprise</div>
+        <div class="entrow">
+          <div class="entav">{% if contrat.proprietaire.company.logo %}<img src="{{ contrat.proprietaire.company.logo.url }}" alt="">{% else %}{{ contrat.proprietaire.company.name|default:contrat.proprietaire.get_full_name|slice:":2"|upper }}{% endif %}</div>
+          <div><div class="entname">{{ contrat.proprietaire.company.name|default:contrat.proprietaire.get_full_name }}</div>
+          {% if contrat.proprietaire.documents_verifies %}<div class="entverif">Entreprise vérifiée</div>{% endif %}</div>
+        </div>
+        <div class="entbtns">
+          {% if contrat.proprietaire.telephone %}<a class="ig-btn-full ghost sm" href="tel:{{ contrat.proprietaire.telephone }}">Appeler</a>{% endif %}
+          <a class="ig-btn-full ghost sm" href="{% if conv %}/chat/{{ conv.id }}/{% else %}/chat/nouveau/{{ contrat.bien.id }}/{% endif %}">Discuter</a>
+          {% if contrat.proprietaire.company %}<a class="ig-btn-full ghost sm" href="/entreprises/{{ contrat.proprietaire.company.id }}/">Voir le profil</a>{% endif %}
+        </div>
+        {% else %}
+        <div class="lab">Locataire</div>
+        <div class="entrow">
+          <div class="entav">{{ contrat.locataire.get_full_name|default:contrat.locataire.username|slice:":2"|upper }}</div>
+          <div><div class="entname">{{ contrat.locataire.get_full_name|default:contrat.locataire.username }}</div></div>
+        </div>
+        <div class="entbtns">
+          {% if contrat.locataire.telephone %}<a class="ig-btn-full ghost sm" href="tel:{{ contrat.locataire.telephone }}">Appeler</a>{% endif %}
+          {% if conv %}<a class="ig-btn-full ghost sm" href="/chat/{{ conv.id }}/">Discuter</a>{% endif %}
+          <a class="ig-btn-full ghost sm" href="/dashboard/client/{{ contrat.locataire.id }}/">Fiche client</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="scard">
+        <div class="lab">Contrat</div>
+        <div class="ctrow">
+          <div><div class="ctnum">{{ contrat.numero_contrat }}</div><div class="ctdates">{{ contrat.date_debut|date:"d M" }} — {{ contrat.date_fin|date:"d M Y" }}</div></div>
+          <span class="chip {% if contrat.statut == 'en_cours' %}ok{% elif contrat.statut == 'termine' %}muted{% else %}late{% endif %}">{{ contrat.get_statut_display }}</span>
+        </div>
+        <div class="progbar"><div class="fill" style="width:{{ progression_pct }}%"></div></div>
+        <div class="progtxt"><span>{{ nb_paiements_payes }} / {{ nb_paiements_total }} paiements</span><span>{{ nb_paiements_restants }} restant{{ nb_paiements_restants|pluralize }}</span></div>
+        <div class="entbtns"><a class="ig-btn-full ghost sm" href="{% url 'contrats_ui:detail' pk=contrat.id %}">États des lieux / caution</a></div>
+      </div>
+    </div>
+
+    <div class="tabbar">
+      <button class="tabbtn active" data-tab="apercu" onclick="showTab('apercu')">Aperçu</button>
+      <button class="tabbtn" data-tab="facture" onclick="showTab('facture')">Facture actuelle</button>
+      <button class="tabbtn" data-tab="paiements" onclick="showTab('paiements')">Paiements</button>
+      <button class="tabbtn" data-tab="messages" onclick="showTab('messages')">Messages</button>
+      {% if est_locataire %}<button class="tabbtn" data-tab="reclam" onclick="showTab('reclam')">Réclamations</button>{% endif %}
+      <button class="tabbtn" data-tab="visites" onclick="showTab('visites')">Visites</button>
+    </div>
+
+    <!-- APERCU -->
+    <div class="panel active" id="tab-apercu">
+      {% if prochaine_echeance %}
+      <div class="card">
+        <h3>Prochaine échéance</h3>
+        <div class="nextpay">
+          <div><div class="np-t">{{ prochaine_echeance.montant_total|floatformat:0|intcomma }} FCFA</div><div class="np-d">{% if prochaine_echeance.paiement %}Loyer de {{ prochaine_echeance.paiement.mois|date:"F Y" }} · {% endif %}échéance le {{ prochaine_echeance.date_echéance|date:"d F Y" }}</div></div>
+          <a class="ig-btn-full primary sm" href="/dashboard/facturation/{{ prochaine_echeance.id }}/">Voir</a>
+        </div>
+      </div>
+      {% endif %}
+      <div class="card">
+        <h3>Journal d'activité</h3>
+        {% if journal %}
+        <div class="journal">
+          {% for j in journal %}
+          <div class="jitem {{ j.type }}"><span class="jdot">{{ j.icon }}</span><div class="jt">{{ j.texte }}</div><div class="jd">{{ j.date|date:"d F Y" }}</div></div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="me-empty"><div class="t">Aucune activité pour le moment</div></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- FACTURE ACTUELLE -->
+    <div class="panel" id="tab-facture">
+      <div class="card">
+        {% if facture_actuelle %}
+        <div class="factop">
+          <div class="factimg"></div>
+          <div><div class="factt">{{ contrat.bien.titre|truncatechars:28 }}</div><div class="factref">{{ facture_actuelle.numero_facture }}</div></div>
+          <span class="badge" style="background:{% if facture_actuelle.statut == 'payee' %}#EAF3DE{% else %}#FEF3C7{% endif %};color:{% if facture_actuelle.statut == 'payee' %}#27500A{% else %}#B45309{% endif %}">{{ facture_actuelle.get_statut_display }}</span>
+        </div>
+        <div class="meta">
+          {% if facture_actuelle.paiement %}<div class="mit"><div class="k">Mois concerné</div><div class="v">{{ facture_actuelle.paiement.mois|date:"F Y" }}</div></div>{% endif %}
+          <div class="mit"><div class="k">Échéance</div><div class="v">{{ facture_actuelle.date_echéance|date:"d F Y" }}</div></div>
+          <div class="mit"><div class="k">Montant</div><div class="v">{{ facture_actuelle.montant_total|floatformat:0|intcomma }} FCFA</div></div>
+          <div class="mit"><div class="k">Mode de paiement</div><div class="v">{% if facture_actuelle.mode_paiement %}{{ facture_actuelle.get_mode_paiement_display }}{% if facture_actuelle.reference_transaction %} — réf. {{ facture_actuelle.reference_transaction }}{% endif %}{% else %}—{% endif %}</div></div>
+        </div>
+        {% if facture_actuelle.statut == 'payee' %}
+        <div class="penalty">Aucune pénalité appliquée sur cette facture.</div>
+        {% endif %}
+        <div class="actions4">
+          <a class="ig-btn-full primary" href="/dashboard/facturation/{{ facture_actuelle.id }}/">Voir la facture complète</a>
+          <a class="ig-btn-full ghost" href="/dashboard/facturation/{{ facture_actuelle.id }}/pdf/">Télécharger</a>
+        </div>
+        {% else %}
+        <div class="me-empty"><div class="t">Aucune facture pour le moment</div></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- PAIEMENTS -->
+    <div class="panel" id="tab-paiements">
+      <div class="card">
+        <h3>Historique des paiements</h3>
+        {% if paiements %}
+        <div class="plist">
+          {% for p in paiements %}
+          <div class="prow">
+            <span class="m">{{ p.mois|date:"F Y" }}</span>
+            <span class="chip {% if p.statut == 'recu' %}ok{% elif p.statut == 'en_attente' %}wait{% else %}late{% endif %}">{{ p.get_statut_display }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="me-empty"><div class="t">Aucun paiement pour le moment</div></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div class="panel" id="tab-messages">
+      <div class="card">
+        <h3>Conversation {% if est_locataire %}avec {{ contrat.proprietaire.company.name|default:contrat.proprietaire.get_full_name }}{% else %}avec {{ contrat.locataire.get_full_name|default:contrat.locataire.username }}{% endif %}</h3>
+        {% if dernier_message %}
+        <div class="msgprev"><div class="who">{{ dernier_message.expediteur.get_full_name|default:dernier_message.expediteur.username }}</div><div class="txt">{{ dernier_message.contenu|truncatechars:140 }}</div></div>
+        {% else %}
+        <div class="me-empty"><div class="t">Aucun message pour le moment</div></div>
+        {% endif %}
+        {% if conv %}
+        <a class="ig-btn-full primary full" href="/chat/{{ conv.id }}/">Ouvrir la conversation</a>
+        {% elif est_locataire %}
+        <a class="ig-btn-full primary full" href="/chat/nouveau/{{ contrat.bien.id }}/">Envoyer un message</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- RECLAMATIONS -->
+    {% if est_locataire %}
+    <div class="panel" id="tab-reclam">
+      <div class="card">
+        <h3>Réclamations sur ce contrat</h3>
+        {% if reclamations %}
+        <div class="rlist">
+          {% for r in reclamations %}
+          <div class="ritem"><span class="t">{{ r.titre }}</span><span class="d">{{ r.cree_le|date:"d/m/Y" }}</span><span class="chip {% if r.statut == 'resolue' %}ok{% elif r.statut == 'ouverte' %}late{% else %}wait{% endif %}">{{ r.get_statut_display }}</span></div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="me-empty"><div class="t">Aucune réclamation en cours</div><div class="d">Tout va bien de votre côté sur ce logement.</div></div>
+        {% endif %}
+        <a class="ig-btn-full ghost full" style="margin-top:12px" href="/contrats/reclamation/{{ contrat.bien.id }}/">Signaler un problème</a>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- VISITES -->
+    <div class="panel" id="tab-visites">
+      <div class="card">
+        <h3>Visites liées à ce bien</h3>
+        {% if visites %}
+        <div class="rlist">
+          {% for v in visites %}
+          <div class="ritem"><span class="t">{{ v.notes|default:"Visite"|truncatechars:40 }}</span><span class="d">{{ v.date_visite|date:"d/m/Y" }}</span><span class="chip {% if v.statut == 'confirmee' %}ok{% elif v.statut == 'en_attente' %}wait{% else %}muted{% endif %}">{{ v.get_statut_display }}</span></div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="me-empty"><div class="t">Aucune visite enregistrée</div></div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function showTab(name){
+  document.querySelectorAll('.tabbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === name); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.toggle('active', p.id === 'tab-' + name); });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+Bonjour {{ user.first_name|default:user.username }},
+
+Merci de vous être inscrit(e) sur ImmoGérer.
+
+Voici votre code de confirmation :
+
+{{ code }}
+
+Saisissez ce code dans l'application pour confirmer votre adresse email. Il expire dans 10 minutes.
+
+Ce code est à usage personnel — ne le partagez pas. Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement cet email.
+
+L'équipe ImmoGérer

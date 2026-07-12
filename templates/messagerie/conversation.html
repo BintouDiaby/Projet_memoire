@@ -1,0 +1,349 @@
+<!--
+  conversation.html — Messagerie (deux volets : conversations à gauche, fil à droite).
+  Rendu par messagerie/views.py::conversation_detail. Le volet gauche vient de
+  conversations_sidebar (même calcul que mes_conversations, factorisé dans
+  _conversations_sidebar). Envoi + polling AJAX réels (pas de démo JS).
+-->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Messages — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#185FA5;--blue-dark:#1A3E6A;--blue-soft:#E7F0F9;--blue-text:#0C447C;
+    --green:#3B6D11;--green-soft:#EAF3DE;--green-text:#27500A;
+    --gold:#A8842F;--gold-soft:#FBF3DE;--red:#B4441F;
+    --ink:#16202B;--text:#39414A;--muted:#6B7280;--muted-2:#9AA0A6;
+    --line:#E7EAEE;--line-2:#DBDFE4;--bg:#F4F6F9;--card:#FFFFFF;
+    --sh:0 1px 2px rgba(16,32,48,.05);
+    --fdisp:"Plus Jakarta Sans",system-ui,sans-serif;--fbody:"Inter",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--fbody);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow:hidden}
+  a{text-decoration:none;color:inherit}
+
+  .nav{height:60px;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;align-items:center}
+  .nav-in{max-width:1280px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:14px;width:100%}
+  .back{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;cursor:pointer;color:var(--muted);flex-shrink:0;transition:.14s}
+  .back:hover{border-color:var(--line-2);color:var(--ink)}.back svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2}
+  .brand{display:flex;align-items:center;gap:9px;font-family:var(--fdisp);font-weight:800;font-size:17px;color:var(--ink);flex-shrink:0}
+  .brand svg{width:22px;height:22px}
+  .links{display:flex;gap:2px;list-style:none;margin:0;padding:0;flex:1}
+  .links a{display:block;padding:7px 12px;border-radius:8px;color:var(--muted);font-weight:500;font-size:13.5px;transition:.14s}
+  .links a:hover{color:var(--ink);background:#eef1f4}.links a.active{color:var(--blue);background:var(--blue-soft);font-weight:600}
+  .acts{display:flex;align-items:center;gap:10px;flex-shrink:0}
+  .uname{font-size:13.5px;color:var(--ink);font-weight:500}.role{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--green-soft);color:var(--green-text)}
+  .sep{width:1px;height:22px;background:var(--line)}
+  .logout{background:#fff;border:1px solid var(--line);border-radius:9px;font-size:13px;font-weight:500;padding:7px 13px;cursor:pointer;color:var(--muted);font-family:var(--fbody);transition:.14s}
+  .logout:hover{border-color:#dc2626;color:#dc2626;background:#fef2f2}
+
+  .phase{font-size:10px;font-weight:700;border-radius:20px;padding:2px 8px;white-space:nowrap}
+  .phase.commercial{background:var(--blue-soft);color:var(--blue)}
+  .phase.locataire{background:var(--green-soft);color:var(--green)}
+  .phase.sav{background:var(--gold-soft);color:var(--gold)}
+
+  .chat{height:calc(100vh - 60px);max-width:1280px;margin:0 auto;padding:18px 24px;display:grid;grid-template-columns:340px 1fr;gap:18px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+
+  .clist-head{padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+  .clist-head h1{font-family:var(--fdisp);font-weight:800;font-size:19px;color:var(--ink);margin:0 0 12px;display:flex;align-items:center;gap:9px}
+  .clist-head h1 svg{width:19px;height:19px;stroke:var(--blue);fill:none;stroke-width:2}
+  .csearch{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+  .csearch svg{width:15px;height:15px;stroke:var(--muted-2);fill:none;stroke-width:1.8}
+  .csearch input{border:none;outline:none;background:transparent;font:inherit;font-size:13px;width:100%}
+  .clist{flex:1;overflow-y:auto;min-height:0}
+  .citem{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s;position:relative}
+  .citem:hover{background:#f8fafc}
+  .citem.active{background:var(--blue-soft)}
+  .citem.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--blue)}
+  .av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-family:var(--fdisp);font-weight:700;font-size:15px;color:#fff;flex:0 0 44px;text-transform:uppercase}
+  .av.b1{background:radial-gradient(130% 130% at 70% 0%,#2170bd,#15528f)}
+  .av.b2{background:radial-gradient(130% 130% at 70% 0%,#4a861b,#2e5409)}
+  .av.b3{background:radial-gradient(130% 130% at 70% 0%,#b98a2a,#7a5f1a)}
+  .av.b4{background:radial-gradient(130% 130% at 70% 0%,#5b6470,#39414a)}
+  .cinfo{flex:1;min-width:0}
+  .cname{font-weight:600;font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:7px}
+  .cname .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .csub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .csub b{color:var(--text);font-weight:600}
+  .cmeta{text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+  .ctime{font-size:11px;color:var(--muted-2)}
+  .cunread{background:var(--blue);color:#fff;border-radius:50%;min-width:19px;height:19px;font-size:10.5px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+  .cempty{padding:30px 18px;text-align:center;color:var(--muted);font-size:13px}
+
+  .thread{display:flex;flex-direction:column;min-height:0}
+  .thead{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line)}
+  .thead .who{flex:1;min-width:0}
+  .thead .who .n{font-family:var(--fdisp);font-weight:700;font-size:15px;color:var(--ink);display:flex;align-items:center;gap:8px}
+  .thead .who .p{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-top:2px}
+  .thead .who .p svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.8}
+  .thead .tact{display:flex;align-items:center;gap:8px;flex-shrink:0;position:relative}
+  .tbtn{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--text);cursor:pointer;transition:.14s;font-family:var(--fbody)}
+  .tbtn:hover{border-color:var(--line-2)}
+  .tbtn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+
+  .phase-panel{position:absolute;top:44px;right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:190px;z-index:50;overflow:hidden;display:none}
+  .phase-panel.show{display:block}
+  .phase-opt{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:11px 15px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;font-family:var(--fbody);border-bottom:1px solid var(--line)}
+  .phase-opt:last-child{border-bottom:none}
+  .phase-opt:hover{background:#f9fafb}
+  .phase-opt .dot{width:8px;height:8px;border-radius:50%}
+
+  .bien-strip{display:flex;align-items:center;gap:10px;padding:9px 18px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+  .bien-strip a{color:var(--blue);font-weight:600}
+  .bien-strip .prix{color:var(--green-text);font-weight:700}
+
+  .visits-strip{background:var(--gold-soft);border-bottom:1px solid #EBD9AC;padding:9px 18px;font-size:12.5px;color:#6b5414}
+  .visits-strip b{font-weight:700}
+  .visit-item{display:inline-flex;align-items:center;gap:7px;margin:3px 12px 3px 0}
+  .v-status{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px}
+  .v-en_attente{background:#FEF3C7;color:#92400E}
+  .v-confirmee{background:#D1FAE5;color:#065F46}
+  .v-refusee{background:#FEE2E2;color:#991B1B}
+  .v-annulee{background:#F3F4F6;color:#6B7280}
+  .vmini{border:none;border-radius:6px;font-size:10.5px;font-weight:700;padding:3px 8px;cursor:pointer;color:#fff}
+  .vmini.ok{background:var(--green)}.vmini.no{background:var(--red)}
+
+  .msgs{flex:1;overflow-y:auto;min-height:0;padding:20px 20px 8px;background:#fbfcfd}
+  .row{display:flex;margin-bottom:10px}
+  .row.me{justify-content:flex-end}
+  .bubble{max-width:74%;padding:10px 14px;font-size:13.5px;line-height:1.45;border-radius:16px;position:relative;box-shadow:var(--sh);word-break:break-word}
+  .row.them .bubble{background:#fff;border:1px solid var(--line);color:var(--text);border-bottom-left-radius:5px}
+  .row.me .bubble{background:var(--blue);color:#fff;border-bottom-right-radius:5px}
+  .bsender{font-size:11px;font-weight:700;color:var(--blue);display:block;margin-bottom:3px}
+  .btime{font-size:10.5px;margin-top:5px;opacity:.75}
+  .row.me .btime{text-align:right;color:#dbe8f5}.row.them .btime{color:var(--muted-2)}
+  .empty-thread{margin:auto;text-align:center;color:var(--muted);padding:32px}
+  .empty-thread .em{font-size:2.2rem}
+
+  .composer{border-top:1px solid var(--line);padding:12px 16px;display:flex;align-items:flex-end;gap:10px;background:#fff}
+  .composer .field{flex:1;display:flex;align-items:flex-end;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:6px 8px 6px 14px}
+  .composer textarea{flex:1;border:none;outline:none;background:transparent;font:inherit;font-size:13.5px;resize:none;max-height:120px;line-height:1.4;padding:6px 0}
+  .send{width:40px;height:40px;border-radius:11px;background:var(--blue);border:none;display:grid;place-items:center;cursor:pointer;color:#fff;flex:0 0 40px;transition:.14s}
+  .send:hover{background:var(--blue-dark)}.send:disabled{opacity:.45;cursor:default}.send svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2}
+
+  @media (max-width:800px){
+    .chat{grid-template-columns:1fr;padding:0;gap:0;height:calc(100vh - 60px)}
+    .panel{border-radius:0;border-left:none;border-right:none}
+    .left{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-in">
+    <button class="back" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+    <a class="brand" href="/"><svg viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#185FA5" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/><path d="M3 21h18" stroke="#185FA5" stroke-width="1.8" stroke-linecap="round"/></svg> ImmoGérer</a>
+    <ul class="links">
+      {% if request.user.role == 'locataire' %}
+      <li><a href="/mon-espace/">Mon espace</a></li>
+      <li><a href="/dashboard/contrats/">Contrats</a></li>
+      {% else %}
+      <li><a href="/dashboard/company/">Dashboard</a></li>
+      <li><a href="/dashboard/biens/">Biens</a></li>
+      <li><a href="/dashboard/contrats/">Contrats</a></li>
+      <li><a href="/dashboard/facturation/">Facturation</a></li>
+      {% endif %}
+      <li><a href="#" class="active">Messages</a></li>
+    </ul>
+    <div class="acts">
+      <span class="uname">{{ request.user.get_full_name|default:request.user.username }}</span><span class="role">{{ request.user.get_role_display }}</span>
+      <div class="sep"></div>
+      <form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}<button type="submit" class="logout">Déconnexion</button></form>
+    </div>
+  </div>
+</nav>
+
+<div class="chat" id="chat">
+
+  <!-- CONVERSATIONS -->
+  <div class="panel left">
+    <div class="clist-head">
+      <h1><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Messages</h1>
+      <div class="csearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="convSearch" placeholder="Rechercher une conversation…"></div>
+    </div>
+    <div class="clist" id="clist">
+      {% for item in conversations_sidebar %}
+      <a class="citem{% if item.conv.id == conv.id %} active{% endif %}" href="/chat/{{ item.conv.id }}/" data-search="{{ item.interlocuteur.get_full_name|default:item.interlocuteur.username|lower }} {{ item.conv.bien.titre|default:''|lower }}">
+        <div class="av {{ item.avatar_class }}">{{ item.interlocuteur.first_name|first|default:item.interlocuteur.username|first }}</div>
+        <div class="cinfo">
+          <div class="cname"><span class="nm">{{ item.interlocuteur.get_full_name|default:item.interlocuteur.username }}</span> <span class="phase {{ item.conv.phase }}">{{ item.conv.get_phase_display }}</span></div>
+          <div class="csub">{% if item.conv.bien %}<b>{{ item.conv.bien.titre|truncatechars:22 }}</b> · {% endif %}{% if item.dernier %}{{ item.dernier.contenu|truncatechars:34 }}{% else %}Conversation ouverte{% endif %}</div>
+        </div>
+        <div class="cmeta">
+          <span class="ctime">{% if item.dernier %}{{ item.dernier.cree_le|time:"H:i" }}{% endif %}</span>
+          {% if item.nb_non_lus %}<span class="cunread">{{ item.nb_non_lus }}</span>{% endif %}
+        </div>
+      </a>
+      {% empty %}
+      <div class="cempty">Aucune conversation pour le moment.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- FIL -->
+  <div class="panel thread-panel">
+    <div class="thread">
+      <div class="thead">
+        <div class="av {{ avatar_class }}">{{ interlocuteur.first_name|first|default:interlocuteur.username|first }}</div>
+        <div class="who">
+          <div class="n">{{ interlocuteur.get_full_name|default:interlocuteur.username }} <span class="phase {{ conv.phase }}">{{ conv.get_phase_display }}</span></div>
+          <div class="p"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12M3 21h18"/></svg> {{ bien.titre|default:"Conversation" }}</div>
+        </div>
+        <div class="tact">
+          {% if est_proprietaire %}
+          <a class="tbtn" href="/chat/{{ conv.id }}/client/{{ conv.demandeur.id }}/"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0M16 5a3.5 3.5 0 0 1 0 7"/></svg> Fiche client</a>
+          <button class="tbtn" type="button" id="phaseBtn"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg> Phase</button>
+          <div class="phase-panel" id="phasePanel">
+            {% for val, label in phase_choices %}
+            <form method="post" action="/chat/{{ conv.id }}/phase/" style="margin:0">
+              {% csrf_token %}
+              <input type="hidden" name="phase" value="{{ val }}">
+              <button class="phase-opt" type="submit"><span class="dot" style="background:{% if val == 'commercial' %}var(--blue){% elif val == 'locataire' %}var(--green){% else %}var(--gold){% endif %}"></span>{{ label }}</button>
+            </form>
+            {% endfor %}
+          </div>
+          {% else %}
+          <a class="tbtn" href="/biens/{{ bien.id }}/"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12M3 21h18"/></svg> Voir le bien</a>
+          {% if interlocuteur.telephone %}<a class="tbtn" href="tel:{{ interlocuteur.telephone }}"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg> Appeler</a>{% endif %}
+          {% endif %}
+        </div>
+      </div>
+
+      {% if bien %}
+      <div class="bien-strip">
+        <a href="/biens/{{ bien.id }}/">{{ bien.titre }}</a>
+        {% if bien.commune or bien.ville %}<span>— {{ bien.commune|default:bien.ville }}</span>{% endif %}
+        {% if bien.prix_mensuel and bien.transaction_type != 'vente' %}<span class="prix">{{ bien.prix_mensuel|floatformat:0 }} FCFA/mois</span>
+        {% elif bien.prix_vente %}<span class="prix">{{ bien.prix_vente|floatformat:0 }} FCFA</span>{% endif %}
+      </div>
+      {% endif %}
+
+      {% if visites %}
+      <div class="visits-strip">
+        <b>Visites :</b>
+        {% for v in visites %}
+        <span class="visit-item">
+          {{ v.date_visite|date:"d/m/Y à H:i" }}
+          <span class="v-status v-{{ v.statut }}">{{ v.get_statut_display }}</span>
+          {% if est_proprietaire and v.statut == 'en_attente' %}
+          <form method="post" action="/chat/visite/{{ v.id }}/gerer/" style="display:inline;margin:0">
+            {% csrf_token %}<input type="hidden" name="action" value="confirmer"><input type="hidden" name="next" value="/chat/{{ conv.id }}/">
+            <button type="submit" class="vmini ok">Confirmer</button>
+          </form>
+          <form method="post" action="/chat/visite/{{ v.id }}/gerer/" style="display:inline;margin:0">
+            {% csrf_token %}<input type="hidden" name="action" value="refuser"><input type="hidden" name="next" value="/chat/{{ conv.id }}/">
+            <button type="submit" class="vmini no">Refuser</button>
+          </form>
+          {% endif %}
+        </span>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="msgs" id="msgs">
+        {% if not messages %}
+        <div class="empty-thread"><div class="em">💬</div><p>Démarrez la conversation avec {{ interlocuteur.get_full_name|default:interlocuteur.username }}.</p></div>
+        {% endif %}
+        {% for msg in messages %}
+        <div class="row {% if msg.expediteur == request.user %}me{% else %}them{% endif %}" data-iso="{{ msg.cree_le.isoformat }}">
+          <div class="bubble">
+            {% if msg.expediteur != request.user %}<span class="bsender">{{ msg.expediteur.get_full_name|default:msg.expediteur.username }}</span>{% endif %}
+            {{ msg.contenu|linebreaksbr }}
+            <div class="btime">{{ msg.cree_le|time:"H:i" }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <form class="composer" id="composer" method="post" action="/chat/{{ conv.id }}/">
+        {% csrf_token %}
+        <div class="field"><textarea id="input" name="contenu" rows="1" placeholder="Écrivez votre message…"></textarea></div>
+        <button type="submit" class="send" id="send" disabled><svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+const CONV_ID = {{ conv.id }};
+const CSRF = '{{ csrf_token }}';
+const msgs = document.getElementById('msgs');
+const input = document.getElementById('input');
+const send = document.getElementById('send');
+
+function scrollBottom(){ msgs.scrollTop = msgs.scrollHeight; }
+scrollBottom();
+
+function getLastIso(){
+  const rows = msgs.querySelectorAll('[data-iso]');
+  if (!rows.length) return new Date(0).toISOString();
+  return rows[rows.length - 1].dataset.iso;
+}
+function escHtml(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function appendBubble(m){
+  const es = msgs.querySelector('.empty-thread'); if (es) es.remove();
+  const div = document.createElement('div');
+  div.className = 'row ' + (m.moi ? 'me' : 'them');
+  div.dataset.iso = m.iso;
+  const sender = !m.moi ? `<span class="bsender">${escHtml(m.nom)}</span>` : '';
+  div.innerHTML = `<div class="bubble">${sender}${escHtml(m.contenu).replace(/\n/g,'<br>')}<div class="btime">${m.heure}</div></div>`;
+  msgs.appendChild(div);
+  scrollBottom();
+}
+input.addEventListener('input', function(){
+  send.disabled = !input.value.trim();
+  input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+});
+async function sendMessage(){
+  const contenu = input.value.trim(); if (!contenu) return;
+  input.value=''; input.style.height='auto'; send.disabled=true;
+  try{
+    const resp = await fetch(`/chat/${CONV_ID}/`, {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest','X-CSRFToken':CSRF},
+      body:`contenu=${encodeURIComponent(contenu)}&csrfmiddlewaretoken=${CSRF}`,
+    });
+    const data = await resp.json();
+    if (data.ok) appendBubble({moi:true, nom:'', contenu, heure:data.heure, iso:new Date().toISOString()});
+  }catch(e){}
+}
+document.getElementById('composer').addEventListener('submit', function(e){ e.preventDefault(); sendMessage(); });
+input.addEventListener('keydown', function(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } });
+
+let polling = true;
+async function poll(){
+  if (!polling) return;
+  try{
+    const resp = await fetch(`/chat/${CONV_ID}/messages/?since=${encodeURIComponent(getLastIso())}`);
+    const data = await resp.json();
+    if (data.messages && data.messages.length) data.messages.forEach(appendBubble);
+  }catch(e){}
+  setTimeout(poll, 3000);
+}
+setTimeout(poll, 3000);
+document.addEventListener('visibilitychange', function(){ if(document.hidden){ polling=false; } else { polling=true; poll(); } });
+
+const phaseBtn = document.getElementById('phaseBtn'), phasePanel = document.getElementById('phasePanel');
+if (phaseBtn){
+  phaseBtn.addEventListener('click', function(e){ e.stopPropagation(); phasePanel.classList.toggle('show'); });
+  document.addEventListener('click', function(){ phasePanel.classList.remove('show'); });
+}
+
+document.getElementById('convSearch').addEventListener('input', function(e){
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('#clist .citem').forEach(function(el){
+    el.style.display = el.dataset.search.indexOf(q) < 0 ? 'none' : '';
+  });
+});
+</script>
+</body>
+</html>

@@ -4,57 +4,169 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Immobilier — Gestion Locative{% endblock %}</title>
+    <title>{% block title %}ImmoGérer — Gestion Locative{% endblock %}</title>
     <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link href="{% static 'css/site.css' %}" rel="stylesheet">
+    <style>
+      :root {
+        --ig-primary: #185FA5;
+        --ig-primary-dark: #1A3E6A;
+        --ig-accent: #C9A84C;
+        --ig-green: #3B6D11;
+        --ig-text: #111;
+        --ig-muted: #6B7280;
+        --ig-border: #e5e7eb;
+        --ig-bg: #F4F6F9;
+        --ig-font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+        --ig-font-body: "Inter", system-ui, sans-serif;
+      }
+      body { font-family: var(--ig-font-body); }
+
+      /* ── Barre de navigation principale ── */
+      .ig-nav {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: rgba(255,255,255,.94);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--ig-border);
+      }
+      .ig-nav-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        height: 60px;
+      }
+      .ig-brand {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-family: var(--ig-font-display);
+        font-weight: 800;
+        font-size: 17px;
+        letter-spacing: -.01em;
+        color: var(--ig-text);
+        text-decoration: none;
+        flex-shrink: 0;
+      }
+      .ig-navlinks {
+        display: flex;
+        gap: 2px;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        flex: 1;
+      }
+      .ig-navlinks li a {
+        display: block;
+        padding: 7px 11px;
+        border-radius: 8px;
+        color: var(--ig-muted);
+        font-weight: 500;
+        font-size: 13.5px;
+        text-decoration: none;
+        transition: .14s;
+        white-space: nowrap;
+      }
+      .ig-navlinks li a:hover { color: var(--ig-text); background: #eaedf1; }
+      .ig-navlinks li a.ig-active { color: var(--ig-primary); background: #e8f0fa; }
+      .ig-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+      .ig-username {
+        font-size: 13.5px;
+        color: var(--ig-text);
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .ig-role-badge {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 20px;
+        background: #e8f0fa;
+        color: var(--ig-primary);
+        white-space: nowrap;
+      }
+      .ig-role-badge.proprietaire { background:#EAF3DE; color:#3B6D11; }
+      .ig-role-badge.gestionnaire { background:#FFF7ED; color:#B45309; }
+      .ig-role-badge.locataire    { background:#e8f0fa; color:#185FA5; }
+      .ig-role-badge.admin        { background:#FEE2E2; color:#B91C1C; }
+      .ig-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border-radius: 9px;
+        font-weight: 600;
+        font-size: 13px;
+        padding: 8px 15px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: .15s;
+        font-family: var(--ig-font-body);
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .ig-btn-primary { background: var(--ig-primary); color: #fff; }
+      .ig-btn-primary:hover { background: var(--ig-primary-dark); color: #fff; }
+      .ig-btn-ghost { background: #fff; border-color: var(--ig-border); color: var(--ig-text); }
+      .ig-btn-ghost:hover { border-color: var(--ig-primary); color: var(--ig-primary); }
+      .ig-btn-amber { background: var(--ig-accent); color: #1c1405; }
+      .ig-btn-amber:hover { filter: brightness(.95); color: #1c1405; }
+      .ig-btn-logout {
+        background: none;
+        border: 1px solid var(--ig-border);
+        border-radius: 9px;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 7px 13px;
+        cursor: pointer;
+        color: var(--ig-muted);
+        font-family: var(--ig-font-body);
+        transition: .14s;
+        line-height: 1;
+      }
+      .ig-btn-logout:hover { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
+
+      /* Séparateur vertical */
+      .ig-sep { width: 1px; height: 22px; background: var(--ig-border); flex-shrink: 0; }
+
+      /* Mobile : cacher les liens de nav, garder brand + actions */
+      @media (max-width: 900px) {
+        .ig-navlinks { display: none; }
+      }
+      @media (max-width: 600px) {
+        .ig-btn-amber { display: none; }
+      }
+    </style>
     {% block extra_head %}{% endblock %}
   </head>
-  <body class="{% block body_class %}{% endblock %}">
+  <style>
+    body.loc-with-sidebar .ig-content-shift { margin-left: 240px; }
+    @media(max-width:860px){
+      body.loc-with-sidebar .ig-content-shift { margin-left: 0; }
+    }
+  </style>
+  <body class="{% block body_class %}{% endblock %}{% if request.user.is_authenticated and request.user.role == 'locataire' and request.resolver_match.url_name != 'landing' %} loc-with-sidebar{% endif %}">
+
+    {% if request.user.is_authenticated and request.user.role == 'locataire' and request.resolver_match.url_name != 'landing' %}
+    {% include "dashboard/includes/sidebar_locataire.html" %}
+    {% endif %}
 
     {% block navbar %}
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-      <div class="container">
-        <a class="navbar-brand" href="/">🏢 Immobilier</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="mainNav">
-          {% if request.user.is_authenticated %}
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item"><a class="nav-link" href="/">Accueil</a></li>
-            <li class="nav-item"><a class="nav-link" href="/biens/">Biens</a></li>
-            <li class="nav-item"><a class="nav-link" href="/contrats/">Contrats</a></li>
-            {% if request.user.role == 'locataire' %}
-              <li class="nav-item"><a class="nav-link" href="/contrats/mes-locations/">Mes locations</a></li>
-            {% endif %}
-            <li class="nav-item"><a class="nav-link" href="/facturation/ui/">Facturation</a></li>
-            <li class="nav-item"><a class="nav-link" href="/recherche/ui/">Recherche</a></li>
-            <li class="nav-item"><a class="nav-link" href="/dashboard/ui/">Dashboard</a></li>
-          </ul>
-          <div class="d-flex align-items-center">
-            <span class="me-3 small text-muted">
-              {{ request.user.get_full_name|default:request.user.username }}
-              <span class="badge bg-light text-dark ms-1">{{ request.user.get_role_display }}</span>
-            </span>
-            {% if request.user.is_staff %}<a href="/admin/" class="btn btn-sm btn-outline-warning me-2">Admin</a>{% endif %}
-            <form method="post" action="{% url 'logout' %}" class="d-inline m-0">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-outline-secondary">Déconnexion</button>
-            </form>
-          </div>
-          {% else %}
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0"></ul>
-          <div class="d-flex align-items-center">
-            <a href="{% url 'login' %}" class="btn btn-outline-secondary me-2">Se connecter</a>
-            <a href="{% url 'signup' %}" class="btn btn-primary">S'inscrire</a>
-          </div>
-          {% endif %}
-        </div>
-      </div>
-    </nav>
+    {% include "includes/main_navbar.html" %}
     {% endblock %}
 
+    <div class="ig-content-shift">
     {% block body %}
     <main class="page-wrapper">
       <div class="container">
@@ -66,8 +178,6 @@
           </div>
         {% endif %}
 
-        {% comment %}Pour les pages publiques (landing/onboarding) nous n'enveloppons pas le contenu
-           dans la card blanche afin d'éviter un rendu blanc sur blanc.{% endcomment %}
         {% if request.resolver_match %}
           {% if request.resolver_match.url_name == 'landing' or request.resolver_match.url_name == 'onboarding' %}
             <div>
@@ -84,6 +194,7 @@
       </div>
     </main>
     {% endblock %}
+    </div>
 
     <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     {% block extra_js %}{% endblock %}

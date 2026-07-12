@@ -1,0 +1,134 @@
+{% load humanize %}
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entreprises — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#185FA5;--primary-dark:#1A3E6A;
+    --accent:#C9A84C;--accent-light:#FFFBEB;--accent-dark:#7A5F1A;
+    --green:#3B6D11;--green-light:#EAF3DE;--green-text:#27500A;
+    --blue:#185FA5;--blue-light:#E6F1FB;--blue-text:#0C447C;
+    --text:#111;--muted:#666;--muted-2:#9aa0a6;
+    --border:#e5e7eb;--bg:#F4F6F9;--card:#fff;
+    --font-display:"Plus Jakarta Sans",system-ui,sans-serif;
+    --font-body:"Inter",system-ui,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box}
+  html{max-width:100%;overflow-x:hidden}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;font-weight:600;font-size:14px;padding:10px 17px;cursor:pointer;border:1px solid transparent;transition:.16s;font-family:var(--font-body)}
+  .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+  .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark);transform:translateY(-1px)}
+  .btn-amber{background:var(--accent);color:#1c1405}.btn-amber:hover{filter:brightness(.96);transform:translateY(-1px)}
+  .btn-ghost{background:var(--card);border-color:var(--border);color:var(--text)}.btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(244,246,249,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .topbar .wrap{display:flex;align-items:center;gap:24px;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;font-size:18px;letter-spacing:-.01em}
+  .brand .mk{width:23px;height:23px}
+  .nav{display:flex;gap:2px;margin-left:6px}
+  .nav a{padding:8px 12px;border-radius:9px;color:var(--muted);font-weight:500;font-size:14px;transition:.15s}
+  .nav a:hover{color:var(--text);background:#eaedf1}
+  .nav a.active{color:var(--primary);background:#e8f0fa}
+  .spacer{flex:1}
+  .signin{font-weight:600;font-size:14px;padding:8px 10px}.signin:hover{color:var(--primary)}
+
+  .hero{padding:40px 0 8px}
+  .hero .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-2);font-weight:600;margin-bottom:8px}
+  .hero h1{font-family:var(--font-display);font-weight:800;font-size:clamp(24px,3vw,34px);margin:0 0 8px}
+  .hero p{color:var(--muted);max-width:44em;margin:0}
+
+  .search-bar{margin:22px 0 30px;display:flex;gap:10px}
+  .search-bar input{flex:1;padding:12px 16px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:var(--font-body)}
+  .search-bar input:focus{outline:none;border-color:var(--primary)}
+
+  .firms{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding-bottom:60px}
+  .firm{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;transition:.16s}
+  .firm:hover{border-color:var(--green);box-shadow:0 8px 22px rgba(59,109,17,.08);transform:translateY(-2px)}
+  .firm .ft{display:flex;align-items:center;gap:12px}
+  .firm .lg{width:42px;height:42px;border-radius:11px;background:var(--green-light);color:var(--green);display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:16px;flex:0 0 42px}
+  .firm .nm{font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px}
+  .firm .nm svg{width:14px;height:14px;stroke:var(--green);fill:none;stroke-width:2.6}
+  .firm .rc{font-size:11px;color:var(--muted-2)}
+  .firm .row2{display:flex;align-items:center;gap:14px;margin-top:13px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+  .firm .tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--blue-light);color:var(--blue-text)}
+  .firm .tag.construction{background:var(--accent-light);color:var(--accent-dark)}
+
+  .empty{text-align:center;padding:70px 20px;color:var(--muted)}
+  .empty h3{font-family:var(--font-display);font-size:18px;color:var(--text);margin-bottom:8px}
+
+  @media (max-width:980px){.firms{grid-template-columns:repeat(2,1fr)}.nav{display:none}}
+  @media (max-width:600px){.firms{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="/">
+      <svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#185FA5" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/><path d="M3 21h18" stroke="#185FA5" stroke-width="1.8" stroke-linecap="round"/></svg>
+      ImmoGérer
+    </a>
+    <nav class="nav">
+      <a href="/explorer/">Explorer</a>
+      <a href="/entreprises/" class="active">Entreprises</a>
+    </nav>
+    <div class="spacer"></div>
+    {% if user.is_authenticated %}
+    <span style="font-size:13px;color:var(--muted);font-weight:500">{{ user.get_full_name|default:user.username }}</span>
+    <a class="btn btn-ghost" href="/dashboard/" style="font-size:13px;padding:8px 14px">Mon espace</a>
+    {% else %}
+    <a class="signin" href="/accounts/login/">Se connecter</a>
+    <a class="btn btn-amber" href="/choisir-profil/">Commencer gratuitement</a>
+    {% endif %}
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">Annuaire</div>
+    <h1>Entreprises partenaires</h1>
+    <p>Agences de location, de vente et entreprises de construction inscrites sur ImmoGérer.</p>
+  </div>
+
+  <form class="search-bar" method="get">
+    <input type="text" name="q" value="{{ q }}" placeholder="Rechercher une entreprise par nom…">
+    <button type="submit" class="btn btn-primary">Rechercher</button>
+  </form>
+
+  {% if entreprises %}
+  <div class="firms">
+    {% for e in entreprises %}
+    <a class="firm" href="/entreprises/{{ e.company.id }}/">
+      <div class="ft">
+        <div class="lg">{{ e.company.name|slice:":1"|upper }}</div>
+        <div>
+          <div class="nm">{{ e.company.name }}{% if e.verifie %}<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{% endif %}</div>
+          <div class="rc">{{ e.company.ville|default:"Côte d'Ivoire" }}</div>
+        </div>
+      </div>
+      <div class="row2">
+        {% if e.nb_biens %}<span>{{ e.nb_biens }} bien{{ e.nb_biens|pluralize }} disponible{{ e.nb_biens|pluralize }}</span>{% endif %}
+        {% if e.est_construction %}<span class="tag construction">Construction</span>{% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">
+    <h3>Aucune entreprise trouvée</h3>
+    <p>{% if q %}Aucun résultat pour « {{ q }} ».{% else %}Aucune entreprise n'est encore active sur la plateforme.{% endif %}</p>
+  </div>
+  {% endif %}
+</div>
+
+</body></html>

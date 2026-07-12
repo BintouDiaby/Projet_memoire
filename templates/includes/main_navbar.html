@@ -1,0 +1,96 @@
+<style>
+.ig-nav{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-bottom:1px solid #e5e7eb}
+.ig-nav-inner{max-width:1200px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:16px;height:60px}
+.ig-brand{display:flex;align-items:center;gap:9px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-weight:800;font-size:17px;letter-spacing:-.01em;color:#111;text-decoration:none;flex-shrink:0}
+.ig-navlinks{display:flex;gap:2px;list-style:none;margin:0;padding:0;flex:1}
+.ig-navlinks li a{display:block;padding:7px 11px;border-radius:8px;color:#6B7280;font-weight:500;font-size:13.5px;text-decoration:none;transition:.14s;white-space:nowrap}
+.ig-navlinks li a:hover{color:#111;background:#eaedf1}
+.ig-navlinks li a.ig-active{color:#185FA5;background:#e8f0fa}
+.ig-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.ig-username{font-size:13.5px;color:#111;font-weight:500;white-space:nowrap}
+.ig-role-badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#e8f0fa;color:#185FA5;white-space:nowrap}
+.ig-role-badge.proprietaire{background:#EAF3DE;color:#3B6D11}
+.ig-role-badge.gestionnaire{background:#FFF7ED;color:#B45309}
+.ig-role-badge.locataire{background:#e8f0fa;color:#185FA5}
+.ig-role-badge.admin{background:#FEE2E2;color:#B91C1C}
+.ig-btn{display:inline-flex;align-items:center;gap:7px;border-radius:9px;font-weight:600;font-size:13px;padding:8px 15px;cursor:pointer;border:1px solid transparent;transition:.15s;font-family:"Inter",system-ui,sans-serif;text-decoration:none;white-space:nowrap}
+.ig-btn-ghost{background:#fff;border-color:#e5e7eb;color:#111}.ig-btn-ghost:hover{border-color:#185FA5;color:#185FA5}
+.ig-btn-amber{background:#C9A84C;color:#1c1405}.ig-btn-amber:hover{filter:brightness(.95);color:#1c1405}
+.ig-btn-logout{background:none;border:1px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:500;padding:7px 13px;cursor:pointer;color:#6B7280;font-family:"Inter",system-ui,sans-serif;transition:.14s;line-height:1}
+.ig-btn-logout:hover{border-color:#dc2626;color:#dc2626;background:#fef2f2}
+.ig-sep{width:1px;height:22px;background:#e5e7eb;flex-shrink:0}
+.ig-backbtn{background:#f3f4f6;border:1.5px solid #d1d5db;border-radius:9px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;color:#374151;transition:.14s;flex-shrink:0;padding:0}
+.ig-backbtn:hover{background:#e5e7eb;border-color:#9ca3af;color:#111}
+.ig-backbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:900px){.ig-navlinks{display:none}}
+@media(max-width:600px){.ig-btn-amber{display:none}}
+</style>
+
+<nav class="ig-nav" role="navigation" aria-label="Navigation principale">
+  <div class="ig-nav-inner">
+
+    <button onclick="history.back()" class="ig-backbtn" title="Retour">
+      <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    </button>
+    <a class="ig-brand" href="/">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M3 21V9l9-6 9 6v12" stroke="#185FA5" stroke-width="1.8" stroke-linejoin="round"/>
+        <rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/>
+        <path d="M3 21h18" stroke="#185FA5" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      ImmoGérer
+    </a>
+
+    {% if request.user.is_authenticated %}
+
+    {% if request.user.role == 'locataire' %}
+    <ul class="ig-navlinks">
+      <li><a href="/guest/" {% if request.resolver_match.url_name == 'guest_landing' %}class="ig-active"{% endif %}>Accueil</a></li>
+      <li><a href="/mon-espace/" {% if request.resolver_match.url_name == 'mon_espace_locataire' %}class="ig-active"{% endif %}>Mon espace</a></li>
+      <li><a href="/explorer/" {% if request.resolver_match.url_name == 'explorer' %}class="ig-active"{% endif %}>Explorer</a></li>
+    </ul>
+    {% else %}
+    <ul class="ig-navlinks">
+      <li><a href="/dashboard/" {% if request.resolver_match.url_name in 'dashboard dashboard_company' %}class="ig-active"{% endif %}>Dashboard</a></li>
+      <li><a href="/biens/">Biens</a></li>
+      <li><a href="/dashboard/contrats/">Contrats</a></li>
+      <li><a href="/dashboard/facturation/">Facturation</a></li>
+      <li><a href="/explorer/">Recherche</a></li>
+    </ul>
+    {% endif %}
+
+    <div class="ig-actions">
+      <span class="ig-username">{{ request.user.get_full_name|default:request.user.username }}</span>
+      <span class="ig-role-badge {{ request.user.role }}">{{ request.user.get_role_display }}</span>
+      {% if request.user.is_staff %}
+      <a href="/admin/" class="ig-btn ig-btn-ghost" style="font-size:12px;padding:6px 11px">Admin</a>
+      {% endif %}
+      <div class="ig-sep"></div>
+      <form method="post" action="{% url 'logout' %}" style="margin:0">
+        {% csrf_token %}
+        <button type="submit" class="ig-btn-logout">Déconnexion</button>
+      </form>
+    </div>
+
+    {% else %}
+
+    <ul class="ig-navlinks">
+      <li><a href="/explorer/" {% if request.resolver_match.url_name == 'explorer' %}class="ig-active"{% endif %}>Explorer</a></li>
+      <li><a href="/explorer/?tab=construction">Construire</a></li>
+    </ul>
+    <div class="ig-actions">
+      <a href="/accounts/login/" class="ig-btn ig-btn-ghost">Se connecter</a>
+      <a href="/choisir-profil/" class="ig-btn ig-btn-amber">Commencer gratuitement</a>
+    </div>
+
+    {% endif %}
+
+  </div>
+</nav>
+
+{% if request.user.is_authenticated and request.user.email and not request.user.email_verifie %}
+<div style="background:#FFFBEB;border-bottom:1px solid #FCD34D;padding:9px 20px;font-size:13px;color:#92400E;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
+  <span>Confirmez votre adresse email ({{ request.user.email }}) pour sécuriser votre compte.</span>
+  <a href="{% url 'confirmer_email' %}" style="color:#92400E;font-weight:700;text-decoration:underline">Entrer le code reçu par email</a>
+</div>
+{% endif %}

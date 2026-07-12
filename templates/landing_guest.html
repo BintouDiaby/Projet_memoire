@@ -1,3 +1,4 @@
+{% load humanize %}
 <!--
   accueil_invite.html — Page Invite (visiteur non connecte)
   IMPORTANT : cette page est AUTONOME. Elle ne doit PAS heriter de base.html
@@ -177,25 +178,15 @@
 </head>
 <body>
 
-<!-- TOP BAR -->
-<header class="topbar">
-  <div class="wrap">
-    <a class="brand" href="/">
-      <svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#185FA5" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/><path d="M3 21h18" stroke="#185FA5" stroke-width="1.8" stroke-linecap="round"/></svg>
-      ImmoGérer
-    </a>
-    <nav class="nav">
-      <a href="/explorer/">Explorer</a><a href="/explorer/?tab=vente">Acheter</a>
-      <a href="/explorer/?tab=terrains">Terrains</a><a href="/explorer/?tab=construction">Construire</a>
-      <a href="/entreprises/">Entreprises vérifiées</a>
-    </nav>
-    <div class="spacer"></div>
-    {% if not request.user.is_authenticated %}
-    <a class="signin" href="/accounts/login/">Se connecter</a>
-    <a class="btn btn-amber" href="/choisir-profil/">Commencer gratuitement</a>
-    {% endif %}
-  </div>
-</header>
+{% include "includes/main_navbar.html" %}
+
+{% if messages %}
+<div style="max-width:1100px;margin:14px auto 0;padding:0 24px">
+  {% for message in messages %}
+  <div style="background:{% if message.tags == 'error' %}#FFF5F5{% else %}#F0FDF4{% endif %};border:1px solid {% if message.tags == 'error' %}#FCA5A5{% else %}#86EFAC{% endif %};color:{% if message.tags == 'error' %}#B91C1C{% else %}#15803D{% endif %};border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;margin-bottom:10px">{{ message }}</div>
+  {% endfor %}
+</div>
+{% endif %}
 
 <!-- GUEST BANNER -->
 {% if not user.is_authenticated %}
@@ -224,25 +215,52 @@
         <div class="op" role="tab" aria-selected="false" data-op="construire"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg>Construire</div>
       </div>
       <div class="fields">
-        <div class="field"><label>Localité</label><select><option>Toutes les communes</option><option>Cocody</option><option>Marcory</option><option>Yopougon</option><option>Bingerville</option><option>Grand-Bassam</option><option>Plateau</option></select></div>
-        <div class="field"><label>Type de bien</label><select><option>Appartement</option><option>Villa</option><option>Studio</option><option>Duplex</option><option>Magasin</option><option>Bureau</option><option>Terrain</option></select></div>
-        <div class="field"><label id="budLab">Budget / mois</label><select><option>Indifférent</option><option>≤ 150 000 F</option><option>150 000 – 400 000 F</option><option>400 000 – 1 000 000 F</option><option>≥ 1 000 000 F</option></select></div>
+        <div class="field">
+          <label>Localité</label>
+          <select id="searchCommune">
+            <option value="">Toutes les communes</option>
+            {% for c in communes_list %}
+            <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Type de bien</label>
+          <select id="searchType">
+            <option value="">Tous les types</option>
+            <option value="locations">Location</option>
+            <option value="vente">Achat / Vente</option>
+            <option value="terrains">Terrain</option>
+            <option value="magasins">Magasin / Commerce</option>
+            <option value="bureaux">Bureau</option>
+            <option value="construction">Projet / Construction</option>
+          </select>
+        </div>
+        <div class="field">
+          <label id="budLab">Budget / mois</label>
+          <select id="searchBudget">
+            <option value="">Indifférent</option>
+            <option value="150000">≤ 150 000 F</option>
+            <option value="400000">≤ 400 000 F</option>
+            <option value="1000000">≤ 1 000 000 F</option>
+          </select>
+        </div>
         <div class="search-go"><button class="btn btn-primary" id="goBtn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg> Rechercher</button></div>
       </div>
       <div class="composer-foot">
         <span class="switch" id="verSwitch"><i></i> Entreprises vérifiées uniquement</span>
-        <span class="stat"><b>320</b> biens · <b>48</b> entreprises vérifiées · <b>6</b> communes</span>
+        <span class="stat"><b>{{ nb_biens_dispo }}</b> biens disponibles · <b>{{ nb_entreprises }}</b> entreprise{{ nb_entreprises|pluralize }}</span>
       </div>
     </div>
 
     <!-- CATEGORIES -->
     <div class="cats">
-      <div class="cat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/></svg></div><div class="nm">Locations</div><div class="ct">186 biens</div></div>
-      <div class="cat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10M9 20v-6h6v6"/></svg></div><div class="nm">Maisons à vendre</div><div class="ct">74 biens</div></div>
-      <div class="cat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5"/></svg></div><div class="nm">Terrains</div><div class="ct">38 lots</div></div>
-      <div class="cat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 21V9h16v12M4 9l2-4h12l2 4M8 21v-6h3v6"/></svg></div><div class="nm">Magasins</div><div class="ct">22 locaux</div></div>
-      <div class="cat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 21V8l7-4v17M10 21V4l9 5v12M3 21h18"/></svg></div><div class="nm">Bureaux</div><div class="ct">15 locaux</div></div>
-      <div class="cat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 21V7h8v14M13 11h6v10M3 21h18M16 4l3 1"/></svg></div><div class="nm">Projets</div><div class="ct">9 chantiers</div></div>
+      <a class="cat" href="/explorer/?tab=locations"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/></svg></div><div class="nm">Locations</div><div class="ct">{{ nb_locations }} bien{{ nb_locations|pluralize }}</div></a>
+      <a class="cat" href="/explorer/?tab=vente"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10M9 20v-6h6v6"/></svg></div><div class="nm">Maisons à vendre</div><div class="ct">{{ nb_ventes }} bien{{ nb_ventes|pluralize }}</div></a>
+      <a class="cat" href="/explorer/?tab=terrains"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5"/></svg></div><div class="nm">Terrains</div><div class="ct">{{ nb_terrains }} lot{{ nb_terrains|pluralize }}</div></a>
+      <a class="cat" href="/explorer/?tab=magasins"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 21V9h16v12M4 9l2-4h12l2 4M8 21v-6h3v6"/></svg></div><div class="nm">Magasins</div><div class="ct">{{ nb_magasins }} local{{ nb_magasins|pluralize:"aux" }}</div></a>
+      <a class="cat" href="/explorer/?tab=bureaux"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 21V8l7-4v17M10 21V4l9 5v12M3 21h18"/></svg></div><div class="nm">Bureaux</div><div class="ct">{{ nb_bureaux }} local{{ nb_bureaux|pluralize:"aux" }}</div></a>
+      <a class="cat" href="/explorer/?tab=construction"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 21V7h8v14M13 11h6v10M3 21h18M16 4l3 1"/></svg></div><div class="nm">Projets</div><div class="ct">{{ nb_projets }} chantier{{ nb_projets|pluralize }}</div></a>
     </div>
   </div>
 </section>
@@ -256,98 +274,166 @@
     </div>
 
     <div class="filters">
-      <span class="fsel"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/></svg><select><option>Toutes communes</option><option>Cocody</option><option>Marcory</option><option>Yopougon</option><option>Bingerville</option><option>Grand-Bassam</option></select></span>
-      <span class="fsel"><select><option>Louer ou acheter</option><option>Louer</option><option>Acheter</option></select></span>
-      <span class="fsel"><select><option>Tous types</option><option>Appartement</option><option>Villa</option><option>Studio</option><option>Magasin</option><option>Bureau</option><option>Terrain</option></select></span>
-      <span class="fsel"><select><option>Tous prix</option><option>≤ 200 000 F</option><option>200 000 – 1 000 000 F</option><option>≥ 1 000 000 F</option></select></span>
-      <span class="fsel"><select><option>Pièces</option><option>1+</option><option>2+</option><option>3+</option><option>4+</option></select></span>
-      <span class="switch sm" id="verSwitch2"><i></i> Vérifiées uniquement</span>
+      <span class="fsel">
+        <svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/></svg>
+        <select id="filterCommune" onchange="applyFilters()">
+          <option value="">Toutes communes</option>
+          {% for c in communes_list %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+        </select>
+      </span>
+      <span class="fsel">
+        <select id="filterTab" onchange="applyFilters()">
+          <option value="">Louer ou acheter</option>
+          <option value="locations">Louer</option>
+          <option value="vente">Acheter</option>
+          <option value="terrains">Terrain</option>
+          <option value="magasins">Commerce</option>
+          <option value="bureaux">Bureau</option>
+        </select>
+      </span>
+      <span class="fsel">
+        <select id="filterBudget" onchange="applyFilters()">
+          <option value="">Tous prix</option>
+          <option value="200000">≤ 200 000 F</option>
+          <option value="500000">≤ 500 000 F</option>
+          <option value="1000000">≤ 1 000 000 F</option>
+        </select>
+      </span>
     </div>
 
     <div class="listings">
 
+      {% for bien in biens %}
+      <!-- Bien réel de la base de données -->
       <article class="lc">
+        <a href="/biens/{{ bien.id }}/" style="display:block;text-decoration:none;color:inherit">
+        <div class="vis">
+          {% if bien.photo_principale %}
+          <img src="{{ bien.photo_principale.url }}" alt="{{ bien.titre }}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+          {% else %}
+          <div class="grid"></div>
+          <svg class="house" viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6M8 11h2M14 11h2"/></svg>
+          {% endif %}
+          {% if bien.transaction_type == 'vente' %}<span class="tag vente">Vente</span>
+          {% elif bien.type_bien == 'terrain' %}<span class="tag terrain">Terrain</span>
+          {% else %}<span class="tag">Location</span>{% endif %}
+          {% if user.is_authenticated %}
+          <button class="fav js-fav" data-id="{{ bien.id }}" onclick="event.preventDefault();event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+          {% else %}
+          <button class="fav" data-gate="ajouter ce bien à vos favoris" onclick="event.preventDefault();event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+          {% endif %}
+        </div>
+        <div class="b">
+          <div class="t">{{ bien.titre }}</div>
+          <div class="loc"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            {% if bien.commune %}{{ bien.commune }}{% if bien.quartier %}, {{ bien.quartier }}{% endif %}{% else %}{{ bien.ville }}{% endif %}
+          </div>
+          <div class="meta">{% if bien.nombre_chambres > 0 %}{{ bien.nombre_chambres }} pièce{{ bien.nombre_chambres|pluralize }} · {% endif %}{{ bien.surface_m2|floatformat:0 }} m²</div>
+          <div class="foot">
+            <div class="price">{% if bien.transaction_type == 'vente' and bien.prix_vente %}{{ bien.prix_vente|floatformat:0|intcomma }} <small>F</small>{% else %}{{ bien.prix_mensuel|floatformat:0|intcomma }} <small>F/mois</small>{% endif %}</div>
+            <span class="contact"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Voir</span>
+          </div>
+          {% if bien.proprietaire.company %}<div class="vf"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> {{ bien.proprietaire.company.name }} · vérifiée</div>{% endif %}
+        </div>
+        </a>
+      </article>
+      {% endfor %}
+
+      <!-- Cartes exemples (toujours visibles comme vitrine) -->
+      <article class="lc">
+        <a href="/biens/1/" style="display:block;text-decoration:none;color:inherit">
         <div class="vis"><div class="grid"></div><svg class="house" viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6M8 11h2M14 11h2"/></svg>
           <span class="tag">Location</span>
-          <button class="fav" data-gate="ajouter ce bien à vos favoris"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+          <button class="fav" data-gate="ajouter ce bien à vos favoris" onclick="event.preventDefault();event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
         </div>
         <div class="b">
           <div class="t">Appartement F4 meublé</div>
           <div class="loc"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Cocody, Riviera</div>
           <div class="meta">4 pièces · 120 m² · meublé</div>
-          <div class="foot"><div class="price">450 000 <small>F/mois</small></div><span class="contact" data-gate="contacter cette entreprise"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Contacter</span></div>
+          <div class="foot"><div class="price">450 000 <small>F/mois</small></div><span class="contact"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Voir</span></div>
           <div class="vf"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Azimuts SARL · vérifiée</div>
         </div>
+        </a>
       </article>
 
       <article class="lc">
+        <a href="/biens/2/" style="display:block;text-decoration:none;color:inherit">
         <div class="vis"><div class="grid"></div><svg class="house" viewBox="0 0 24 24"><path d="M3 21V11l9-6 9 6v10M3 21h18M8 21v-5h3v5M14 13h3v3h-3z"/></svg>
           <span class="tag vente">Vente</span>
-          <button class="fav" data-gate="ajouter ce bien à vos favoris"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+          <button class="fav" data-gate="ajouter ce bien à vos favoris" onclick="event.preventDefault();event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
         </div>
         <div class="b">
           <div class="t">Villa basse 5 pièces + piscine</div>
           <div class="loc"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Cocody, Riviera Golf</div>
           <div class="meta">5 pièces · 380 m² · jardin</div>
-          <div class="foot"><div class="price">95 000 000 <small>F</small></div><span class="contact" data-gate="contacter cette entreprise"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Contacter</span></div>
+          <div class="foot"><div class="price">95 000 000 <small>F</small></div><span class="contact"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Voir</span></div>
           <div class="vf"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Ivoire Habitat · vérifiée</div>
         </div>
+        </a>
       </article>
 
       <article class="lc">
+        <a href="/biens/3/" style="display:block;text-decoration:none;color:inherit">
         <div class="vis"><div class="grid"></div><svg class="house" viewBox="0 0 24 24"><path d="M3 20h18M5 20l2-7h10l2 7M8 13l4-6 4 6"/><circle cx="12" cy="17" r="1"/></svg>
           <span class="tag terrain">Terrain</span>
-          <button class="fav" data-gate="ajouter ce terrain à vos favoris"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+          <button class="fav" data-gate="ajouter ce terrain à vos favoris" onclick="event.preventDefault();event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
         </div>
         <div class="b">
           <div class="t">Terrain 500 m² titré ACD</div>
           <div class="loc"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Bingerville</div>
           <div class="meta">500 m² · viabilisé · ACD dispo.</div>
-          <div class="foot"><div class="price">18 000 000 <small>F</small></div><span class="contact" data-gate="contacter cette entreprise"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Contacter</span></div>
+          <div class="foot"><div class="price">18 000 000 <small>F</small></div><span class="contact"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Voir</span></div>
           <div class="vf"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Bassam Foncier · vérifiée</div>
         </div>
+        </a>
       </article>
 
       <article class="lc">
+        <a href="/biens/4/" style="display:block;text-decoration:none;color:inherit">
         <div class="vis"><div class="grid"></div><svg class="house" viewBox="0 0 24 24"><path d="M4 21V9h16v12M4 9l2-4h12l2 4M8 21v-6h3v6M14 15h3v6"/></svg>
           <span class="tag">Location</span>
-          <button class="fav" data-gate="ajouter ce local à vos favoris"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+          <button class="fav" data-gate="ajouter ce local à vos favoris" onclick="event.preventDefault();event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
         </div>
         <div class="b">
           <div class="t">Boutique 60 m² sur grande voie</div>
           <div class="loc"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Yopougon</div>
           <div class="meta">60 m² · vitrine · eau + électricité</div>
-          <div class="foot"><div class="price">250 000 <small>F/mois</small></div><span class="contact" data-gate="contacter cette entreprise"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Contacter</span></div>
+          <div class="foot"><div class="price">250 000 <small>F/mois</small></div><span class="contact"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Voir</span></div>
           <div class="vf"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Eburnie Immo · vérifiée</div>
         </div>
+        </a>
       </article>
 
       <article class="lc">
+        <a href="/biens/5/" style="display:block;text-decoration:none;color:inherit">
         <div class="vis"><div class="grid"></div><svg class="house" viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6M8 11h2M14 11h2"/></svg>
           <span class="tag">Location</span>
-          <button class="fav" data-gate="ajouter ce bien à vos favoris"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+          <button class="fav" data-gate="ajouter ce bien à vos favoris" onclick="event.preventDefault();event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
         </div>
         <div class="b">
           <div class="t">Studio meublé Zone 4</div>
           <div class="loc"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Marcory, Zone 4</div>
           <div class="meta">38 m² · meublé · climatisé</div>
-          <div class="foot"><div class="price">180 000 <small>F/mois</small></div><span class="contact" data-gate="contacter cette entreprise"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Contacter</span></div>
+          <div class="foot"><div class="price">180 000 <small>F/mois</small></div><span class="contact"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Voir</span></div>
           <div class="vf"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Azimuts SARL · vérifiée</div>
         </div>
+        </a>
       </article>
 
       <article class="lc">
+        <a href="/biens/6/" style="display:block;text-decoration:none;color:inherit">
         <div class="vis"><div class="grid"></div><svg class="house" viewBox="0 0 24 24"><path d="M5 21V7h8v14M13 11h6v10M3 21h18M16 4l3 1M16 4v3"/></svg>
           <span class="tag projet">Sur plan</span>
-          <button class="fav" data-gate="suivre ce projet"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+          <button class="fav" data-gate="suivre ce projet" onclick="event.preventDefault();event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
         </div>
         <div class="b">
           <div class="t">Les Jardins de Bingerville</div>
           <div class="loc"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Bingerville</div>
           <div class="meta">24 villas · livraison 2027 · échelonné</div>
-          <div class="foot"><div class="price">dès 25 000 000 <small>F</small></div><span class="contact" data-gate="contacter cette entreprise"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Contacter</span></div>
+          <div class="foot"><div class="price">dès 25 000 000 <small>F</small></div><span class="contact"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3z"/></svg> Voir</span></div>
           <div class="vf"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> BTP Lagune · vérifiée</div>
         </div>
+        </a>
       </article>
 
     </div>
@@ -402,20 +488,65 @@
 </div>
 
 <script>
-  // onglets d'opération
+  // onglets opération (hero search)
   const ops=document.querySelectorAll('.op'), budLab=document.getElementById('budLab'), goBtn=document.getElementById('goBtn');
-  const L={louer:'Budget / mois',acheter:"Budget d'achat",terrain:'Budget terrain',construire:'Budget projet'};
-  ops.forEach(op=>op.addEventListener('click',()=>{ops.forEach(o=>o.setAttribute('aria-selected','false'));op.setAttribute('aria-selected','true');budLab.textContent=L[op.dataset.op];}));
+  const TAB_LABELS={louer:'Budget / mois',acheter:"Budget d'achat",terrain:'Budget terrain',construire:'Budget projet'};
+  const TAB_KEYS={louer:'locations',acheter:'vente',terrain:'terrains',construire:'construction'};
+  ops.forEach(op=>op.addEventListener('click',()=>{
+    ops.forEach(o=>o.setAttribute('aria-selected','false'));
+    op.setAttribute('aria-selected','true');
+    if(budLab) budLab.textContent=TAB_LABELS[op.dataset.op]||'Budget';
+  }));
 
-  // toggles
+  // Bouton RECHERCHER → redirige vers l'explorer avec les filtres sélectionnés
+  if(goBtn) goBtn.addEventListener('click', ()=>{
+    const activeOp = document.querySelector('.op[aria-selected="true"]');
+    const tab = activeOp ? (TAB_KEYS[activeOp.dataset.op]||'locations') : 'locations';
+    const commune = (document.getElementById('searchCommune')||{}).value || '';
+    const budget = (document.getElementById('searchBudget')||{}).value || '';
+    let url = '/explorer/?tab=' + tab;
+    if(commune) url += '&commune=' + encodeURIComponent(commune);
+    if(budget) url += '&budget_max=' + budget;
+    window.location.href = url;
+  });
+
+  // Filtres de la section listings → redirige vers l'explorer
+  function applyFilters(){
+    const tab = (document.getElementById('filterTab')||{}).value || '';
+    const commune = (document.getElementById('filterCommune')||{}).value || '';
+    const budget = (document.getElementById('filterBudget')||{}).value || '';
+    let url = '/explorer/?tab=' + (tab||'locations');
+    if(commune) url += '&commune=' + encodeURIComponent(commune);
+    if(budget) url += '&budget_max=' + budget;
+    window.location.href = url;
+  }
+
+  // toggles switch
   document.querySelectorAll('#verSwitch,#verSwitch2').forEach(s=>s.addEventListener('click',()=>s.classList.toggle('off')));
 
   // GATE : actions réservées aux comptes
+  {% if user.is_authenticated %}
+  document.querySelectorAll('[data-gate]').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();window.location.href='/explorer/';}));
+  {% if user.role == 'locataire' or True %}
+  // favoris pour locataires connectés
+  function getCsrf(){var m=document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)');return m?m.pop():'';}
+  document.querySelectorAll('.js-fav').forEach(btn=>{
+    btn.addEventListener('click', async function(){
+      var id=this.dataset.id;
+      try{
+        var r=await fetch('/api/recherche/favoris/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},body:JSON.stringify({bien:parseInt(id)})});
+        if(r.ok) this.querySelector('svg').style.fill='var(--warn)';
+      }catch(e){}
+    });
+  });
+  {% endif %}
+  {% else %}
   const gate=document.getElementById('gate'), gateMsg=document.getElementById('gateMsg');
   function openGate(action){ gateMsg.textContent='Pour '+action+', connectez-vous ou créez un compte gratuit. La navigation reste libre.'; gate.classList.add('show'); }
   document.querySelectorAll('[data-gate]').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();openGate(el.dataset.gate);}));
   document.getElementById('gateClose').addEventListener('click',()=>gate.classList.remove('show'));
   gate.addEventListener('click',e=>{if(e.target===gate)gate.classList.remove('show');});
+  {% endif %}
 </script>
 </body>
 </html>

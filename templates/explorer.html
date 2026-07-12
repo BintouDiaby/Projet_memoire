@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+<script src="/static/vendor/leaflet/leaflet.js"></script>
 <style>
   :root{
     --primary:#185FA5;--primary-dark:#1A3E6A;
@@ -146,6 +148,17 @@
   .modal .close{margin-top:14px;font-size:13px;color:var(--muted-2);cursor:pointer}
   .modal .close:hover{color:var(--text)}
 
+  /* vue toggle */
+  .vue-toggle{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card)}
+  .vue-toggle a{padding:7px 14px;font-size:13px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:5px;transition:.13s}
+  .vue-toggle a:hover{color:var(--text)}
+  .vue-toggle a.active{background:var(--primary);color:#fff}
+  .vue-toggle a svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+
+  /* map view */
+  #map-view{display:none;height:480px;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);margin-bottom:22px}
+  #map-view.show{display:block}
+
   footer{border-top:1px solid var(--border);padding:24px 0 36px;color:var(--muted);font-size:13px;margin-top:8px}
   footer .wrap{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;align-items:center}
   footer .fnav{display:flex;gap:18px;flex-wrap:wrap}
@@ -168,12 +181,20 @@
     <nav class="nav">
       <a href="/explorer/" class="active">Explorer</a>
       <a href="/explorer/?tab=vente">Acheter</a>
+      <a href="/explorer/?tab=locations">Louer</a>
       <a href="/explorer/?tab=terrains">Terrains</a>
       <a href="/explorer/?tab=construction">Construire</a>
+      <a href="/entreprises/">Entreprises</a>
     </nav>
     <div class="spacer"></div>
     {% if user.is_authenticated %}
-    <a class="btn btn-ghost" href="/dashboard/">Mon espace</a>
+    <span style="font-size:13px;color:var(--muted);font-weight:500">{{ user.get_full_name|default:user.username }}</span>
+    <span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--blue-light);color:var(--primary)">{{ user.get_role_display }}</span>
+    <a class="btn btn-ghost" href="/dashboard/" style="font-size:13px;padding:8px 14px">Mon espace</a>
+    <form method="post" action="{% url 'logout' %}" style="margin:0">
+      {% csrf_token %}
+      <button type="submit" style="background:none;border:1px solid var(--border);border-radius:9px;font-size:13px;font-weight:500;padding:8px 13px;cursor:pointer;color:var(--muted);font-family:var(--font-body);transition:.14s" onmouseover="this.style.borderColor='#dc2626';this.style.color='#dc2626'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">Déconnexion</button>
+    </form>
     {% else %}
     <a class="signin" href="/accounts/login/">Se connecter</a>
     <a class="btn btn-amber" href="/choisir-profil/">Commencer gratuitement</a>
@@ -200,7 +221,7 @@
     <div class="tabs" role="tablist">
       {% for t in tabs %}
       <a class="tab {% if tab == t.key %}active{% endif %}"
-         href="/explorer/?tab={{ t.key }}"
+         href="{% if t.key == 'construction' %}/construction/{% else %}/explorer/?tab={{ t.key }}{% endif %}"
          role="tab"
          aria-selected="{% if tab == t.key %}true{% else %}false{% endif %}">
         {{ t.emoji }} {{ t.label }}
@@ -214,8 +235,29 @@
 <!-- FILTER BAR -->
 <div class="filter-bar">
   <div class="wrap">
-    <form class="filter-form" method="get" action="/explorer/">
+    <form class="filter-form" method="get" action="/explorer/" id="explorerFilterForm">
       <input type="hidden" name="tab" value="{{ tab }}">
+      <input type="hidden" name="lat" id="fLat" value="{{ user_lat|default:'' }}">
+      <input type="hidden" name="lng" id="fLng" value="{{ user_lng|default:'' }}">
+
+      <button type="button" class="btn-filter" id="btnAutourDeMoi" style="display:inline-flex;align-items:center;gap:6px;border:1.5px solid {% if autour_de_moi %}var(--primary){% else %}var(--border){% endif %};background:{% if autour_de_moi %}var(--primary-light,#E6F1FB){% else %}#fff{% endif %};color:{% if autour_de_moi %}var(--primary){% else %}var(--text){% endif %};border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span id="btnAutourDeMoiLabel">{% if autour_de_moi %}Autour de moi ✓{% else %}Autour de moi{% endif %}</span>
+      </button>
+
+      {% if autour_de_moi %}
+      <div class="fi">
+        <svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <select name="distance_max" onchange="document.getElementById('explorerFilterForm').submit()">
+          <option value="2" {% if distance_max == '2' %}selected{% endif %}>2 km</option>
+          <option value="5" {% if distance_max == '5' %}selected{% endif %}>5 km</option>
+          <option value="10" {% if distance_max == '10' %}selected{% endif %}>10 km</option>
+          <option value="20" {% if distance_max == '20' or not distance_max %}selected{% endif %}>20 km</option>
+          <option value="50" {% if distance_max == '50' %}selected{% endif %}>50 km</option>
+          <option value="all" {% if distance_max == 'all' %}selected{% endif %}>Toute la Côte d'Ivoire</option>
+        </select>
+      </div>
+      {% endif %}
 
       <div class="fi fi-search">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -228,6 +270,16 @@
           <option value="">Toutes les villes</option>
           {% for v in villes %}
           <option value="{{ v }}" {% if ville_filtre == v %}selected{% endif %}>{{ v }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="fi">
+        <svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/><rect x="9" y="13" width="6" height="8"/></svg>
+        <select name="commune">
+          <option value="">Toutes les communes</option>
+          {% for c in communes %}
+          <option value="{{ c }}" {% if commune_filtre == c %}selected{% endif %}>{{ c }}</option>
           {% endfor %}
         </select>
       </div>
@@ -255,6 +307,14 @@
       <a href="/explorer/?tab={{ tab }}" class="btn-reset">✕ Réinitialiser</a>
       {% endif %}
       <span class="result-count"><b>{{ total }}</b> résultat{{ total|pluralize }}</span>
+      <div class="vue-toggle">
+        <a href="/explorer/?tab={{ tab }}&q={{ q }}&ville={{ ville_filtre }}&commune={{ commune_filtre }}&budget_max={{ budget_max }}&chambres={{ chambres }}&lat={{ user_lat|default:'' }}&lng={{ user_lng|default:'' }}&distance_max={{ distance_max }}&vue=liste" class="{% if vue != 'carte' %}active{% endif %}">
+          <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg> Liste
+        </a>
+        <a href="/explorer/?tab={{ tab }}&q={{ q }}&ville={{ ville_filtre }}&commune={{ commune_filtre }}&budget_max={{ budget_max }}&chambres={{ chambres }}&lat={{ user_lat|default:'' }}&lng={{ user_lng|default:'' }}&distance_max={{ distance_max }}&vue=carte" class="{% if vue == 'carte' %}active{% endif %}">
+          <svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/><path d="M9 4v14M15 6v14"/></svg> Carte
+        </a>
+      </div>
     </form>
   </div>
 </div>
@@ -262,6 +322,9 @@
 <!-- RESULTS -->
 <div class="expl-body">
   <div class="wrap">
+    <!-- MAP VIEW -->
+    <div id="map-view"{% if vue == 'carte' %} class="show"{% endif %}></div>
+
     {% if biens %}
     <div class="listings">
       {% for bien in biens %}
@@ -304,7 +367,7 @@
 
           <!-- FAVORITE BUTTON -->
           {% if user.is_authenticated %}
-          <button class="fav js-fav" data-id="{{ bien.id }}" aria-label="Ajouter aux favoris">
+          <button class="fav js-fav{% if bien.id in favoris_ids %} liked{% endif %}" data-id="{{ bien.id }}" aria-label="Ajouter aux favoris">
             <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg>
           </button>
           {% else %}
@@ -319,7 +382,8 @@
           <div class="t">{{ bien.titre }}</div>
           <div class="loc">
             <svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-            {{ bien.ville }}{% if bien.adresse %}, {{ bien.adresse|truncatechars:28 }}{% endif %}
+            {% if bien.commune %}{{ bien.commune }}{% if bien.quartier %}, {{ bien.quartier }}{% endif %}{% else %}{{ bien.ville }}{% if bien.adresse %}, {{ bien.adresse|truncatechars:28 }}{% endif %}{% endif %}
+            {% if bien.distance_km %}<span style="color:var(--primary);font-weight:700;margin-left:4px">· {{ bien.distance_km|floatformat:1 }} km de vous</span>{% endif %}
           </div>
           <div class="meta">
             {% if bien.nombre_chambres > 0 %}{{ bien.nombre_chambres }} ch · {% endif %}{{ bien.surface_m2|floatformat:0 }} m²{% if bien.equipements %}{% for eq in bien.equipements|slice:":2" %} · {{ eq }}{% endfor %}{% endif %}
@@ -352,21 +416,21 @@
     {% if biens.has_other_pages %}
     <div class="pagi" role="navigation" aria-label="Pagination">
       {% if biens.has_previous %}
-      <a href="/explorer/?tab={{ tab }}&q={{ q }}&ville={{ ville_filtre }}&budget_max={{ budget_max }}&chambres={{ chambres }}&page={{ biens.previous_page_number }}" aria-label="Page précédente">←</a>
+      <a href="/explorer/?tab={{ tab }}&q={{ q }}&ville={{ ville_filtre }}&commune={{ commune_filtre }}&budget_max={{ budget_max }}&chambres={{ chambres }}&lat={{ user_lat|default:'' }}&lng={{ user_lng|default:'' }}&distance_max={{ distance_max }}&vue={{ vue }}&page={{ biens.previous_page_number }}" aria-label="Page précédente">←</a>
       {% endif %}
       {% for num in biens.paginator.page_range %}
         {% if biens.number == num %}
         <span class="cur" aria-current="page">{{ num }}</span>
         {% elif num >= biens.number|add:"-2" and num <= biens.number|add:"2" %}
-        <a href="/explorer/?tab={{ tab }}&q={{ q }}&ville={{ ville_filtre }}&budget_max={{ budget_max }}&chambres={{ chambres }}&page={{ num }}">{{ num }}</a>
+        <a href="/explorer/?tab={{ tab }}&q={{ q }}&ville={{ ville_filtre }}&commune={{ commune_filtre }}&budget_max={{ budget_max }}&chambres={{ chambres }}&lat={{ user_lat|default:'' }}&lng={{ user_lng|default:'' }}&distance_max={{ distance_max }}&vue={{ vue }}&page={{ num }}">{{ num }}</a>
         {% elif num == 1 or num == biens.paginator.num_pages %}
-        <a href="/explorer/?tab={{ tab }}&q={{ q }}&ville={{ ville_filtre }}&budget_max={{ budget_max }}&chambres={{ chambres }}&page={{ num }}">{{ num }}</a>
+        <a href="/explorer/?tab={{ tab }}&q={{ q }}&ville={{ ville_filtre }}&commune={{ commune_filtre }}&budget_max={{ budget_max }}&chambres={{ chambres }}&lat={{ user_lat|default:'' }}&lng={{ user_lng|default:'' }}&distance_max={{ distance_max }}&vue={{ vue }}&page={{ num }}">{{ num }}</a>
         {% elif num == biens.number|add:"-3" or num == biens.number|add:"3" %}
         <span class="dots">…</span>
         {% endif %}
       {% endfor %}
       {% if biens.has_next %}
-      <a href="/explorer/?tab={{ tab }}&q={{ q }}&ville={{ ville_filtre }}&budget_max={{ budget_max }}&chambres={{ chambres }}&page={{ biens.next_page_number }}" aria-label="Page suivante">→</a>
+      <a href="/explorer/?tab={{ tab }}&q={{ q }}&ville={{ ville_filtre }}&commune={{ commune_filtre }}&budget_max={{ budget_max }}&chambres={{ chambres }}&lat={{ user_lat|default:'' }}&lng={{ user_lng|default:'' }}&distance_max={{ distance_max }}&vue={{ vue }}&page={{ biens.next_page_number }}" aria-label="Page suivante">→</a>
       {% endif %}
     </div>
     {% endif %}
@@ -426,6 +490,33 @@
 {% endif %}
 
 <script>
+(function() {
+  var btn = document.getElementById('btnAutourDeMoi');
+  if (!btn) return;
+  btn.addEventListener('click', function() {
+    if ({{ autour_de_moi|yesno:"true,false" }}) {
+      // Déjà actif : un second clic désactive le mode « autour de moi »
+      var params = new URLSearchParams(window.location.search);
+      params.delete('lat'); params.delete('lng'); params.delete('distance_max');
+      window.location.href = '/explorer/?' + params.toString();
+      return;
+    }
+    if (!navigator.geolocation) {
+      alert("La géolocalisation n'est pas disponible sur ce navigateur.");
+      return;
+    }
+    var label = document.getElementById('btnAutourDeMoiLabel');
+    label.textContent = 'Localisation…';
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      document.getElementById('fLat').value = pos.coords.latitude;
+      document.getElementById('fLng').value = pos.coords.longitude;
+      document.getElementById('explorerFilterForm').submit();
+    }, function() {
+      label.textContent = 'Autour de moi';
+      alert("Impossible d'obtenir votre position. Vérifiez que la géolocalisation est autorisée pour ce site.");
+    });
+  });
+})();
 {% if not user.is_authenticated %}
 function openGate(action) {
   document.getElementById('gateMsg').textContent = 'Pour ' + action + ', connectez-vous ou créez un compte gratuit.';
@@ -445,6 +536,53 @@ document.querySelectorAll('[data-gate]').forEach(function(el) {
 });
 {% endif %}
 
+{% if biens_carte_json %}
+(function() {
+  var MAP_DATA = {{ biens_carte_json|safe }};
+  var _mapInited = false;
+  function initMap() {
+    if (_mapInited) return;
+    _mapInited = true;
+    var mapEl = document.getElementById('map-view');
+    if (!mapEl || typeof L === 'undefined') return;
+    var map = L.map('map-view').setView([7.54, -5.55], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(map);
+    var bounds = [];
+    MAP_DATA.forEach(function(b) {
+      if (!b.lat || !b.lng) return;
+      var isSale = b.type_tx === 'vente';
+      var prix = b.prix ? Math.round(b.prix).toLocaleString('fr-FR') + ' F' + (isSale ? '' : '/mois') : '';
+      var popup = '<strong style="font-size:14px">' + b.titre + '</strong>' +
+        (b.lieu ? '<br><span style="color:#666;font-size:12px">📍 ' + b.lieu + '</span>' : '') +
+        (prix ? '<br><span style="font-weight:700;color:#185FA5">' + prix + '</span>' : '') +
+        '<br><a href="' + b.url + '" style="color:#185FA5;font-size:13px">Voir ce bien →</a>';
+      var marker = L.marker([b.lat, b.lng]).addTo(map);
+      marker.bindPopup(popup, {maxWidth: 220});
+      bounds.push([b.lat, b.lng]);
+    });
+    if (bounds.length > 0) map.fitBounds(bounds, {padding: [40, 40]});
+    else map.setView([7.54, -5.55], 7);
+  }
+  if (document.getElementById('map-view') && document.getElementById('map-view').classList.contains('show')) {
+    initMap();
+  }
+  document.querySelectorAll('.vue-toggle a').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+      if (this.href && this.href.indexOf('vue=carte') !== -1) {
+        var mapEl = document.getElementById('map-view');
+        if (mapEl) { mapEl.classList.add('show'); setTimeout(initMap, 50); }
+      } else {
+        var mapEl = document.getElementById('map-view');
+        if (mapEl) mapEl.classList.remove('show');
+      }
+    });
+  });
+})();
+{% endif %}
+
 {% if user.is_authenticated %}
 function getCsrf() {
   var m = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)');
@@ -453,18 +591,15 @@ function getCsrf() {
 document.querySelectorAll('.js-fav').forEach(function(btn) {
   btn.addEventListener('click', async function() {
     var id = this.dataset.id;
-    var isLiked = this.classList.contains('liked');
+    var el = this;
     try {
-      if (isLiked) {
-        /* On ne gère pas la suppression sans connaître l'ID du favori — toggle visuel seulement */
-        this.classList.remove('liked');
-      } else {
-        var r = await fetch('/api/recherche/favoris/', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
-          body: JSON.stringify({bien: parseInt(id)})
-        });
-        if (r.ok) this.classList.add('liked');
+      var r = await fetch('/api/recherche/favoris/toggle/' + id + '/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCsrf(), 'X-Requested-With': 'XMLHttpRequest'},
+      });
+      if (r.ok) {
+        var data = await r.json();
+        el.classList.toggle('liked', data.est_favori);
       }
     } catch(e) {}
   });

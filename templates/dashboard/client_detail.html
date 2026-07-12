@@ -1,0 +1,159 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ client.get_full_name|default:client.username }} — Fiche client</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+.client-hero{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:24px;margin-bottom:20px;display:flex;align-items:center;gap:20px}
+.client-av{width:62px;height:62px;border-radius:16px;background:var(--green-light);color:var(--green);display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:24px;flex:0 0 62px}
+.client-info h2{font-family:var(--font-display);font-weight:800;font-size:20px;margin:0 0 6px;letter-spacing:-.01em}
+.client-info .meta{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.client-info .meta span{display:flex;align-items:center;gap:5px}
+.client-info .meta svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px 16px;text-align:center}
+.kpi-val{font-family:var(--font-display);font-weight:800;font-size:22px;color:#111;line-height:1}
+.kpi-lab{font-size:11.5px;color:var(--muted);margin-top:4px}
+.section-title{font-family:var(--font-display);font-weight:700;font-size:14.5px;color:#111;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.section-title svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='clients' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+<button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="Rechercher…"></div>
+  <div class="tspacer"></div>
+  <a href="/dashboard/clients/" style="background:var(--bg);border:1px solid var(--border);color:var(--muted);border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600">← Retour CRM</a>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+
+<!-- Carte client -->
+<div class="client-hero">
+  <div class="client-av">{{ client.get_full_name|default:client.username|slice:":1"|upper }}</div>
+  <div class="client-info">
+    <h2>{{ client.get_full_name|default:client.username }}</h2>
+    <div class="meta">
+      {% if client.email and client.afficher_email %}<span><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg>{{ client.email }}</span>{% endif %}
+      {% if client.telephone and client.afficher_telephone %}<span><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>{{ client.telephone }}</span>{% endif %}
+      {% if not client.afficher_telephone and not client.afficher_email %}<span style="color:var(--muted-2,#9ca3af)">Coordonnées masquées par le client</span>{% endif %}
+      <span>Client depuis {{ client.date_joined|date:"F Y" }}</span>
+    </div>
+  </div>
+  <div style="margin-left:auto;display:flex;gap:8px;flex-shrink:0">
+    {% if conversations %}<a href="/chat/{{ conversations.0.id }}/" style="background:var(--green);color:#fff;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:600">Envoyer un message</a>{% endif %}
+  </div>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-row">
+  <div class="kpi"><div class="kpi-val">{{ conversations|length }}</div><div class="kpi-lab">Conversations</div></div>
+  <div class="kpi"><div class="kpi-val">{{ visites|length }}</div><div class="kpi-lab">Visites</div></div>
+  <div class="kpi"><div class="kpi-val">{{ contrats|length }}</div><div class="kpi-lab">Contrats</div></div>
+  <div class="kpi"><div class="kpi-val">{{ paiements|length }}</div><div class="kpi-lab">Paiements</div></div>
+  <div class="kpi"><div class="kpi-val">{{ reclamations|length }}</div><div class="kpi-lab">Réclamations</div></div>
+  {% if projets_construction %}<div class="kpi"><div class="kpi-val">{{ projets_construction|length }}</div><div class="kpi-lab">Projets</div></div>{% endif %}
+</div>
+
+<!-- Conversations -->
+{% if conversations %}
+<div class="card">
+  <h3 class="section-title"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Conversations</h3>
+  {% for conv in conversations %}
+  <div class="row">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:13.5px">{{ conv.bien.titre|default:"Discussion générale" }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ conv.mis_a_jour_le|date:"d/m/Y H:i" }}</div>
+    </div>
+    <a href="/chat/{{ conv.id }}/" style="background:var(--blue-light);color:var(--primary);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600">Ouvrir →</a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Visites -->
+{% if visites %}
+<div class="card">
+  <h3 class="section-title"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Visites</h3>
+  {% for v in visites %}
+  <div class="row">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:13.5px">{{ v.bien.titre }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ v.date_visite|date:"d/m/Y H:i" }}</div>
+    </div>
+    <span class="badge {% if v.statut == 'confirmee' %}b-green{% elif v.statut == 'en_attente' %}b-amber{% else %}b-muted{% endif %}">{{ v.get_statut_display }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Contrats -->
+{% if contrats %}
+<div class="card">
+  <h3 class="section-title"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg> Contrats</h3>
+  {% for c in contrats %}
+  <div class="row">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:13.5px">{{ c.bien.titre }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ c.date_debut|date:"d/m/Y" }} — {{ c.date_fin|date:"d/m/Y"|default:"En cours" }} · {{ c.prix_mensuel|floatformat:0 }} FCFA/mois</div>
+    </div>
+    <span class="badge {% if c.statut == 'en_cours' %}b-green{% elif c.statut == 'termine' %}b-muted{% else %}b-red{% endif %}">{{ c.get_statut_display }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Paiements -->
+{% if paiements %}
+<div class="card">
+  <h3 class="section-title"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Paiements</h3>
+  {% for p in paiements %}
+  <div class="row">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:13.5px">{{ p.mois|date:"F Y" }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ p.contrat.bien.titre }}</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-weight:700;font-size:13px">{{ p.montant_du|floatformat:0 }} FCFA</div>
+      <span class="badge {% if p.statut == 'recu' %}b-green{% elif p.statut == 'en_attente' %}b-muted{% else %}b-red{% endif %}">{{ p.get_statut_display }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Réclamations -->
+{% if reclamations %}
+<div class="card">
+  <h3 class="section-title"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg> Réclamations</h3>
+  {% for r in reclamations %}
+  <div class="row">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:13.5px">{{ r.titre }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ r.bien.titre }} · {{ r.cree_le|date:"d/m/Y" }}</div>
+    </div>
+    <span class="badge {% if r.statut == 'ouverte' %}b-red{% elif r.statut == 'en_cours' %}b-amber{% elif r.statut == 'resolue' %}b-green{% else %}b-muted{% endif %}">{{ r.get_statut_display }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Projets construction -->
+{% if projets_construction %}
+<div class="card">
+  <h3 class="section-title"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg> Projets construction</h3>
+  {% for p in projets_construction %}
+  <div class="row">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:13.5px">{{ p.get_type_projet_display }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ p.cree_le|date:"d/m/Y" }}{% if p.superficie %} · {{ p.superficie }} m²{% endif %}</div>
+    </div>
+    <a href="/construction/projet/{{ p.id }}/" style="background:var(--blue-light);color:var(--primary);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600">Voir →</a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+</div>
+</div>
+</div>
+</body></html>

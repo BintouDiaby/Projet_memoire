@@ -107,10 +107,10 @@
 <body>
 
 <div class="topbar">
-  <a class="back" href="/dashboard/"><svg viewBox="0 0 24 24"><path d="M19 12H5m7-7-7 7 7 7"/></svg> Tableau de bord</a>
+  <a class="back" href="/dashboard/company/"><svg viewBox="0 0 24 24"><path d="M19 12H5m7-7-7 7 7 7"/></svg> Tableau de bord</a>
   <span class="ttl">Publier un bien</span>
   <span class="sp"></span>
-  <span class="firm"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Azimuts SARL</span>
+  <span class="firm"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> {{ entreprise.name }}</span>
 </div>
 
 <div class="wrap">
@@ -118,6 +118,12 @@
     <h1>Publier un bien</h1>
     <p>Choisissez d'abord l'opération — le formulaire s'adapte automatiquement.</p>
   </div>
+
+  {% if errors %}
+  <div class="card" style="border-color:var(--err);background:#FEF2F2;color:var(--err);font-size:13.5px;font-weight:600">
+    {% for e in errors %}<div>{{ e }}</div>{% endfor %}
+  </div>
+  {% endif %}
 
   <form id="bienForm" method="post" enctype="multipart/form-data" action="">
     {% csrf_token %}
@@ -127,22 +133,30 @@
     <div class="card">
       <div class="sh"><span class="n">1</span><h2>Opération</h2></div>
       <div class="ops" id="ops">
+        {% if 'location' in ops_enabled %}
         <div class="op" data-op="location">
           <div class="ic"><svg viewBox="0 0 24 24"><path d="M14 7a4 4 0 1 0-3 6l-5 5 2 2 6-6a4 4 0 0 0 0-7z"/></svg></div>
           <div class="nm">Location</div><div class="chk"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
         </div>
+        {% endif %}
+        {% if 'vente' in ops_enabled %}
         <div class="op" data-op="vente">
           <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg></div>
           <div class="nm">Vente</div><div class="chk"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
         </div>
+        {% endif %}
+        {% if 'terrain' in ops_enabled %}
         <div class="op" data-op="terrain">
           <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5"/></svg></div>
           <div class="nm">Terrain</div><div class="chk"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
         </div>
+        {% endif %}
+        {% if 'construction' in ops_enabled %}
         <div class="op" data-op="construction">
           <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg></div>
           <div class="nm">Construction</div><div class="chk"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
         </div>
+        {% endif %}
       </div>
     </div>
 
@@ -169,6 +183,10 @@
               <option>Abobo</option><option>Treichville</option><option>Koumassi</option><option>Port-Bouët</option>
             </select>
           </div>
+          <div class="field">
+            <label for="ville">Ville<span class="req">*</span></label>
+            <input type="text" name="ville" id="ville" value="Abidjan" placeholder="Ex. Abidjan, Grand-Bassam…">
+          </div>
           <div class="field full">
             <label for="titre">Titre de l'annonce<span class="req">*</span></label>
             <input type="text" name="titre" id="titre" placeholder="Ex. Appartement F4 meublé, Cocody Riviera">
@@ -176,6 +194,15 @@
           <div class="field full">
             <label for="adresse">Adresse / repère</label>
             <input type="text" name="adresse" id="adresse" placeholder="Quartier, rue, point de repère">
+          </div>
+          <div class="field">
+            <label for="latitude">Latitude</label>
+            <input type="number" step="any" name="latitude" id="latitude" placeholder="ex: 5.3364">
+            <div class="hint">Optionnel — permet d'afficher ce bien sur les cartes.</div>
+          </div>
+          <div class="field">
+            <label for="longitude">Longitude</label>
+            <input type="number" step="any" name="longitude" id="longitude" placeholder="ex: -4.0267">
           </div>
         </div>
       </div>
@@ -241,7 +268,7 @@
       </div>
 
       <div class="actions">
-        <a class="btn ghost" href="/dashboard/">Annuler</a>
+        <a class="btn ghost" href="/dashboard/company/">Annuler</a>
         <button type="submit" class="btn green">Publier le bien <svg viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
       </div>
     </div>

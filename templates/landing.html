@@ -116,6 +116,24 @@
     margin-bottom: 2.5rem;
   }
 
+  .hero-alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: fit-content;
+    background: rgba(74,222,128,0.12);
+    border: 1px solid rgba(74,222,128,0.35);
+    color: #86EFAC;
+    border-radius: 11px;
+    padding: 0.7rem 1.1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+  .hero-alert svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.4; flex: 0 0 16px; }
+  .hero-alert.hero-alert-error { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.35); color: #FCA5A5; }
+  .hero-alert.hero-alert-warning { background: rgba(251,191,36,0.12); border-color: rgba(251,191,36,0.35); color: #FCD34D; }
+
   .hero-ctas {
     display: flex;
     gap: 1rem;
@@ -526,15 +544,54 @@
 </style>
 {% endblock %}
 
+{% block navbar %}
+<!-- Nav transparente intégrée au hero sombre -->
+<nav style="position:absolute;top:0;left:0;right:0;z-index:20;padding:18px 32px">
+  <div style="max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:20px">
+    <a href="/" style="display:flex;align-items:center;gap:9px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:800;font-size:17px;letter-spacing:-.01em;color:#fff;text-decoration:none;flex-shrink:0">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M3 21V9l9-6 9 6v12" stroke="#C9A84C" stroke-width="1.8" stroke-linejoin="round"/>
+        <rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/>
+        <path d="M3 21h18" stroke="#C9A84C" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      ImmoGérer
+    </a>
+    <div style="flex:1"></div>
+    <a href="/guest/" style="color:rgba(255,255,255,.65);font-size:13.5px;font-weight:500;text-decoration:none;transition:.15s" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.65)'">Trouver un bien</a>
+    <a href="/explorer/" style="color:rgba(255,255,255,.65);font-size:13.5px;font-weight:500;text-decoration:none;transition:.15s" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.65)'">Explorer</a>
+    {% if user.is_authenticated %}
+    <span style="color:rgba(255,255,255,.75);font-size:13px;font-weight:500">{{ user.get_full_name|default:user.username }}</span>
+    <a href="/mon-espace/" style="background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;text-decoration:none;border:1px solid rgba(255,255,255,.2)">Mon espace</a>
+    <form method="post" action="{% url 'logout' %}" style="margin:0">
+      {% csrf_token %}
+      <button type="submit" style="background:#C9A84C;color:#1c1405;font-size:13px;font-weight:700;padding:9px 18px;border-radius:9px;border:none;cursor:pointer;white-space:nowrap">Déconnexion</button>
+    </form>
+    {% else %}
+    <a href="{% url 'login' %}" style="color:rgba(255,255,255,.65);font-size:13.5px;font-weight:500;text-decoration:none" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.65)'">Se connecter</a>
+    <a href="/choisir-profil/" style="background:#C9A84C;color:#1c1405;font-size:13px;font-weight:700;padding:9px 18px;border-radius:9px;text-decoration:none;white-space:nowrap">Commencer gratuitement</a>
+    {% endif %}
+  </div>
+</nav>
+{% endblock %}
+
 {% block body %}
 
 <!-- ══ HERO ══ -->
-<header class="hero">
+<header class="hero" style="position:relative">
   <div class="hero-inner">
     <div class="hero-eyebrow">
       <span class="pulse"></span>
       Plateforme opérationnelle
     </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="hero-alert hero-alert-{{ message.tags }}">
+      <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+      {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
 
     <h1>
       Gérez vos biens<br>
@@ -546,8 +603,16 @@
     </p>
 
     <div class="hero-ctas">
+      {% if user.is_authenticated %}
+      <a href="/guest/" class="btn-primary-hero">Dashboard →</a>
+      <form method="post" action="{% url 'logout' %}" style="margin:0">
+        {% csrf_token %}
+        <button type="submit" class="btn-ghost-hero" style="cursor:pointer;border:1px solid rgba(255,255,255,.18)">Déconnexion</button>
+      </form>
+      {% else %}
       <a href="{% url 'utilisateurs_ui:choix_profil' %}" class="btn-primary-hero">Commencer gratuitement</a>
-      <a href="{% url 'login' %}" class="btn-ghost-hero">Se connecter</a>
+      <a href="/guest/" class="btn-ghost-hero">Je cherche un logement</a>
+      {% endif %}
     </div>
 
     <div class="hero-stats">
@@ -695,8 +760,16 @@
   <h2>Prêt à <em>digitaliser</em><br>votre gestion ?</h2>
   <p>Rejoignez les professionnels qui font confiance à ImmoGérer.</p>
     <div class="cta-buttons">
+    {% if user.is_authenticated %}
+    <a href="/mon-espace/" class="btn-primary-hero">Accéder à mon espace →</a>
+    <form method="post" action="{% url 'logout' %}" style="margin:0">
+      {% csrf_token %}
+      <button type="submit" class="btn-ghost-hero" style="cursor:pointer;border:1px solid rgba(255,255,255,.18)">Déconnexion</button>
+    </form>
+    {% else %}
     <a href="{% url 'utilisateurs_ui:choix_profil' %}" class="btn-primary-hero">Créer mon compte</a>
     <a href="{% url 'login' %}" class="btn-ghost-hero">Me connecter</a>
+    {% endif %}
   </div>
 </section>
 
@@ -728,5 +801,15 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.3 });
 
 document.querySelectorAll('.stat-value').forEach(el => observer.observe(el));
+
+/* ── Auto-disparition des messages ── */
+document.querySelectorAll('.hero-alert').forEach(el => {
+  setTimeout(() => {
+    el.style.transition = 'opacity .4s ease, transform .4s ease';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-6px)';
+    setTimeout(() => el.remove(), 400);
+  }, 4000);
+});
 </script>
 {% endblock %}

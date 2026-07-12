@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Construction — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--primary:#185FA5;--accent:#C9A84C;--green:#3B6D11;--green-light:#EAF3DE;--purple:#5B21B6;--text:#111;--muted:#666;--border:#e5e7eb;--bg:#F4F6F9;--card:#fff;--r:14px;--font-display:"Plus Jakarta Sans",system-ui,sans-serif;--font-body:"Inter",system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);font-size:14.5px;line-height:1.55}
+  a{text-decoration:none;color:inherit}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;font-weight:600;font-size:13.5px;padding:9px 16px;cursor:pointer;border:1px solid transparent;transition:.16s;font-family:var(--font-body)}
+  .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+  .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{filter:brightness(1.08)}
+  .btn-ghost{background:var(--card);border-color:var(--border);color:var(--muted)}.btn-ghost:hover{color:var(--primary);border-color:var(--primary)}
+
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(244,246,249,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .topbar .wrap{display:flex;align-items:center;gap:16px;height:60px}
+  .brand{font-family:var(--font-display);font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px}
+  .spacer{flex:1}
+  .nav{display:flex;gap:2px}
+  .nav a{padding:7px 12px;border-radius:9px;color:var(--muted);font-weight:500;font-size:13.5px;transition:.15s}
+  .nav a:hover,.nav a.active{color:var(--text);background:#eaedf1}
+  .notif-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;transition:.14s}
+  .notif-btn:hover{border-color:var(--primary);color:var(--primary)}
+  .notif-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2}
+  .notif-dot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#dc2626;border:2px solid #fff}
+  .notif-count{position:absolute;top:3px;right:3px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 5px;line-height:1.4}
+
+  .dash-hero{background:linear-gradient(135deg,#0f3d6e,#185FA5);color:#fff;padding:28px 0}
+  .dh-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .dh-title h1{font-family:var(--font-display);font-weight:800;font-size:24px;line-height:1.08}
+  .dh-title p{font-size:14px;color:rgba(255,255,255,.75);margin-top:4px}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:24px 0}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px}
+  .kpi .v{font-family:var(--font-display);font-weight:800;font-size:28px;line-height:1;margin-bottom:4px}
+  .kpi .l{font-size:12.5px;color:var(--muted)}
+  .kpi.yellow .v{color:#92400E}
+  .kpi.purple .v{color:var(--purple)}
+  .kpi.green .v{color:var(--green)}
+
+  /* 2 colonnes */
+  .dash-grid{display:grid;grid-template-columns:1fr 360px;gap:22px;margin-bottom:28px}
+
+  /* Notifications panel */
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+  .panel-head h3{font-family:var(--font-display);font-weight:700;font-size:15px;display:flex;align-items:center;gap:9px}
+  .panel-head h3 svg{width:16px;height:16px;stroke:var(--primary);fill:none;stroke-width:2}
+  .panel-head .badge{font-size:11px;font-weight:700;background:#dc2626;color:#fff;padding:2px 8px;border-radius:20px}
+  .notif-list{max-height:320px;overflow-y:auto}
+  .notif-item{display:flex;gap:12px;padding:13px 20px;border-bottom:1px solid var(--border);transition:.12s}
+  .notif-item:last-child{border-bottom:none}
+  .notif-item:hover{background:#f8fafc}
+  .notif-item.new{background:#fef9f0;border-left:3px solid var(--accent)}
+  .notif-icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:0 0 36px;font-size:16px}
+  .notif-icon.devis{background:#FEF3C7}
+  .notif-icon.rdv{background:#DBEAFE}
+  .notif-icon.statut{background:var(--green-light)}
+  .notif-msg{font-size:13px;color:var(--text);line-height:1.45}
+  .notif-msg a{color:var(--primary);font-weight:600}
+  .notif-time{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .panel-foot{padding:12px 20px;text-align:center}
+  .panel-foot a{font-size:13px;color:var(--primary);font-weight:600}
+
+  /* RDV panel */
+  .rdv-item{display:flex;gap:14px;padding:13px 20px;border-bottom:1px solid var(--border);align-items:center}
+  .rdv-item:last-child{border-bottom:none}
+  .rdv-date-box{width:44px;height:44px;border-radius:10px;background:var(--primary);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 44px}
+  .rdv-date-box .day{font-family:var(--font-display);font-weight:800;font-size:18px;line-height:1}
+  .rdv-date-box .mon{font-size:10px;text-transform:uppercase;opacity:.8}
+  .rdv-info{}
+  .rdv-titre{font-weight:700;font-size:13.5px}
+  .rdv-sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .rdv-heure{font-size:12px;font-weight:700;color:var(--primary);margin-top:2px}
+
+  /* Filters */
+  .filters{display:flex;gap:8px;flex-wrap:wrap}
+  .filter-btn{padding:7px 14px;border-radius:20px;font-size:13px;font-weight:600;border:1.5px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;transition:.15s}
+  .filter-btn.active,.filter-btn:hover{border-color:var(--primary);color:var(--primary);background:rgba(24,95,165,.06)}
+
+  .proj-list{display:flex;flex-direction:column;gap:12px}
+  .proj-row{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;display:grid;grid-template-columns:auto 1fr auto auto;gap:16px;align-items:center;transition:.14s}
+  .proj-row:hover{border-color:rgba(24,95,165,.25);box-shadow:0 4px 18px rgba(24,95,165,.07)}
+  .pr-icon{width:40px;height:40px;border-radius:10px;background:var(--green-light);display:grid;place-items:center;font-size:18px;flex:0 0 40px}
+  .pr-title{font-weight:700;font-size:14.5px;margin-bottom:2px}
+  .pr-sub{font-size:12.5px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+  .pr-sub span{display:flex;align-items:center;gap:4px}
+  .pr-sub svg{width:12px;height:12px;stroke:var(--muted);fill:none;stroke-width:2}
+  .pr-progress{min-width:130px}
+  .pr-pct{font-size:12px;font-weight:700;color:var(--primary);margin-bottom:4px;text-align:right}
+  .pr-track{height:7px;background:#e5e7eb;border-radius:99px;overflow:hidden}
+  .pr-fill{height:100%;background:linear-gradient(90deg,var(--green),#5cb527);border-radius:99px}
+  .pr-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+  .statut-badge{display:inline-flex;align-items:center;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+  .statut-badge.en_attente{background:#FEF3C7;color:#92400E}
+  .statut-badge.devis_envoye{background:#DBEAFE;color:#1E40AF}
+  .statut-badge.accepte{background:#D1FAE5;color:#065F46}
+  .statut-badge.en_cours{background:#EDE9FE;color:var(--purple)}
+  .statut-badge.termine{background:#D1FAE5;color:#065F46}
+  .statut-badge.annule{background:#FEE2E2;color:#991B1B}
+
+  .empty{text-align:center;padding:40px 20px;color:var(--muted)}
+  .empty svg{width:40px;height:40px;stroke:#d1d5db;fill:none;stroke-width:1.2;display:block;margin:0 auto 12px}
+
+  footer{border-top:1px solid var(--border);padding:20px 0;color:var(--muted);font-size:13px;margin-top:24px;text-align:center}
+
+  @media(max-width:1000px){.dash-grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:600px){.kpis{grid-template-columns:1fr 1fr}.proj-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#185FA5" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/></svg>
+      ImmoGérer
+    </a>
+    <nav class="nav">
+      <a href="/dashboard/">Immobilier</a>
+      <a href="/construction/dashboard/" class="active">Construction</a>
+      <a href="/chat/dashboard/">Messages</a>
+    </nav>
+    <div class="spacer"></div>
+    <!-- Cloche notifications -->
+    <a href="#notifs" class="notif-btn" title="Notifications">
+      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      {% if nb_notifs %}<span class="notif-count">{{ nb_notifs }}</span>{% endif %}
+    </a>
+    <a class="btn btn-ghost" href="/construction/entreprise/{{ company.id }}/" style="font-size:13px;padding:8px 14px">Mon profil public</a>
+    <a class="btn btn-primary" href="/dashboard/" style="font-size:13px;padding:8px 14px">Dashboard principal</a>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="dash-hero">
+  <div class="wrap">
+    <div class="dh-inner">
+      <div class="dh-title">
+        <h1>🏗 Dashboard Construction</h1>
+        <p>{{ company.name }} · Gérez vos projets, devis et rendez-vous</p>
+      </div>
+      <a class="btn" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.25)" href="/construction/">Vue publique</a>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" style="padding-top:0;padding-bottom:60px">
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi yellow">
+      <div class="v">{{ nb_en_attente }}</div>
+      <div class="l">Devis en attente</div>
+    </div>
+    <div class="kpi purple">
+      <div class="v">{{ nb_en_cours }}</div>
+      <div class="l">Chantiers en cours</div>
+    </div>
+    <div class="kpi green">
+      <div class="v">{{ nb_termines }}</div>
+      <div class="l">Projets terminés</div>
+    </div>
+    <div class="kpi">
+      <div class="v">{{ rdv_a_venir|length }}</div>
+      <div class="l">RDV à venir</div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS + RDV -->
+  <div class="dash-grid" id="notifs">
+
+    <!-- NOTIFICATIONS -->
+    <div class="panel">
+      <div class="panel-head">
+        <h3>
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Notifications
+          {% if nb_notifs %}<span class="badge">{{ nb_notifs }} new</span>{% endif %}
+        </h3>
+        {% if nb_notifs %}
+        <form method="post" action="/construction/notifs/lues/" style="margin:0">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="/construction/dashboard/#notifs">
+          <button type="submit" style="background:none;border:none;font-size:12.5px;color:var(--primary);cursor:pointer;font-weight:600;font-family:var(--font-body)">Tout marquer lu</button>
+        </form>
+        {% endif %}
+      </div>
+      <div class="notif-list">
+        {% for n in notifs %}
+        <a class="notif-item {% if not n.lue %}new{% endif %}" href="/construction/projet/{{ n.projet.id }}/">
+          <div class="notif-icon {% if n.type == 'nouveau_devis' %}devis{% elif 'rdv' in n.type %}rdv{% else %}statut{% endif %}">
+            {% if n.type == 'nouveau_devis' %}📋
+            {% elif 'rdv' in n.type %}📅
+            {% else %}🔔{% endif %}
+          </div>
+          <div>
+            <div class="notif-msg">{{ n.message|truncatechars:90 }}</div>
+            <div class="notif-time">{{ n.cree_le|timesince }} · {{ n.projet.get_type_projet_display }}</div>
+          </div>
+        </a>
+        {% empty %}
+        <div class="empty" style="padding:30px 20px">
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <p>Aucune nouvelle notification</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- RDV À VENIR -->
+    <div class="panel">
+      <div class="panel-head">
+        <h3>
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+          RDV à venir
+        </h3>
+      </div>
+      {% if rdv_a_venir %}
+      {% for p in rdv_a_venir %}
+      <div class="rdv-item">
+        <div class="rdv-date-box">
+          <div class="day">{{ p.date_rdv|date:"d" }}</div>
+          <div class="mon">{{ p.date_rdv|date:"M" }}</div>
+        </div>
+        <div class="rdv-info">
+          <div class="rdv-titre">{{ p.get_type_projet_display }}{% if p.localisation_terrain %} · {{ p.localisation_terrain }}{% endif %}</div>
+          <div class="rdv-sub">{{ p.client.get_full_name|default:p.client.username }}</div>
+          <div class="rdv-heure">{{ p.date_rdv|date:"H:i" }}{% if p.notes_rdv %} · {{ p.notes_rdv|truncatechars:40 }}{% endif %}</div>
+        </div>
+        <a class="btn btn-ghost" href="/construction/projet/{{ p.id }}/" style="font-size:12px;padding:6px 10px;white-space:nowrap">Voir</a>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="empty" style="padding:30px 20px">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <p>Aucun RDV programmé</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- LISTE PROJETS -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+    <h2 style="font-family:var(--font-display);font-weight:700;font-size:17px">Tous les projets</h2>
+    <div class="filters">
+      <span class="filter-btn active" onclick="filtrer(this,'')">Tous</span>
+      <span class="filter-btn" onclick="filtrer(this,'en_attente')">Devis reçus</span>
+      <span class="filter-btn" onclick="filtrer(this,'en_cours')">En cours</span>
+      <span class="filter-btn" onclick="filtrer(this,'termine')">Terminés</span>
+    </div>
+  </div>
+
+  {% if projets %}
+  <div class="proj-list" id="proj-list">
+    {% for projet in projets %}
+    <div class="proj-row" data-statut="{{ projet.statut }}">
+      <div class="pr-icon">
+        {% if projet.type_projet == 'villa' %}🏡{% elif projet.type_projet == 'duplex' %}🏘{% elif projet.type_projet == 'immeuble' %}🏢{% elif projet.type_projet == 'magasin' %}🏪{% elif projet.type_projet == 'bureau' %}🏬{% elif projet.type_projet == 'renovation' %}🔨{% else %}🏗{% endif %}
+      </div>
+      <div>
+        <div class="pr-title">{{ projet.get_type_projet_display }}{% if projet.localisation_terrain %} · {{ projet.localisation_terrain }}{% endif %}</div>
+        <div class="pr-sub">
+          <span><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>{{ projet.client.get_full_name|default:projet.client.username }}</span>
+          <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>{{ projet.cree_le|date:"d M Y" }}</span>
+          {% if projet.date_rdv %}<span style="color:var(--primary);font-weight:600"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>RDV {{ projet.date_rdv|date:"d/m à H:i" }}</span>{% endif %}
+          {% if projet.budget_estime %}<span style="font-weight:600">{{ projet.budget_estime }} FCFA</span>{% endif %}
+        </div>
+      </div>
+      <div class="pr-progress">
+        <div class="pr-pct">{{ projet.pourcentage_avancement }}%</div>
+        <div class="pr-track"><div class="pr-fill" style="width:{{ projet.pourcentage_avancement }}%"></div></div>
+      </div>
+      <div class="pr-actions">
+        <span class="statut-badge {{ projet.statut }}">{{ projet.get_statut_display }}</span>
+        <a class="btn btn-primary" href="/construction/projet/{{ projet.id }}/" style="font-size:12.5px;padding:7px 12px">Gérer</a>
+        {% for conv in projet.conversations.all %}
+        <a class="btn btn-ghost" href="/chat/{{ conv.id }}/" style="font-size:12px;padding:6px 10px">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Chat
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty" style="padding:60px 20px">
+    <svg viewBox="0 0 24 24"><path d="M5 21V7h8v14M13 11h6v10M3 21h18"/></svg>
+    <p>Aucun projet reçu pour le moment.</p>
+    <p style="font-size:13px;margin-top:8px">Complétez votre <a href="/construction/entreprise/{{ company.id }}/" style="color:var(--primary)">profil public</a> pour attirer des clients.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<footer><div class="wrap">ImmoGérer · Dashboard Construction · {{ company.name }}</div></footer>
+
+<script>
+function filtrer(el, statut) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.proj-row').forEach(row => {
+    row.style.display = (!statut || row.dataset.statut === statut) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

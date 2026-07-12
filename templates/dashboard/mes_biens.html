@@ -1,0 +1,124 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mes biens — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<style>
+/* Même langage visuel que la vitrine publique (/biens/) pour qu'on ne voie pas
+   de rupture en passant de "Mes biens" au détail d'un bien ou à la vitrine. */
+.tab-bar{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.tab-btn{padding:7px 16px;border-radius:999px;font-size:13px;font-weight:600;border:1px solid var(--border);cursor:pointer;background:var(--card);color:var(--muted)}
+.tab-btn.on{background:var(--green-light);color:var(--green-text);border-color:#c8ddb0}
+
+.mb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
+.mb-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .18s,transform .18s;box-shadow:var(--sh)}
+.mb-card:hover{box-shadow:var(--sh-lg);transform:translateY(-2px)}
+.mb-media{position:relative;height:130px;display:grid;place-items:center;overflow:hidden}
+.mb-media img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.mb-media .wm{width:54px;height:54px;stroke:#fff;fill:none;stroke-width:1.4;opacity:.9;position:relative;z-index:1}
+.mb-media.loc{background:linear-gradient(135deg,#2170bd,#185FA5 70%,#134a82)}
+.mb-media.vente{background:linear-gradient(135deg,#4a861b,#3B6D11 70%,#2c520a)}
+.mb-media.terrain{background:linear-gradient(135deg,#d3b45f,var(--accent) 55%,#8a6a1f)}
+.mb-media.const{background:linear-gradient(135deg,#e0561f,var(--orange) 65%,#8f2f08)}
+.mb-statut{position:absolute;top:10px;left:10px;font-size:10.5px;font-weight:700;letter-spacing:.02em;color:#fff;padding:4px 10px;border-radius:999px;z-index:1;backdrop-filter:blur(4px)}
+.mb-statut.disponible{background:rgba(59,109,17,.55)}
+.mb-statut.loue{background:rgba(24,95,165,.55)}
+.mb-statut.maintenance{background:rgba(168,132,47,.6)}
+.mb-statut.archive{background:rgba(0,0,0,.4)}
+.mb-body{padding:14px 15px 15px;display:flex;flex-direction:column;flex:1}
+.mb-loc{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted-2);margin-bottom:5px}
+.mb-loc svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.8}
+.mb-titre{font-family:var(--font-display);font-weight:700;font-size:14.5px;color:var(--ink,#111);line-height:1.3;margin:0 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mb-specs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.mb-spec{font-size:10.5px;font-weight:500;padding:3px 8px;border-radius:999px;background:#f2f4f7;color:#4a5560}
+.mb-foot{margin-top:auto;display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding-top:10px;border-top:1px solid var(--border);margin-bottom:12px}
+.mb-price{font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--ink,#111)}
+.mb-price small{font-size:11px;font-weight:600;color:var(--muted)}
+.mb-actions{display:flex;gap:7px}
+.btn-sm{flex:1;text-align:center;font-size:12px;font-weight:600;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--text)}
+.btn-sm:hover{border-color:var(--primary);color:var(--primary)}
+.btn-sm.danger:hover{border-color:#dc2626;color:#dc2626}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='biens' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+<button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="Rechercher…"></div>
+  <div class="tspacer"></div>
+  <a class="addbtn" href="{% url 'biens_ui:publier' %}"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Publier un bien</a>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+<div class="pg-head">
+  <h1>Mes biens</h1>
+  <p>Toutes vos annonces publiées sur ImmoGérer — <a href="/biens/">voir la vitrine publique →</a></p>
+</div>
+
+{% if mes_biens %}
+<div class="tab-bar">
+  <button class="tab-btn on" onclick="filtrer(this,'tous')">Tous ({{ mes_biens|length }})</button>
+  <button class="tab-btn" onclick="filtrer(this,'disponible')">Disponibles</button>
+  <button class="tab-btn" onclick="filtrer(this,'loue')">Loués</button>
+  <button class="tab-btn" onclick="filtrer(this,'archive')">Archivés</button>
+</div>
+
+<div class="mb-grid">
+  {% for bien in mes_biens %}
+  <div class="mb-card" data-statut="{{ bien.statut }}">
+    <a href="{% url 'biens_ui:gerer' bien.id %}" class="mb-media {% if bien.type_bien == 'terrain' %}terrain{% elif bien.type_bien in 'immeuble,residence' %}const{% elif bien.transaction_type == 'vente' %}vente{% else %}loc{% endif %}">
+      {% if bien.photo_principale %}<img src="{{ bien.photo_principale.url }}" alt="{{ bien.titre }}">{% endif %}
+      <span class="mb-statut {{ bien.statut }}">{{ bien.get_statut_display }}</span>
+      {% if not bien.photo_principale %}
+      <svg class="wm" viewBox="0 0 24 24">
+        {% if bien.type_bien == 'terrain' %}<path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5"/>
+        {% elif bien.type_bien in 'immeuble,residence' %}<path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/>
+        {% elif bien.transaction_type == 'vente' %}<path d="M3 11l9-7 9 7M5 10v10h14V10"/>
+        {% else %}<path d="M3 21V9l9-6 9 6v12M3 21h18M9 21v-6h6v6"/>{% endif %}
+      </svg>
+      {% endif %}
+    </a>
+    <div class="mb-body">
+      <span class="mb-loc"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg> {% if bien.commune %}{{ bien.commune }}, {% endif %}{{ bien.ville }}</span>
+      <div class="mb-titre">{{ bien.titre }}</div>
+      <div class="mb-specs">
+        <span class="mb-spec">{{ bien.get_type_bien_display }}</span>
+        <span class="mb-spec">{{ bien.surface_m2|floatformat:0 }} m²</span>
+      </div>
+      <div class="mb-foot">
+        {% if bien.transaction_type == 'vente' or bien.transaction_type == 'both' %}
+          {% if bien.prix_vente %}<span class="mb-price">{{ bien.prix_vente|floatformat:0 }} <small>FCFA</small></span>
+          {% else %}<span class="mb-price">{{ bien.prix_mensuel|floatformat:0 }} <small>FCFA/mois</small></span>{% endif %}
+        {% else %}<span class="mb-price">{{ bien.prix_mensuel|floatformat:0 }} <small>FCFA/mois</small></span>{% endif %}
+      </div>
+      <div class="mb-actions">
+        <a class="btn-sm" href="{% url 'biens_ui:gerer' bien.id %}">Gérer</a>
+        <a class="btn-sm" href="{% url 'biens_ui:edit' bien.id %}">Modifier</a>
+        <a class="btn-sm danger" href="{% url 'biens_ui:delete' bien.id %}">Supprimer</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+function filtrer(btn, statut){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.mb-card').forEach(function(el){
+    if(statut === 'tous' || el.dataset.statut === statut){ el.style.display=''; } else { el.style.display='none'; }
+  });
+}
+</script>
+{% else %}
+<div class="card">
+  <div class="empty">
+    <b>Aucun bien publié pour le moment</b>
+    Publiez votre premier bien pour le voir apparaître ici.
+    <div style="margin-top:14px"><a class="btn-sm" href="{% url 'biens_ui:publier' %}">Publier un bien</a></div>
+  </div>
+</div>
+{% endif %}
+
+</div>
+</div>
+</div>
+</body></html>

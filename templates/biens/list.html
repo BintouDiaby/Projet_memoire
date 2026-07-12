@@ -1,67 +1,248 @@
-{% extends "base.html" %}
+<!--
+  list.html — Vitrine publique "Biens disponibles" (/biens/).
+  Rendu par biens/views.py::ui_list — biens, type_choices, transaction_choices,
+  rooms_range, selected_* (état des filtres) déjà fournis par la vue.
+-->
+{% load humanize %}
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }} — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#185FA5;--blue-dark:#1A3E6A;--blue-soft:#E7F0F9;--blue-text:#0C447C;
+    --green:#3B6D11;--green-soft:#EDF3E4;--green-text:#27500A;
+    --gold:#A8842F;--gold-soft:#FBF3DE;--orange:#C2410C;--orange-soft:#FBEADF;
+    --ink:#16202B;--text:#39414A;--muted:#6B7280;--muted-2:#9AA0A6;
+    --line:#E7EAEE;--line-2:#DBDFE4;--bg:#F4F6F9;--card:#FFFFFF;
+    --sh:0 1px 2px rgba(16,32,48,.05);--sh-lg:0 12px 32px rgba(16,32,48,.09);
+    --fdisp:"Plus Jakarta Sans",system-ui,sans-serif;--fbody:"Inter",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--fbody);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  .num{font-variant-numeric:tabular-nums}
 
-{% block title %}Biens disponibles — Immobilier{% endblock %}
+  /* ---------- nav ---------- */
+  .nav{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav-in{max-width:1200px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:14px;height:60px}
+  .back{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;cursor:pointer;color:var(--muted);flex-shrink:0;transition:.14s}
+  .back:hover{border-color:var(--line-2);color:var(--ink)}.back svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2}
+  .brand{display:flex;align-items:center;gap:9px;font-family:var(--fdisp);font-weight:800;font-size:17px;letter-spacing:-.01em;color:var(--ink);flex-shrink:0}
+  .brand svg{width:22px;height:22px}
+  .links{display:flex;gap:2px;list-style:none;margin:0;padding:0;flex:1}
+  .links a{display:block;padding:7px 12px;border-radius:8px;color:var(--muted);font-weight:500;font-size:13.5px;transition:.14s}
+  .links a:hover{color:var(--ink);background:#eef1f4}
+  .links a.active{color:var(--blue);background:var(--blue-soft);font-weight:600}
+  .acts{display:flex;align-items:center;gap:10px;flex-shrink:0}
+  .uname{font-size:13.5px;color:var(--ink);font-weight:500;white-space:nowrap}
+  .role{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--green-soft);color:var(--green-text);white-space:nowrap}
+  .sep{width:1px;height:22px;background:var(--line);flex-shrink:0}
+  .logout{background:#fff;border:1px solid var(--line);border-radius:9px;font-size:13px;font-weight:500;padding:7px 13px;cursor:pointer;color:var(--muted);font-family:var(--fbody);transition:.14s}
+  .logout:hover{border-color:#dc2626;color:#dc2626;background:#fef2f2}
+  .cta{background:var(--gold);color:#1c1405;font-size:13px;font-weight:700;padding:8px 15px;border-radius:9px}
 
-{% block content %}
-  <div class="card p-4">
-    <h1>{{ title }}</h1>
-    <form method="get" class="mb-3">
-      <div class="row g-2">
-        <div class="col-md-3">
-          <input name="ville" value="{{ request.GET.ville }}" class="form-control" placeholder="Ville / Quartier">
-        </div>
-        <div class="col-md-2">
-          <select name="min_chambres" class="form-control">
-            <option value="">Pièces (min)</option>
-            {% for i in rooms_range %}
-              <option value="{{ i }}" {% if request.GET.min_chambres == i|stringformat:"s" %}selected{% endif %}>{{ i }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <input name="min_price" value="{{ request.GET.min_price }}" class="form-control" placeholder="Budget min">
-        </div>
-        <div class="col-md-2">
-          <input name="max_price" value="{{ request.GET.max_price }}" class="form-control" placeholder="Budget max">
-        </div>
-        <div class="col-md-3 text-end">
-          <button class="btn btn-primary">Filtrer</button>
-          <a class="btn btn-link" href="/biens/">Réinitialiser</a>
-        </div>
-      </div>
+  /* ---------- shell ---------- */
+  .wrap{max-width:1200px;margin:0 auto;padding:26px 24px 60px}
+  .head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .head .eyebrow{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted-2);font-weight:600;margin-bottom:6px}
+  .head h1{font-family:var(--fdisp);font-weight:800;font-size:26px;letter-spacing:-.02em;color:var(--ink);margin:0}
+  .head .count{color:var(--muted);font-size:13.5px}
 
-      <div class="mt-3">
-        <strong>Type d'opération</strong>
-        {% for val,label in transaction_choices %}
-          <label class="ms-2"><input type="checkbox" name="transaction_type" value="{{ val }}" {% if val in selected_transaction_types %}checked{% endif %}> {{ label }}</label>
-        {% endfor %}
-      </div>
+  /* ---------- filtres ---------- */
+  .filters{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:24px;box-shadow:var(--sh)}
+  .frow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .fin{position:relative;flex:1;min-width:190px}
+  .fin svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--muted-2);fill:none;stroke-width:1.8}
+  .fin input{width:100%;padding:10px 12px 10px 36px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:13.5px;outline:none;background:#fff;transition:.15s}
+  .fin input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.12)}
+  .fsel,.fnum{padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:13.5px;background:#fff;outline:none;transition:.15s}
+  .fnum{width:120px}.fsel{cursor:pointer}
+  .fsel:focus,.fnum:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.12)}
+  .btn{display:inline-flex;align-items:center;gap:7px;border-radius:10px;font:inherit;font-weight:600;font-size:13.5px;padding:10px 16px;cursor:pointer;border:1px solid transparent;transition:.15s}
+  .btn.primary{background:var(--blue);color:#fff}.btn.primary:hover{background:var(--blue-dark)}
+  .btn.ghost{background:#fff;border-color:var(--line);color:var(--muted)}.btn.ghost:hover{border-color:var(--line-2);color:var(--ink)}
+  .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.2}
 
-      <div class="mt-2">
-        <strong>Type de bien</strong>
-        {% for val,label in type_choices %}
-          <label class="ms-2"><input type="checkbox" name="type_bien" value="{{ val }}" {% if val in selected_types_bien %}checked{% endif %}> {{ label }}</label>
-        {% endfor %}
-      </div>
+  .frow2{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+  .flabel{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2);font-weight:600;margin-right:2px}
+  .chip{cursor:pointer;user-select:none}
+  .chip input{position:absolute;opacity:0;pointer-events:none}
+  .chip .t{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 13px;transition:.14s}
+  .chip:hover .t{border-color:var(--line-2);color:var(--ink)}
+  .chip:has(input:checked) .t{background:var(--blue-soft);border-color:#bcd6ee;color:var(--blue-text)}
+  .chip.verif:has(input:checked) .t{background:var(--green-soft);border-color:#c8ddb0;color:var(--green-text)}
+  .chip .t .dot{width:6px;height:6px;border-radius:50%;background:var(--blue)}
+  .more{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--blue);cursor:pointer;background:none;border:none;font-family:var(--fbody)}
+  .more svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;transition:transform .2s}
+  .more.open svg{transform:rotate(180deg)}
+  .adv{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+  .adv.open{display:block}
+  .adv .grp-lab{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2);font-weight:600;margin-bottom:9px}
+  .adv .chips{display:flex;flex-wrap:wrap;gap:7px}
 
-      <div class="form-check mt-2">
-        <input class="form-check-input" type="checkbox" name="entreprises_verifiees" value="1" id="entreprises_verifiees" {% if request.GET.entreprises_verifiees %}checked{% endif %}>
-        <label class="form-check-label" for="entreprises_verifiees">Entreprises vérifiées uniquement</label>
-      </div>
-    </form>
-    <div class="list-group">
-    {% for b in biens %}
-      <a href="/biens/{{ b.id }}/" class="list-group-item list-group-item-action">
-        <div class="d-flex w-100 justify-content-between">
-          <h5 class="mb-1">{{ b.titre }}</h5>
-          <small>{{ b.ville }}</small>
-        </div>
-        <p class="mb-1">{{ b.description|truncatechars:120 }}</p>
-        <small>{{ b.prix_mensuel }} € / mois</small>
-      </a>
-    {% empty %}
-      <div class="alert alert-info">Aucun bien disponible.</div>
-    {% endfor %}
+  /* ---------- grille de biens ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+  .pcard{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .18s,transform .18s;box-shadow:var(--sh)}
+  .pcard:hover{box-shadow:var(--sh-lg);transform:translateY(-3px)}
+  .media{position:relative;height:150px;display:grid;place-items:center;overflow:hidden}
+  .media img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+  .media .wm{width:66px;height:66px;stroke:#fff;fill:none;stroke-width:1.4;opacity:.9;position:relative;z-index:1}
+  .media.loc{background:linear-gradient(135deg,#2170bd,#185FA5 70%,#134a82)}
+  .media.vente{background:linear-gradient(135deg,#4a861b,#3B6D11 70%,#2c520a)}
+  .media.terrain{background:linear-gradient(135deg,#d3b45f,#C9A84C 55%,#8a6a1f)}
+  .media.const{background:linear-gradient(135deg,#e0561f,#C2410C 65%,#8f2f08)}
+  .op-badge{position:absolute;top:12px;left:12px;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.02em;color:#fff;background:rgba(0,0,0,.28);backdrop-filter:blur(4px);padding:5px 11px;border-radius:999px;z-index:1}
+  .op-badge .d{width:6px;height:6px;border-radius:50%;background:#fff}
+  .verif-badge{position:absolute;top:12px;right:12px;display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:#fff;background:rgba(255,255,255,.22);backdrop-filter:blur(4px);padding:5px 9px;border-radius:999px;z-index:1}
+  .verif-badge svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2.6}
+  .pbody{padding:15px 16px 17px;display:flex;flex-direction:column;flex:1}
+  .ploc{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .ploc svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.8}
+  .ptitle{font-family:var(--fdisp);font-weight:700;font-size:15px;color:var(--ink);line-height:1.3;margin:0 0 9px}
+  .pspecs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+  .spec{font-size:11px;font-weight:500;padding:3px 9px;border-radius:999px;background:#f2f4f7;color:#4a5560}
+  .pfoot{margin-top:auto;display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+  .price{font-family:var(--fdisp);font-weight:800;font-size:17px;color:var(--ink);letter-spacing:-.01em}
+  .price small{font-size:12px;font-weight:600;color:var(--muted)}
+  .price.soft{font-size:14px;font-weight:700;color:var(--muted)}
+  .see{font-size:12.5px;font-weight:600;color:var(--blue);display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+  .see svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2}
+  .empty-state{grid-column:1/-1;text-align:center;padding:56px 24px;color:var(--muted)}
+  .empty-state b{display:block;font-family:var(--fdisp);color:var(--ink);font-size:16px;margin-bottom:6px}
+
+  @media (max-width:600px){.head h1{font-size:22px}.fnum{flex:1}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-in">
+    <button class="back" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+    <a class="brand" href="/"><svg viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#185FA5" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/><path d="M3 21h18" stroke="#185FA5" stroke-width="1.8" stroke-linecap="round"/></svg> ImmoGérer</a>
+    <ul class="links">
+      {% if user.is_authenticated and user.role == 'locataire' %}
+      <li><a href="/mon-espace/">Mon espace</a></li>
+      {% elif user.is_authenticated %}
+      <li><a href="/dashboard/company/">Dashboard</a></li>
+      {% endif %}
+      <li><a href="/biens/" class="active">Biens</a></li>
+      <li><a href="/explorer/">Recherche</a></li>
+    </ul>
+    <div class="acts">
+      {% if user.is_authenticated %}
+      <span class="uname">{{ user.get_full_name|default:user.username }}</span>
+      <span class="role">{{ user.get_role_display }}</span>
+      <div class="sep"></div>
+      <form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}<button type="submit" class="logout">Déconnexion</button></form>
+      {% else %}
+      <a href="{% url 'login' %}" style="font-size:13.5px;font-weight:500;color:var(--muted)">Se connecter</a>
+      <a class="cta" href="/choisir-profil/">Commencer gratuitement</a>
+      {% endif %}
     </div>
   </div>
-{% endblock %}
+</nav>
+
+<div class="wrap">
+
+  <div class="head">
+    <div>
+      <div class="eyebrow">Marketplace</div>
+      <h1>{{ title }}</h1>
+    </div>
+    <span class="count"><b class="num">{{ biens|length }}</b> bien{{ biens|length|pluralize }} disponible{{ biens|length|pluralize }}</span>
+  </div>
+
+  <!-- FILTRES -->
+  <form class="filters" method="get">
+    <div class="frow">
+      <div class="fin"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="text" name="ville" value="{{ request.GET.ville }}" placeholder="Ville, commune ou quartier"></div>
+      <select class="fsel" name="min_chambres">
+        <option value="">Pièces (min)</option>
+        {% for i in rooms_range %}{% if i > 0 %}<option value="{{ i }}" {% if selected_min_chambres == i|stringformat:"s" %}selected{% endif %}>{{ i }}+</option>{% endif %}{% endfor %}
+      </select>
+      <input class="fnum" type="text" inputmode="numeric" name="min_price" value="{{ selected_min_price|default:'' }}" placeholder="Budget min">
+      <input class="fnum" type="text" inputmode="numeric" name="max_price" value="{{ selected_max_price|default:'' }}" placeholder="Budget max">
+      <button class="btn primary" type="submit"><svg viewBox="0 0 24 24"><path d="M22 3H2l8 9.5V19l4 2v-8.5z"/></svg> Filtrer</button>
+      <a class="btn ghost" href="/biens/">Réinitialiser</a>
+    </div>
+
+    <div class="frow2">
+      <span class="flabel">Opération</span>
+      {% for val, label in transaction_choices %}
+      <label class="chip"><input type="checkbox" name="transaction_type" value="{{ val }}" {% if val in selected_transaction_types %}checked{% endif %}><span class="t"><span class="dot" style="background:{% if val == 'location' %}var(--blue){% elif val == 'vente' %}var(--green){% else %}var(--gold){% endif %}"></span> {{ label }}</span></label>
+      {% endfor %}
+      <label class="chip verif"><input type="checkbox" name="entreprises_verifiees" value="1" {% if selected_entreprises_verifiees %}checked{% endif %}><span class="t"><svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.4"><path d="M20 6 9 17l-5-5"/></svg> Entreprises vérifiées</span></label>
+      <button type="button" class="more{% if selected_types_bien %} open{% endif %}" id="moreBtn">Type de bien <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+    </div>
+
+    <div class="adv{% if selected_types_bien %} open{% endif %}" id="adv">
+      <div class="grp-lab">Type de bien</div>
+      <div class="chips">
+        {% for val, label in type_choices %}
+        <label class="chip"><input type="checkbox" name="type_bien" value="{{ val }}" {% if val in selected_types_bien %}checked{% endif %}><span class="t">{{ label }}</span></label>
+        {% endfor %}
+      </div>
+    </div>
+  </form>
+
+  <!-- GRILLE -->
+  <div class="grid">
+    {% for b in biens %}
+    <a href="/biens/{{ b.id }}/" class="pcard">
+      <div class="media {% if b.type_bien == 'terrain' %}terrain{% elif b.type_bien in 'immeuble,residence' %}const{% elif b.transaction_type == 'vente' %}vente{% else %}loc{% endif %}">
+        {% if b.photo_principale %}<img src="{{ b.photo_principale.url }}" alt="{{ b.titre }}">{% endif %}
+        <span class="op-badge"><span class="d"></span>
+          {% if b.type_bien == 'terrain' %}Terrain{% elif b.type_bien in 'immeuble,residence' %}Construction{% else %}{{ b.get_transaction_type_display }}{% endif %}
+        </span>
+        {% if b.proprietaire.documents_verifies %}<span class="verif-badge"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Vérifié</span>{% endif %}
+        {% if not b.photo_principale %}
+        <svg class="wm" viewBox="0 0 24 24">
+          {% if b.type_bien == 'terrain' %}<path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5"/>
+          {% elif b.type_bien in 'immeuble,residence' %}<path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/>
+          {% elif b.transaction_type == 'vente' %}<path d="M3 11l9-7 9 7M5 10v10h14V10"/>
+          {% else %}<path d="M3 21V9l9-6 9 6v12M3 21h18M9 21v-6h6v6"/>{% endif %}
+        </svg>
+        {% endif %}
+      </div>
+      <div class="pbody">
+        <span class="ploc"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg> {% if b.commune %}{{ b.commune }}, {% endif %}{{ b.ville }}</span>
+        <h3 class="ptitle">{{ b.titre }}</h3>
+        <div class="pspecs">
+          <span class="spec">{{ b.get_type_bien_display }}</span>
+          <span class="spec">{{ b.surface_m2|floatformat:0 }} m²</span>
+          {% if b.nombre_chambres > 0 %}<span class="spec">{{ b.nombre_chambres }} pièce{{ b.nombre_chambres|pluralize }}</span>{% endif %}
+          {% for eq in b.equipements|slice:":2" %}<span class="spec">{{ eq }}</span>{% endfor %}
+        </div>
+        <div class="pfoot">
+          {% if b.transaction_type == 'vente' or b.transaction_type == 'both' %}
+            {% if b.prix_vente %}<span class="price num">{{ b.prix_vente|floatformat:0|intcomma }} <small>FCFA</small></span>
+            {% elif b.prix_mensuel %}<span class="price num">{{ b.prix_mensuel|floatformat:0|intcomma }} <small>FCFA/mois</small></span>
+            {% else %}<span class="price soft">Prix sur demande</span>{% endif %}
+          {% else %}<span class="price num">{{ b.prix_mensuel|floatformat:0|intcomma }} <small>FCFA/mois</small></span>{% endif %}
+          <span class="see">Voir <svg viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></span>
+        </div>
+      </div>
+    </a>
+    {% empty %}
+    <div class="empty-state">
+      <b>Aucun bien ne correspond à ces critères</b>
+      Essayez d'élargir votre recherche ou <a href="/biens/" style="color:var(--blue);font-weight:600">réinitialisez les filtres</a>.
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+  var mb=document.getElementById('moreBtn'), adv=document.getElementById('adv');
+  mb.addEventListener('click',function(){ adv.classList.toggle('open'); mb.classList.toggle('open'); });
+</script>
+</body>
+</html>

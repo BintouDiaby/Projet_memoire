@@ -1,22 +1,74 @@
 {% extends "base.html" %}
+{% load humanize %}
 
-{% block title %}Contrats — Immobilier{% endblock %}
+{% block title %}Contrats — ImmoGérer{% endblock %}
 
-{% block content %}
-  <div class="card p-4">
-    <h1>{{ title }}</h1>
-    <div class="list-group">
-      {% for c in contrats %}
-        <a href="/contrats/{{ c.id }}/" class="list-group-item list-group-item-action">
-          <div class="d-flex w-100 justify-content-between">
-            <h5 class="mb-1">Contrat #{{ c.id }} - {{ c.numero_contrat }}</h5>
-            <small>{{ c.statut }}</small>
-          </div>
-          <p class="mb-1">Bien: {{ c.bien }} — Locataire: {{ c.locataire }}</p>
-        </a>
-      {% empty %}
-        <div class="alert alert-info">Aucun contrat trouvé.</div>
-      {% endfor %}
+{% block extra_head %}
+<style>
+  .me-page { background: var(--ig-bg, #F4F6F9); min-height: calc(100vh - 60px); padding: 28px 0 56px; }
+  .me-wrap  { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+  .me-greeting { margin-bottom: 24px; }
+  .me-greeting h1 { font-family: var(--ig-font-display); font-weight: 800; font-size: 24px; letter-spacing: -.02em; margin: 0 0 4px; color: #111; }
+  .me-greeting p  { font-size: 13.5px; color: #6B7280; margin: 0; }
+
+  .me-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 18px 20px; margin-bottom: 14px; display: flex; align-items: center; gap: 16px; text-decoration: none; transition: .14s; }
+  .me-card:hover { border-color: #d1d5db; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+  .mc-icon { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; flex: 0 0 46px; }
+  .mc-icon svg { width: 20px; height: 20px; stroke-width: 1.7; fill: none; }
+  .mc-main { flex: 1; min-width: 0; }
+  .mc-num { font-size: 11.5px; color: #9aa0a6; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 2px; }
+  .mc-titre { font-family: var(--ig-font-display); font-weight: 700; font-size: 14.5px; color: #111; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mc-meta { font-size: 12.5px; color: #6B7280; }
+
+  .badge-statut { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .badge-statut::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .7; }
+  .s-ok     { background: #F0FDF4; color: #15803D; }
+  .s-warn   { background: #FFFBEB; color: #92400E; }
+  .s-danger { background: #FFF5F5; color: #B91C1C; }
+  .s-muted  { background: #F4F6F9; color: #6B7280; }
+
+  .me-empty { text-align: center; padding: 56px 24px; background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; }
+  .me-empty .eic { width: 56px; height: 56px; border-radius: 16px; background: #E6F1FB; display: grid; place-items: center; margin: 0 auto 16px; }
+  .me-empty .eic svg { width: 26px; height: 26px; stroke: #185FA5; fill: none; stroke-width: 1.5; }
+  .me-empty h3 { font-family: var(--ig-font-display); font-weight: 700; font-size: 18px; margin: 0 0 6px; }
+  .me-empty p  { color: #6B7280; font-size: 13.5px; margin: 0; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="me-page">
+  <div class="me-wrap">
+
+    <div class="me-greeting">
+      <h1>{{ title }}</h1>
+      <p>Vos contrats de location</p>
     </div>
+
+    {% if contrats %}
+      {% for c in contrats %}
+      <a class="me-card" href="/contrats/{{ c.id }}/suivi/">
+        <div class="mc-icon" style="background:{% if c.statut == 'en_cours' %}#EAF3DE{% elif c.statut == 'termine' %}#F4F6F9{% elif c.statut == 'brouillon' %}#FFFBEB{% else %}#FFF5F5{% endif %}">
+          <svg viewBox="0 0 24 24" stroke="{% if c.statut == 'en_cours' %}#3B6D11{% elif c.statut == 'termine' %}#9aa0a6{% elif c.statut == 'brouillon' %}#92400E{% else %}#B91C1C{% endif %}"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+        </div>
+        <div class="mc-main">
+          <div class="mc-num">{{ c.numero_contrat }}</div>
+          <div class="mc-titre">{{ c.bien.titre|default:c.bien }}</div>
+          <div class="mc-meta">
+            {% if request.user.role == 'locataire' %}{{ c.proprietaire }}{% else %}{{ c.locataire|default:"Locataire non défini" }}{% endif %}
+            · {{ c.date_debut|date:"d/m/Y" }} → {{ c.date_fin|date:"d/m/Y" }}
+          </div>
+        </div>
+        <span class="badge-statut {% if c.statut == 'en_cours' %}s-ok{% elif c.statut == 'termine' %}s-muted{% elif c.statut == 'brouillon' %}s-warn{% else %}s-danger{% endif %}">{{ c.get_statut_display }}</span>
+      </a>
+      {% endfor %}
+    {% else %}
+      <div class="me-empty">
+        <div class="eic"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></div>
+        <h3>Aucun contrat</h3>
+        <p>Vous n'avez pour le moment aucun contrat de location.</p>
+      </div>
+    {% endif %}
+
   </div>
+</div>
 {% endblock %}

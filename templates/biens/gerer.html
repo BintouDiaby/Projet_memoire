@@ -1,0 +1,318 @@
+<!--
+  gerer.html — Rendu par biens/views.py::ui_gerer.
+  Page de pilotage d'un bien pour le propriétaire/gestionnaire, distincte de la
+  page publique de l'annonce (biens_ui:detail). KPI "Vues" du mockup retiré :
+  aucun champ de comptage de vues n'existe sur Bien, pas de donnée à afficher.
+  Coordonnées passées à Leaflet via |unlocalize (voir bug corrigé sur detail.html :
+  en locale fr, {{ float }} rend "5,3054" avec une virgule qui casse le tableau JS).
+-->
+{% load l10n humanize %}
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gérer — {{ bien.titre }} — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+{% if bien.latitude and bien.longitude %}
+<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+<script src="/static/vendor/leaflet/leaflet.js"></script>
+{% endif %}
+<style>
+  :root{
+    --grn:#1F7A4E;--grn-dark:#155A38;--grn-soft:#E5F3EA;--grn-text:#155A38;
+    --blue:#185FA5;--blue-soft:#E7F0F9;--blue-text:#0C447C;
+    --amber:#B45309;--amber-soft:#FEF3C7;--red:#B4441F;--red-soft:#FBEAE4;
+    --ink:#16202B;--text:#39414A;--muted:#6B7280;--muted-2:#9AA0A6;
+    --line:#E7EAEE;--line-2:#DBDFE4;--bg:#F4F6F9;--card:#FFFFFF;
+    --sh:0 1px 2px rgba(16,32,48,.05);--sh-lg:0 12px 32px rgba(16,32,48,.09);
+    --fdisp:"Plus Jakarta Sans",system-ui,sans-serif;--fbody:"Inter",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--fbody);background:var(--bg);color:var(--text);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  button{font:inherit}
+  .num{font-variant-numeric:tabular-nums}
+
+  .nav{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav-in{max-width:1160px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:14px;height:60px}
+  .back{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;cursor:pointer;color:var(--muted);flex-shrink:0}
+  .back:hover{border-color:var(--line-2);color:var(--ink)}.back svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2}
+  .brand{display:flex;align-items:center;gap:9px;font-family:var(--fdisp);font-weight:800;font-size:17px;color:var(--ink);flex-shrink:0}
+  .brand svg{width:22px;height:22px}
+  .links{display:flex;gap:2px;list-style:none;flex:1}
+  .links a{display:block;padding:7px 12px;border-radius:8px;color:var(--muted);font-weight:500;font-size:13.5px}
+  .links a:hover{color:var(--ink);background:#eef1f4}.links a.active{color:var(--grn);background:var(--grn-soft);font-weight:600}
+  .acts{display:flex;align-items:center;gap:10px}
+  .uname{font-size:13.5px;color:var(--ink);font-weight:500}.role{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--grn-soft);color:var(--grn-text)}
+
+  .wrap{max-width:1160px;margin:0 auto;padding:22px 24px 60px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:10px;font:inherit;font-weight:600;font-size:13.5px;padding:9px 15px;cursor:pointer;border:1px solid transparent;transition:.15s}
+  .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+  .btn.primary{background:var(--grn);color:#fff}.btn.primary:hover{background:var(--grn-dark)}
+  .btn.ghost{background:#fff;border-color:var(--line);color:var(--text)}.btn.ghost:hover{border-color:var(--line-2)}
+  .btn.danger{background:#fff;border-color:#f0c4b6;color:var(--red)}.btn.danger:hover{background:var(--red-soft)}
+  .btn.amber{background:#fff;border-color:#FCD34D;color:var(--amber)}
+  .btn.sm{padding:7px 12px;font-size:12.5px}
+
+  .msg{border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13.5px;font-weight:600}
+  .msg.success{background:var(--grn-soft);color:var(--grn-text)}
+
+  .pheader{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px;box-shadow:var(--sh);margin-bottom:18px}
+  .ph-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+  .ph-top h1{font-family:var(--fdisp);font-weight:800;font-size:22px;color:var(--ink);letter-spacing:-.02em}
+  .ph-loc{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:13px;margin-top:5px}
+  .ph-loc svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.8}
+  .ph-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .ph-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .tag{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--grn-soft);color:var(--grn-text)}
+  .tag.pub{background:var(--blue-soft);color:var(--blue-text)}
+  .tag.off{background:var(--bg);color:var(--muted)}
+
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--sh)}
+  .kpi .lab{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-2);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .kpi .lab svg{width:13px;height:13px;stroke:var(--grn);fill:none;stroke-width:2}
+  .kpi .val{font-family:var(--fdisp);font-weight:800;font-size:22px;color:var(--ink)}
+  .kpi .sub{font-size:11.5px;color:var(--muted-2);margin-top:3px}
+  .kpi.amber{border-color:#FCD34D;background:var(--amber-soft)}.kpi.amber .val{color:var(--amber)}
+
+  .layout{display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:var(--sh);margin-bottom:16px}
+  .card h2{font-family:var(--fdisp);font-weight:700;font-size:15.5px;color:var(--ink);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .card h2 svg{width:15px;height:15px;stroke:var(--grn);fill:none;stroke-width:2}
+
+  .photo{height:280px;border-radius:14px;background:linear-gradient(135deg,#2a9660,#1F7A4E 55%,#0f4a2c);margin-bottom:16px;display:grid;place-items:center;color:rgba(255,255,255,.5);background-size:cover;background-position:center}
+  .photo svg{width:70px;height:70px;stroke:rgba(255,255,255,.35);fill:none;stroke-width:1.2}
+
+  .desc{color:var(--text);line-height:1.7;font-size:13.5px}
+
+  .char-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .char{background:var(--bg);border-radius:10px;padding:12px 14px}
+  .char span{font-size:11px;color:var(--muted);display:block;margin-bottom:2px}
+  .char b{font-size:14px;font-weight:700;color:var(--ink)}
+
+  .equip-list{display:flex;flex-wrap:wrap;gap:8px}
+  .equip-tag{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:var(--bg);border:1px solid var(--line);border-radius:20px;font-size:12.5px;font-weight:500}
+  .equip-tag::before{content:"✓";color:var(--grn);font-weight:700;font-size:11px}
+
+  #map{height:260px;border-radius:12px}
+
+  .sidebar{position:sticky;top:80px}
+  .price-main{font-family:var(--fdisp);font-weight:800;font-size:24px;color:var(--ink)}
+  .price-main small{font-size:13px;color:var(--muted);font-weight:500}
+  .price-sub{font-size:12px;color:var(--muted);margin-bottom:12px}
+  .price-detail{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+  .price-detail span{color:var(--muted)}.price-detail b{font-weight:600}
+
+  .reqlist{display:flex;flex-direction:column;gap:10px}
+  .reqitem{border:1px solid var(--line);border-radius:11px;padding:12px 13px}
+  .reqitem .who{font-weight:700;font-size:13px;color:var(--ink)}
+  .reqitem .when{font-size:11.5px;color:var(--muted-2);margin:2px 0 9px}
+  .reqbtns{display:flex;gap:7px}
+  .reqbtns .btn{flex:1}
+  .empty2{text-align:center;padding:20px 10px;color:var(--muted-2);font-size:12.5px}
+
+  @media(max-width:960px){.layout{grid-template-columns:1fr}.sidebar{position:static}.kpis{grid-template-columns:1fr 1fr}}
+  @media(max-width:640px){.char-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-in">
+    <button class="back" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+    <a class="brand" href="/"><svg viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#1F7A4E" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/><path d="M3 21h18" stroke="#1F7A4E" stroke-width="1.8" stroke-linecap="round"/></svg> ImmoGérer</a>
+    <ul class="links">
+      <li><a href="/dashboard/company/">Tableau de bord</a></li>
+      <li><a href="/dashboard/biens/" class="active">Mes biens</a></li>
+      <li><a href="/dashboard/clients/">Clients</a></li>
+      <li><a href="/dashboard/facturation/">Facturation</a></li>
+    </ul>
+    <div class="acts">
+      <span class="uname">{{ request.user.company.name|default:request.user.get_full_name|default:request.user.username }}</span>
+      {% if request.user.documents_verifies %}<span class="role">✓ Vérifiée</span>{% endif %}
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  {% if messages %}
+  {% for m in messages %}<div class="msg success">{{ m }}</div>{% endfor %}
+  {% endif %}
+
+  <div class="pheader">
+    <div class="ph-top">
+      <div>
+        <h1>{{ bien.titre }}</h1>
+        <div class="ph-loc"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> {% if bien.quartier %}{{ bien.quartier }}, {% endif %}{{ bien.commune|default:bien.ville }} — {{ bien.ville }}</div>
+      </div>
+      <div class="ph-actions">
+        <a class="btn ghost sm" href="{% url 'biens_ui:detail' pk=bien.id %}" target="_blank"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/></svg> Voir l'annonce publique</a>
+        <a class="btn ghost sm" href="{% url 'biens_ui:edit' pk=bien.id %}"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Modifier</a>
+        <form method="post" style="display:inline">
+          {% csrf_token %}
+          {% if bien.statut == 'archive' %}
+          <button type="submit" name="action" value="publier" class="btn amber sm"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Publier</button>
+          {% else %}
+          <button type="submit" name="action" value="depublier" class="btn amber sm"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><path d="M4 4l16 16"/></svg> Dépublier</button>
+          {% endif %}
+        </form>
+        <a class="btn danger sm" href="{% url 'biens_ui:delete' pk=bien.id %}"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg> Supprimer</a>
+      </div>
+    </div>
+    <div class="ph-tags">
+      <span class="tag">{{ bien.get_type_bien_display }}</span>
+      <span class="tag">{{ bien.surface_m2|floatformat:0 }} m²</span>
+      {% if bien.nombre_chambres > 0 %}<span class="tag">{{ bien.nombre_chambres }} chambre{{ bien.nombre_chambres|pluralize }}</span>{% endif %}
+      {% if bien.nombre_salles_bain > 0 %}<span class="tag">{{ bien.nombre_salles_bain }} sdb</span>{% endif %}
+      {% if bien.statut == 'disponible' %}<span class="tag pub">🔵 Publiée</span>
+      {% elif bien.statut == 'archive' %}<span class="tag off">Dépubliée</span>
+      {% elif bien.statut == 'loue' %}<span class="tag">Louée</span>
+      {% elif bien.statut == 'maintenance' %}<span class="tag off">Maintenance</span>{% endif %}
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi amber"><div class="lab"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Demandes de visite</div><div class="val num">{{ visites_en_attente|length }}</div><div class="sub">en attente</div></div>
+    <div class="kpi"><div class="lab"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/></svg> Réservations</div><div class="val num">{{ reservations_en_attente|length }}</div><div class="sub">en attente</div></div>
+    <div class="kpi"><div class="lab"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg> Favoris reçus</div><div class="val num">{{ nb_favoris }}</div><div class="sub">côté clients</div></div>
+  </div>
+
+  <div class="layout">
+
+    <!-- COLONNE GAUCHE -->
+    <div>
+      <div class="photo" {% if bien.photo_principale %}style="background-image:url('{{ bien.photo_principale.url }}')"{% endif %}>
+        {% if not bien.photo_principale %}<svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6M8 11h2M14 11h2"/></svg>{% endif %}
+      </div>
+
+      {% if bien.description %}
+      <div class="card">
+        <h2><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg> Description</h2>
+        <p class="desc">{{ bien.description }}</p>
+      </div>
+      {% endif %}
+
+      <div class="card">
+        <h2><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Caractéristiques</h2>
+        <div class="char-grid">
+          <div class="char"><span>Type</span><b>{{ bien.get_type_bien_display }}</b></div>
+          <div class="char"><span>Surface</span><b>{{ bien.surface_m2|floatformat:0 }} m²</b></div>
+          {% if bien.nombre_chambres > 0 %}<div class="char"><span>Chambres</span><b>{{ bien.nombre_chambres }}</b></div>{% endif %}
+          {% if bien.nombre_salles_bain > 0 %}<div class="char"><span>Salle de bain</span><b>{{ bien.nombre_salles_bain }}</b></div>{% endif %}
+          {% if bien.nombre_etages > 1 %}<div class="char"><span>Étages</span><b>{{ bien.nombre_etages }}</b></div>{% endif %}
+          <div class="char"><span>Loyer mensuel</span><b>{{ bien.prix_mensuel|floatformat:0|intcomma }} F</b></div>
+          {% if bien.prix_depot_garantie %}<div class="char"><span>Dépôt de garantie</span><b>{{ bien.prix_depot_garantie|floatformat:0|intcomma }} F</b></div>{% endif %}
+        </div>
+      </div>
+
+      {% if bien.equipements %}
+      <div class="card">
+        <h2><svg viewBox="0 0 24 24"><path d="M12 2l3.1 6.3L22 9.3l-5 4.9 1.2 6.8L12 18l-6.2 3 1.2-6.8L2 9.3l6.9-1L12 2z"/></svg> Équipements</h2>
+        <div class="equip-list">
+          {% for eq in bien.equipements %}<span class="equip-tag">{{ eq }}</span>{% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if bien.latitude and bien.longitude %}
+      <div class="card">
+        <h2><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Localisation</h2>
+        <div id="map"></div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="card">
+        <h2><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Prix</h2>
+        {% if bien.transaction_type == 'vente' and bien.prix_vente %}
+        <div class="price-main">{{ bien.prix_vente|floatformat:0|intcomma }} <small>F</small></div>
+        <div class="price-sub">Prix de vente</div>
+        {% else %}
+        <div class="price-main">{{ bien.prix_mensuel|floatformat:0|intcomma }} <small>F/mois</small></div>
+        <div class="price-sub">Loyer mensuel</div>
+        {% endif %}
+        {% if bien.prix_depot_garantie %}<div class="price-detail"><span>Dépôt de garantie</span><b>{{ bien.prix_depot_garantie|floatformat:0|intcomma }} F</b></div>{% endif %}
+      </div>
+
+      <div class="card">
+        <h2><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Demandes de visite en attente</h2>
+        {% if visites_en_attente %}
+        <div class="reqlist">
+          {% for v in visites_en_attente %}
+          <div class="reqitem">
+            <div class="who">{{ v.locataire.get_full_name|default:v.locataire.username }}</div>
+            <div class="when">Souhaite visiter le {{ v.date_visite|date:"d F à H:i" }}</div>
+            <div class="reqbtns">
+              <form method="post" action="{% url 'messagerie:gerer_visite' visite_id=v.id %}" style="flex:1">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="confirmer">
+                <input type="hidden" name="next" value="{% url 'biens_ui:gerer' pk=bien.id %}">
+                <button type="submit" class="btn primary sm" style="width:100%">Accepter</button>
+              </form>
+              <form method="post" action="{% url 'messagerie:gerer_visite' visite_id=v.id %}" style="flex:1">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="refuser">
+                <input type="hidden" name="next" value="{% url 'biens_ui:gerer' pk=bien.id %}">
+                <button type="submit" class="btn ghost sm" style="width:100%">Refuser</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty2">Aucune demande de visite en attente sur ce bien.</div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <h2><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/></svg> Réservations</h2>
+        {% if reservations_en_attente %}
+        <div class="reqlist">
+          {% for r in reservations_en_attente %}
+          <div class="reqitem">
+            <div class="who">{{ r.client.get_full_name|default:r.client.username }}</div>
+            <div class="when">Réservation du {{ r.date_creation|date:"d F Y" }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        <a class="btn ghost sm" href="/dashboard/reservations/" style="width:100%;margin-top:10px">Gérer les réservations →</a>
+        {% else %}
+        <div class="empty2">Aucune réservation en attente sur ce bien.</div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <h2><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Messages</h2>
+        <div class="price-detail" style="border-top:none;padding-top:0">
+          <span>Conversations sur ce bien</span><b>{{ nb_conversations }}</b>
+        </div>
+        <a class="btn ghost sm" href="/chat/" style="width:100%;margin-top:10px">Voir mes messages →</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% if bien.latitude and bien.longitude %}
+<script>
+(function() {
+  var lat = {{ bien.latitude|unlocalize }}, lng = {{ bien.longitude|unlocalize }};
+  var map = L.map('map').setView([lat, lng], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap',
+    maxZoom: 19
+  }).addTo(map);
+  L.marker([lat, lng]).addTo(map).bindPopup('<strong>{{ bien.titre|escapejs }}</strong>{% if bien.commune %}<br>{{ bien.commune|escapejs }}{% endif %}').openPopup();
+})();
+</script>
+{% endif %}
+</body>
+</html>

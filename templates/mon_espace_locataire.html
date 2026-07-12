@@ -1,0 +1,620 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Mon espace — ImmoGérer{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+<script src="/static/vendor/leaflet/leaflet.js"></script>
+<style>
+  /* ── Carte des logements ── */
+  #map-mes-logements { height: 280px; border-radius: 11px; overflow: hidden; }
+  .map-empty { text-align: center; padding: 32px 24px; color: #6B7280; font-size: 13.5px; }
+
+  /* ── Layout ── */
+  .me-page { background: var(--ig-bg, #F4F6F9); min-height: calc(100vh - 60px); padding: 28px 0 56px; }
+  .me-wrap  { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Greeting ── */
+  .me-greeting { margin-bottom: 28px; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+  .me-greeting h1 { font-family: var(--ig-font-display); font-weight: 800; font-size: 26px; letter-spacing: -.02em; margin: 0 0 4px; color: #111; }
+
+  /* ── Cloche de notifications ── */
+  .bell { width: 38px; height: 38px; border-radius: 10px; border: 1px solid #e5e7eb; background: #fff; display: grid; place-items: center; cursor: pointer; color: #6B7280; position: relative; flex-shrink: 0; }
+  .bell:hover { border-color: #185FA5; color: #185FA5; }
+  .bell svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .bell .bdg { position: absolute; top: -4px; right: -4px; background: #B91C1C; color: #fff; font-size: 10px; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; }
+  .bellpanel { position: absolute; top: 46px; right: 0; width: 340px; background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; box-shadow: 0 12px 32px rgba(16,32,48,.14); z-index: 60; opacity: 0; pointer-events: none; transform: translateY(-6px); transition: .15s; max-height: 420px; overflow-y: auto; }
+  .bellpanel.open { opacity: 1; pointer-events: auto; transform: none; }
+  .bellpanel .bh { padding: 13px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 700; font-size: 13.5px; color: #111; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: #fff; }
+  .bellpanel .bh a { font-size: 12px; color: #185FA5; font-weight: 600; }
+  .bnotif { display: flex; gap: 10px; padding: 11px 16px; border-bottom: 1px solid #f3f4f6; text-decoration: none; color: inherit; }
+  .bnotif:last-child { border-bottom: none; }
+  .bnotif .ni { width: 30px; height: 30px; border-radius: 9px; background: #E6F1FB; display: grid; place-items: center; flex: 0 0 30px; }
+  .bnotif .ni svg { width: 14px; height: 14px; stroke: #185FA5; fill: none; stroke-width: 2; }
+  .bnotif .t { font-size: 12.5px; color: #111; font-weight: 500; }
+  .bnotif .d { font-size: 11px; color: #9aa0a6; margin-top: 1px; }
+  .bnotif-empty { padding: 20px 16px; text-align: center; font-size: 12.5px; color: #9aa0a6; }
+
+  /* ── Hero contrat avec photo ── */
+  .bienhero { position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 0; box-shadow: 0 12px 32px rgba(16,32,48,.09); height: 150px; display: flex; align-items: flex-end; background: linear-gradient(120deg, #2170bd, #185FA5 55%, #123f72); background-size: cover; background-position: center; }
+  .bienhero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.55), transparent 65%); }
+  .bienhero .bin { position: relative; z-index: 1; padding: 16px 20px; color: #fff; display: flex; align-items: flex-end; justify-content: space-between; width: 100%; gap: 12px; flex-wrap: wrap; }
+  .bienhero .t { font-family: var(--ig-font-display); font-weight: 800; font-size: 19px; }
+  .bienhero .l { font-size: 12px; color: #dce8f5; margin-top: 2px; display: flex; align-items: center; gap: 5px; }
+  .bienhero .l svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .bstatus { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.3); padding: 5px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700; color: #fff; white-space: nowrap; }
+  .hero-card { border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -6px; padding-top: 20px; }
+  .me-greeting p  { font-size: 14px; color: #6B7280; margin: 0; }
+
+  /* ── KPI cards ── */
+  .me-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+  .kpi { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 18px 20px; }
+  .kpi .kpi-label { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #9aa0a6; margin-bottom: 8px; }
+  .kpi .kpi-val   { font-family: var(--ig-font-display); font-weight: 700; font-size: 22px; color: #111; line-height: 1; }
+  .kpi .kpi-sub   { font-size: 12px; color: #9aa0a6; margin-top: 5px; }
+  .kpi.kpi-warn   { border-color: #FCA5A5; background: #FFF5F5; }
+  .kpi.kpi-warn .kpi-val { color: #B91C1C; }
+  .kpi.kpi-ok     { border-color: #86EFAC; background: #F0FDF4; }
+  .kpi.kpi-ok .kpi-val   { color: #15803D; }
+  .kpi.kpi-amber  { border-color: #FCD34D; background: #FFFBEB; }
+  .kpi.kpi-amber .kpi-val { color: #92400E; }
+
+  /* ── Main grid ── */
+  .me-grid { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+
+  /* ── Cards ── */
+  .me-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 22px; margin-bottom: 18px; }
+  .me-card:last-child { margin-bottom: 0; }
+  .me-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
+  .me-card-title { font-family: var(--ig-font-display); font-weight: 700; font-size: 16px; color: #111; margin: 0; display: flex; align-items: center; gap: 8px; }
+  .me-card-title .ic { width: 30px; height: 30px; border-radius: 9px; background: #E6F1FB; display: grid; place-items: center; flex: 0 0 30px; }
+  .me-card-title .ic svg { width: 15px; height: 15px; stroke: #185FA5; fill: none; stroke-width: 2; }
+  .me-link { font-size: 13px; font-weight: 600; color: #185FA5; text-decoration: none; }
+  .me-link:hover { text-decoration: underline; }
+
+  /* ── Contrat actif ── */
+  .contrat-bien { display: flex; gap: 16px; align-items: flex-start; padding: 16px; background: #F4F6F9; border-radius: 11px; margin-bottom: 18px; }
+  .contrat-bien .thumb { width: 72px; height: 72px; border-radius: 10px; background: radial-gradient(120% 120% at 70% 0%, #1c66ad, #15528f); display: grid; place-items: center; flex: 0 0 72px; overflow: hidden; }
+  .contrat-bien .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .contrat-bien .thumb svg { width: 32px; height: 32px; stroke: #dfe9f4; fill: none; stroke-width: 1.4; }
+  .contrat-bien .info .titre { font-weight: 700; font-size: 15px; color: #111; margin-bottom: 3px; }
+  .contrat-bien .info .loc   { font-size: 13px; color: #6B7280; display: flex; align-items: center; gap: 4px; }
+  .contrat-bien .info .loc svg { width: 12px; height: 12px; stroke: #9aa0a6; fill: none; stroke-width: 1.8; }
+
+  .contrat-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .cmeta { padding: 12px 14px; background: #F4F6F9; border-radius: 10px; }
+  .cmeta .cl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #9aa0a6; margin-bottom: 4px; }
+  .cmeta .cv { font-weight: 700; font-size: 14px; color: #111; }
+
+  /* ── Statut badges ── */
+  .badge-statut { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
+  .badge-statut::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .7; }
+  .s-ok     { background: #F0FDF4; color: #15803D; }
+  .s-warn   { background: #FFFBEB; color: #92400E; }
+  .s-danger { background: #FFF5F5; color: #B91C1C; }
+  .s-muted  { background: #F4F6F9; color: #6B7280; }
+  .s-orange { background: #FFF7ED; color: #C2410C; }
+
+  /* ── Paiements table ── */
+  .paie-table { width: 100%; border-collapse: collapse; }
+  .paie-table th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #9aa0a6; padding: 0 10px 10px; text-align: left; }
+  .paie-table td { padding: 10px; border-top: 1px solid #f3f4f6; font-size: 13.5px; vertical-align: middle; }
+  .paie-table tr:first-child td { border-top: none; }
+  .paie-table .mois-label { font-weight: 600; color: #111; }
+  .paie-table .montant { font-family: var(--ig-font-display); font-weight: 700; font-size: 14px; }
+
+  /* ── Factures ── */
+  .facture-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #f3f4f6; }
+  .facture-row:first-child { border-top: none; padding-top: 0; }
+  .facture-ico { width: 34px; height: 34px; border-radius: 9px; background: #F0FDF4; display: grid; place-items: center; flex: 0 0 34px; }
+  .facture-ico svg { width: 16px; height: 16px; stroke: #15803D; fill: none; stroke-width: 2; }
+  .facture-ico.warn { background: #FFFBEB; }
+  .facture-ico.warn svg { stroke: #92400E; }
+  .facture-num  { font-weight: 600; font-size: 13.5px; color: #111; }
+  .facture-date { font-size: 12px; color: #9aa0a6; }
+  .facture-amt  { margin-left: auto; font-family: var(--ig-font-display); font-weight: 700; font-size: 14px; }
+
+  /* ── Actions rapides ── */
+  .action-btn { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 11px; border: 1px solid #e5e7eb; text-decoration: none; color: #111; transition: .14s; margin-bottom: 10px; }
+  .action-btn:last-child { margin-bottom: 0; }
+  .action-btn:hover { border-color: #185FA5; background: #F0F6FF; }
+  .action-btn .aic { width: 36px; height: 36px; border-radius: 10px; background: #E6F1FB; display: grid; place-items: center; flex: 0 0 36px; }
+  .action-btn .aic svg { width: 16px; height: 16px; stroke: #185FA5; fill: none; stroke-width: 2; }
+  .action-btn .aic.green { background: #EAF3DE; }
+  .action-btn .aic.green svg { stroke: #3B6D11; }
+  .action-btn .aic.amber { background: #FFFBEB; }
+  .action-btn .aic.amber svg { stroke: #92400E; }
+  .action-btn .atxt strong { display: block; font-size: 13.5px; font-weight: 600; }
+  .action-btn .atxt span   { font-size: 12px; color: #6B7280; }
+  .action-btn .achev { margin-left: auto; color: #9aa0a6; }
+  .action-btn .achev svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+  /* ── Recommandations ── */
+  .reco-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 16px; }
+  .reco-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; transition: .15s; }
+  .reco-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(24,95,165,.09); }
+  .reco-vis { height: 90px; background: radial-gradient(120% 120% at 70% 0%, #1c66ad, #15528f); position: relative; overflow: hidden; }
+  .reco-vis img { width: 100%; height: 100%; object-fit: cover; }
+  .reco-body { padding: 12px 13px; }
+  .reco-titre { font-weight: 600; font-size: 13.5px; color: #111; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .reco-ville { font-size: 12px; color: #6B7280; }
+  .reco-prix  { font-family: var(--ig-font-display); font-weight: 700; font-size: 14px; color: #185FA5; margin-top: 6px; }
+
+  /* ── Empty state ── */
+  .me-empty { text-align: center; padding: 48px 24px; }
+  .me-empty .eic { width: 56px; height: 56px; border-radius: 16px; background: #E6F1FB; display: grid; place-items: center; margin: 0 auto 16px; }
+  .me-empty .eic svg { width: 26px; height: 26px; stroke: #185FA5; fill: none; stroke-width: 1.5; }
+  .me-empty h3 { font-family: var(--ig-font-display); font-weight: 700; font-size: 19px; margin: 0 0 6px; }
+  .me-empty p  { color: #6B7280; font-size: 14px; margin: 0 0 20px; }
+
+  /* ── Alerte retard ── */
+  .me-alerte { display: flex; align-items: center; gap: 14px; background: #FFF5F5; border: 1px solid #FCA5A5; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; }
+  .me-alerte svg { width: 20px; height: 20px; stroke: #B91C1C; fill: none; stroke-width: 2; flex: 0 0 20px; }
+  .me-alerte p { margin: 0; font-size: 13.5px; color: #7F1D1D; }
+  .me-alerte p b { font-weight: 700; }
+
+  /* Bouton principal */
+  .ig-btn-full { display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; font-weight: 600; font-size: 14px; padding: 11px 20px; cursor: pointer; border: none; text-decoration: none; transition: .15s; font-family: var(--ig-font-body); width: 100%; }
+  .ig-btn-full.primary { background: #185FA5; color: #fff; }
+  .ig-btn-full.primary:hover { background: #1A3E6A; }
+  .ig-btn-full.ghost { background: #fff; border: 1px solid #e5e7eb; color: #111; }
+  .ig-btn-full.ghost:hover { border-color: #185FA5; color: #185FA5; }
+
+  @media (max-width: 900px) {
+    .me-kpis { grid-template-columns: repeat(2, 1fr); }
+    .me-grid  { grid-template-columns: 1fr; }
+    .contrat-meta { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .me-kpis { grid-template-columns: 1fr 1fr; }
+    .reco-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="me-page">
+  <div class="me-wrap">
+
+    <!-- GREETING -->
+    <div class="me-greeting">
+      <div>
+        <h1>Bonjour, {{ user.first_name|default:user.username|capfirst }} 👋</h1>
+        <p>{% if contrats_actifs %}Voici l'état de vos location{{ contrats_actifs|length|pluralize }} — {{ today|date:"l d F Y" }}{% else %}Bienvenue sur votre espace locataire{% endif %}</p>
+      </div>
+      <div class="bell" id="bellBtn" onclick="toggleBell(event)">
+        <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        {% if nb_notifs %}<span class="bdg">{{ nb_notifs }}</span>{% endif %}
+        <div class="bellpanel" id="bellpanel">
+          <div class="bh">
+            Notifications
+            <span style="display:flex;gap:10px">
+              {% if nb_notifs %}
+              <form method="post" action="{% url 'notifications_marquer_toutes_lues' %}" style="margin:0">
+                {% csrf_token %}
+                <button type="submit" style="background:none;border:none;cursor:pointer;font-size:12px;color:#185FA5;font-weight:600;padding:0">Tout lire</button>
+              </form>
+              {% endif %}
+              <a href="/dashboard/notifications/">Tout voir</a>
+            </span>
+          </div>
+          {% for n in notifications|slice:":5" %}
+          <a class="bnotif" href="/dashboard/notifications/lire/{{ n.id }}/?next={{ n.lien|default:'/mon-espace/' }}">
+            <span class="ni"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg></span>
+            <div><div class="t" style="font-weight:{% if not n.lue %}700{% else %}500{% endif %}">{{ n.titre }}</div><div class="d">{{ n.message|truncatechars:40 }} · il y a {{ n.date_creation|timesince }}</div></div>
+          </a>
+          {% empty %}
+          <div class="bnotif-empty">Aucune notification pour le moment.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ALERTE RETARD -->
+    {% if nb_retards > 0 %}
+    <div class="me-alerte">
+      <svg viewBox="0 0 24 24"><path d="M10.3 3.3 2 20h20L13.7 3.3a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r=".5" fill="#B91C1C"/></svg>
+      <p>Vous avez <b>{{ nb_retards }} paiement{{ nb_retards|pluralize }} en retard</b> pour un total de <b>{{ montant_retard|floatformat:0|intcomma }} F CFA</b>. Régularisez dès que possible pour éviter des pénalités.</p>
+    </div>
+    {% endif %}
+
+    <!-- KPI CARDS -->
+    <div class="me-kpis">
+
+      <!-- Loyer mensuel -->
+      <div class="kpi">
+        <div class="kpi-label">Loyer{{ contrats_actifs|length|pluralize }} mensuel{{ contrats_actifs|length|pluralize }}</div>
+        {% if contrats_actifs %}
+        <div class="kpi-val">{{ total_loyer_mensuel|floatformat:0|intcomma }}</div>
+        <div class="kpi-sub">F CFA / mois{% if contrats_actifs|length > 1 %} · {{ contrats_actifs|length }} logements{% endif %}</div>
+        {% else %}
+        <div class="kpi-val" style="font-size:16px;color:#9aa0a6">—</div>
+        <div class="kpi-sub">Pas de contrat actif</div>
+        {% endif %}
+      </div>
+
+      <!-- Statut paiement du mois -->
+      {% if contrats_actifs|length > 1 %}
+      <div class="kpi {% if nb_contrats_payes_ce_mois == contrats_actifs|length %}kpi-ok{% elif nb_retards > 0 %}kpi-warn{% else %}kpi-amber{% endif %}">
+        <div class="kpi-label">Ce mois</div>
+        <div class="kpi-val">{{ nb_contrats_payes_ce_mois }}/{{ contrats_actifs|length }} payés</div>
+        <div class="kpi-sub">{{ mois_actuel|date:"F Y" }}</div>
+      </div>
+      {% else %}
+      <div class="kpi {% if paiement_du_mois %}{% if paiement_du_mois.statut == 'recu' %}kpi-ok{% elif paiement_du_mois.statut == 'en_attente' %}kpi-amber{% else %}kpi-warn{% endif %}{% endif %}">
+        <div class="kpi-label">Ce mois</div>
+        {% if paiement_du_mois %}
+          {% if paiement_du_mois.statut == 'recu' %}
+          <div class="kpi-val">Payé ✓</div>
+          {% elif paiement_du_mois.statut == 'en_attente' %}
+          <div class="kpi-val">En attente</div>
+          {% elif paiement_du_mois.statut == 'retard_mineur' %}
+          <div class="kpi-val">Retard</div>
+          {% elif paiement_du_mois.statut == 'retard_majeur' %}
+          <div class="kpi-val">Retard grave</div>
+          {% else %}
+          <div class="kpi-val">Impayé !</div>
+          {% endif %}
+          <div class="kpi-sub">{{ mois_actuel|date:"F Y" }}</div>
+        {% else %}
+        <div class="kpi-val" style="font-size:16px;color:#9aa0a6">—</div>
+        <div class="kpi-sub">Aucune échéance</div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Prochain paiement -->
+      <div class="kpi">
+        <div class="kpi-label">Prochain paiement</div>
+        {% if prochain_paiement %}
+        <div class="kpi-val" style="font-size:17px">{{ prochain_paiement.date_limite|date:"d/m/Y" }}</div>
+        <div class="kpi-sub">{{ prochain_paiement.montant_du|floatformat:0|intcomma }} F CFA</div>
+        {% else %}
+        <div class="kpi-val" style="font-size:16px;color:#9aa0a6">—</div>
+        <div class="kpi-sub">Aucune échéance</div>
+        {% endif %}
+      </div>
+
+      <!-- Contrats / Favoris -->
+      <div class="kpi">
+        <div class="kpi-label">Mes favoris</div>
+        <div class="kpi-val">{{ nb_favoris }}</div>
+        <div class="kpi-sub">bien{{ nb_favoris|pluralize }} sauvegardé{{ nb_favoris|pluralize }}</div>
+      </div>
+
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="me-grid">
+
+      <!-- COLONNE GAUCHE -->
+      <div>
+
+        {% for c in contrats_actifs %}
+        <!-- CONTRAT ACTIF : hero avec photo -->
+        <div class="bienhero" {% if c.bien.photo_principale %}style="background-image:url('{{ c.bien.photo_principale.url }}')"{% endif %}>
+          <div class="bin">
+            <div>
+              <div class="t">{{ c.bien.titre }}</div>
+              <div class="l">
+                <svg viewBox="0 0 24 24"><path d="M12 21c-4-4-8-7.5-8-12a8 8 0 0 1 16 0c0 4.5-4 8-8 12z"/></svg>
+                {{ c.bien.ville }}{% if c.bien.adresse %}, {{ c.bien.adresse|truncatechars:30 }}{% endif %}
+              </div>
+            </div>
+            {% if c.paiement_du_mois.statut == 'recu' %}
+            <span class="bstatus">✓ Payé ce mois</span>
+            {% elif c.paiement_du_mois.statut == 'retard_mineur' %}
+            <span class="bstatus">⚠ Retard</span>
+            {% elif c.paiement_du_mois.statut == 'retard_majeur' or c.paiement_du_mois.statut == 'impaye' %}
+            <span class="bstatus">⚠ Retard grave</span>
+            {% else %}
+            <span class="bstatus">En attente</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="me-card hero-card">
+          <div class="me-card-head">
+            <h2 class="me-card-title">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+              Contrat {{ c.numero_contrat }}
+            </h2>
+            {% if c.proprietaire.company %}
+            <span style="font-size:12px;color:#3B6D11;font-weight:600">✓ {{ c.proprietaire.company.name }}</span>
+            {% endif %}
+          </div>
+
+          <div class="contrat-meta">
+            <div class="cmeta">
+              <div class="cl">Début</div>
+              <div class="cv">{{ c.date_debut|date:"d/m/Y" }}</div>
+            </div>
+            <div class="cmeta">
+              <div class="cl">Fin</div>
+              <div class="cv">{{ c.date_fin|date:"d/m/Y" }}</div>
+            </div>
+            <div class="cmeta">
+              <div class="cl">Loyer</div>
+              <div class="cv">{{ c.prix_mensuel|floatformat:0|intcomma }} F</div>
+            </div>
+            <div class="cmeta">
+              <div class="cl">Charges</div>
+              <div class="cv">{{ c.charges_mensuelles|floatformat:0|intcomma }} F</div>
+            </div>
+            <div class="cmeta">
+              <div class="cl">Dépôt</div>
+              <div class="cv">{{ c.prix_depot_garantie|floatformat:0|intcomma }} F</div>
+            </div>
+            <div class="cmeta">
+              <div class="cl">Bien</div>
+              <div class="cv"><a href="{% url 'biens_ui:detail' pk=c.bien.id %}" style="color:#185FA5">Voir le bien →</a></div>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+            <a href="/contrats/{{ c.id }}/suivi/" class="ig-btn-full ghost" style="width:auto;padding:9px 16px">Voir le contrat</a>
+            <a href="/contrats/reclamation/{{ c.bien.id }}/" class="ig-btn-full ghost" style="width:auto;padding:9px 16px;color:#B45309;border-color:#FCD34D">Signaler un problème</a>
+            <a href="/chat/nouveau/{{ c.bien.id }}/" class="ig-btn-full ghost" style="width:auto;padding:9px 16px">Contacter le propriétaire</a>
+          </div>
+        </div>
+        {% endfor %}
+
+        <!-- CARTE DE MES LOGEMENTS -->
+        {% if contrats_actifs %}
+        <div class="me-card">
+          <div class="me-card-head">
+            <h2 class="me-card-title">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+              Localisation de mes logements
+            </h2>
+          </div>
+          {% if logements_carte_json != '[]' %}
+          <div id="map-mes-logements"></div>
+          {% if nb_logements_sans_localisation %}
+          <p style="margin:10px 0 0;font-size:12px;color:#9aa0a6">{{ nb_logements_sans_localisation }} logement{{ nb_logements_sans_localisation|pluralize }} sans coordonnées GPS n'apparaissent pas sur la carte.</p>
+          {% endif %}
+          {% else %}
+          <div class="map-empty">Localisation non disponible pour vos logements pour le moment.</div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- HISTORIQUE PAIEMENTS -->
+        <div class="me-card">
+          <div class="me-card-head">
+            <h2 class="me-card-title">
+              <span class="ic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span>
+              Historique des paiements
+            </h2>
+            <a href="/dashboard/facturation/" class="me-link">Tout voir →</a>
+          </div>
+
+          {% if paiements_recents %}
+          <table class="paie-table">
+            <thead>
+              <tr>
+                <th>Mois</th>
+                <th>Bien</th>
+                <th>Montant</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in paiements_recents %}
+              <tr{% if p.facture %} style="cursor:pointer" onclick="window.location='/dashboard/facturation/{{ p.facture.id }}/'"{% endif %}>
+                <td class="mois-label">{{ p.mois|date:"F Y" }}</td>
+                <td style="color:#6B7280;font-size:13px">{{ p.contrat.bien.titre|truncatechars:22 }}</td>
+                <td class="montant">{{ p.montant_du|floatformat:0|intcomma }} F</td>
+                <td>
+                  {% if p.statut == 'recu' %}
+                  <span class="badge-statut s-ok">Payé</span>
+                  {% elif p.statut == 'en_attente' %}
+                  <span class="badge-statut s-warn">En attente</span>
+                  {% elif p.statut == 'retard_mineur' %}
+                  <span class="badge-statut s-orange">Retard</span>
+                  {% elif p.statut == 'retard_majeur' %}
+                  <span class="badge-statut s-danger">Retard grave</span>
+                  {% else %}
+                  <span class="badge-statut s-danger">Impayé</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="me-empty" style="padding:32px 24px">
+            <p style="color:#6B7280;font-size:14px;margin:0">Aucun paiement enregistré pour le moment.</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- BIENS RECOMMANDÉS (si pas de contrat actif) -->
+        {% if not contrats_actifs %}
+        <div class="me-card">
+          <div class="me-card-head">
+            <h2 class="me-card-title">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6"/></svg></span>
+              Biens disponibles à louer
+            </h2>
+            <a href="/explorer/?tab=locations" class="me-link">Explorer →</a>
+          </div>
+          {% if biens_recommandes %}
+          <div class="reco-grid">
+            {% for b in biens_recommandes %}
+            <a href="{% url 'biens_ui:detail' pk=b.id %}" class="reco-card" style="text-decoration:none;color:inherit">
+              <div class="reco-vis">
+                {% if b.photo_principale %}<img src="{{ b.photo_principale.url }}" alt="{{ b.titre }}">{% endif %}
+              </div>
+              <div class="reco-body">
+                <div class="reco-titre">{{ b.titre }}</div>
+                <div class="reco-ville">{{ b.ville }}</div>
+                <div class="reco-prix">{{ b.prix_mensuel|floatformat:0|intcomma }} F/mois</div>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="me-empty" style="padding:24px">
+            <p style="margin:0;color:#6B7280;font-size:14px">Aucun bien disponible pour le moment.</p>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+      </div>
+
+      <!-- COLONNE DROITE -->
+      <div>
+
+        <!-- ACTIONS RAPIDES -->
+        <div class="me-card">
+          <div class="me-card-head">
+            <h2 class="me-card-title">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
+              Actions rapides
+            </h2>
+          </div>
+
+          <a href="/explorer/?tab=locations" class="action-btn">
+            <div class="aic"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6"/></svg></div>
+            <div class="atxt">
+              <strong>Explorer les locations</strong>
+              <span>Trouver un nouveau bien</span>
+            </div>
+            <div class="achev"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+          </a>
+
+          <a href="/dashboard/contrats/" class="action-btn">
+            <div class="aic"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+            <div class="atxt">
+              <strong>Mes locations</strong>
+              <span>Contrats et historique</span>
+            </div>
+            <div class="achev"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+          </a>
+
+          <a href="/api/recherche/mes-favoris/" class="action-btn">
+            <div class="aic amber"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></div>
+            <div class="atxt">
+              <strong>Mes favoris</strong>
+              <span>{{ nb_favoris }} bien{{ nb_favoris|pluralize }} sauvegardé{{ nb_favoris|pluralize }}</span>
+            </div>
+            <div class="achev"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+          </a>
+
+          <a href="/chat/" class="action-btn">
+            <div class="aic"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+            <div class="atxt">
+              <strong>Messages</strong>
+              <span>{% if nb_messages_non_lus %}{{ nb_messages_non_lus }} non lu{{ nb_messages_non_lus|pluralize }}{% else %}Vos conversations{% endif %}</span>
+            </div>
+            <div class="achev"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+          </a>
+
+          <a href="/contrats/mes-reclamations/" class="action-btn">
+            <div class="aic amber"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+            <div class="atxt">
+              <strong>Mes réclamations</strong>
+              <span>{% if nb_reclamations_actives %}{{ nb_reclamations_actives }} en cours{% else %}Suivi de vos signalements{% endif %}</span>
+            </div>
+            <div class="achev"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+          </a>
+
+        </div>
+
+        <!-- FACTURES RÉCENTES -->
+        <div class="me-card">
+          <div class="me-card-head">
+            <h2 class="me-card-title">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M9 14l2 2 4-4"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+              Mes factures
+            </h2>
+            <a href="/dashboard/facturation/" class="me-link">Tout voir →</a>
+          </div>
+
+          {% if factures_recentes %}
+          {% for f in factures_recentes %}
+          <div class="facture-row">
+            <div class="facture-ico {% if f.statut != 'payee' %}warn{% endif %}">
+              <svg viewBox="0 0 24 24"><path d="M9 14l2 2 4-4"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div>
+              <div class="facture-num">{{ f.numero_facture }}</div>
+              <div class="facture-date">{{ f.date_generation|date:"d/m/Y" }} ·
+                {% if f.statut == 'payee' %}<span style="color:#15803D;font-weight:600">Payée</span>
+                {% elif f.statut == 'envoyee' %}<span style="color:#185FA5;font-weight:600">Envoyée</span>
+                {% else %}<span style="color:#92400E;font-weight:600">{{ f.get_statut_display }}</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="facture-amt">{{ f.montant_total|floatformat:0|intcomma }} F</div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="me-empty" style="padding:24px">
+            <p style="margin:0;color:#6B7280;font-size:14px">Aucune facture pour le moment.</p>
+          </div>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ÉTAT VIDE (nouveau locataire sans contrat) -->
+    {% if not contrats_actifs and not tous_contrats %}
+    <div class="me-card" style="margin-top:20px;text-align:center;padding:48px 24px">
+      <div class="me-empty">
+        <div class="eic"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6"/></svg></div>
+        <h3>Pas encore de location</h3>
+        <p>Explorez les biens disponibles et démarrez votre première location.</p>
+        <a href="/explorer/?tab=locations" class="ig-btn-full primary" style="max-width:280px;margin:0 auto">
+          <svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          Trouver un logement
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  var bellPanel = document.getElementById('bellpanel');
+  function toggleBell(e) {
+    if (e) e.stopPropagation();
+    bellPanel.classList.toggle('open');
+  }
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#bellBtn')) bellPanel.classList.remove('open');
+  });
+</script>
+{% if logements_carte_json != '[]' %}
+<script>
+(function() {
+  var DATA = {{ logements_carte_json|safe }};
+  var mapEl = document.getElementById('map-mes-logements');
+  if (!mapEl || typeof L === 'undefined' || !DATA.length) return;
+  var map = L.map('map-mes-logements').setView([7.54, -5.55], 7);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(map);
+  var bounds = [];
+  DATA.forEach(function(logement) {
+    var loyer = logement.loyer ? Math.round(logement.loyer).toLocaleString('fr-FR') + ' F/mois' : '';
+    var popup = '<strong style="font-size:14px">' + logement.titre + '</strong>' +
+      (logement.lieu ? '<br><span style="color:#666;font-size:12px">📍 ' + logement.lieu + '</span>' : '') +
+      (loyer ? '<br><span style="font-weight:700;color:#185FA5">' + loyer + '</span>' : '') +
+      '<br><a href="' + logement.url + '" style="color:#185FA5;font-size:13px">Voir le contrat →</a>';
+    var marker = L.marker([logement.lat, logement.lng]).addTo(map);
+    marker.bindPopup(popup, {maxWidth: 220});
+    bounds.push([logement.lat, logement.lng]);
+  });
+  if (bounds.length > 0) map.fitBounds(bounds, {padding: [30, 30]});
+})();
+</script>
+{% endif %}
+{% endblock %}

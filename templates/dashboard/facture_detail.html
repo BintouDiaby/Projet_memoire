@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Facture {{ facture.numero_facture }} — ImmoGérer{% endblock %}
+
+{% block extra_head %}
+<style>
+  .me-page { background: var(--ig-bg, #F4F6F9); min-height: calc(100vh - 60px); padding: 28px 0 56px; }
+  .me-wrap  { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+
+  .ct-head { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px; margin-bottom: 18px; }
+  .ct-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .ct-num { font-size: 11.5px; color: #9aa0a6; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 4px; }
+  .ct-titre { font-family: var(--ig-font-display); font-weight: 800; font-size: 19px; color: #111; }
+  .ct-addr { font-size: 12.5px; color: #6B7280; margin-top: 3px; }
+
+  .badge-statut { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 5px 12px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .badge-statut::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .7; }
+  .s-ok     { background: #F0FDF4; color: #15803D; }
+  .s-warn   { background: #FFFBEB; color: #92400E; }
+  .s-danger { background: #FFF5F5; color: #B91C1C; }
+  .s-muted  { background: #F4F6F9; color: #6B7280; }
+
+  .latenote { display: flex; align-items: center; gap: 9px; background: #FFFBEB; border-radius: 10px; padding: 10px 13px; margin-bottom: 18px; font-size: 12.5px; color: #7a4a06; font-weight: 500; }
+  .latenote svg { width: 15px; height: 15px; stroke: #B45309; fill: none; stroke-width: 2; flex: 0 0 15px; }
+
+  .ct-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 18px; }
+  .cmeta { padding: 12px 14px; background: #F4F6F9; border-radius: 10px; }
+  .cmeta .cl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #9aa0a6; margin-bottom: 4px; }
+  .cmeta .cv { font-weight: 700; font-size: 13.5px; color: #111; }
+  .pmdot { width: 18px; height: 18px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 9px; font-weight: 800; font-family: var(--ig-font-display); margin-right: 6px; vertical-align: -4px; }
+  .pmdot.wave { background: #1DA1F2; } .pmdot.orange_money { background: #FF7900; } .pmdot.mtn { background: #FFCC00; color: #1c1405; } .pmdot.carte { background: #334155; }
+
+  .amt-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+  .amt-table td { padding: 9px 4px; font-size: 13.5px; border-bottom: 1px solid #f3f4f6; }
+  .amt-table td:last-child { text-align: right; font-family: var(--ig-font-display); font-weight: 600; }
+  .amt-table tr.total td { border-bottom: none; border-top: 2px solid #185FA5; padding-top: 12px; font-weight: 800; font-size: 15.5px; color: #185FA5; }
+
+  .ct-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .ig-btn-full { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; font-weight: 600; font-size: 13.5px; padding: 10px 18px; cursor: pointer; border: none; text-decoration: none; transition: .15s; font-family: var(--ig-font-body); }
+  .ig-btn-full.primary { background: #185FA5; color: #fff; }
+  .ig-btn-full.primary:hover { background: #1A3E6A; color: #fff; }
+  .ig-btn-full.green { background: #3B6D11; color: #fff; }
+  .ig-btn-full.green:hover { background: #2E5409; color: #fff; }
+  .ig-btn-full.warn { background: #FFFBEB; color: #92400E; border: 1px solid #FCD34D; }
+  .ig-btn-full.warn:hover { background: #FEF3C7; color: #92400E; }
+  .ig-btn-full.ghost { background: #fff; border: 1px solid #e5e7eb; color: #111; }
+  .ig-btn-full.ghost:hover { border-color: #185FA5; color: #185FA5; }
+
+  .me-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 22px; margin-bottom: 18px; }
+  .me-card-title { font-family: var(--ig-font-display); font-weight: 700; font-size: 15px; color: #111; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
+  .me-card-title svg { width: 15px; height: 15px; stroke: #185FA5; fill: none; stroke-width: 2; }
+  .me-card p.desc { font-size: 12.5px; color: #6B7280; margin: 0 0 14px; }
+
+  .fld { margin-bottom: 14px; }
+  .fld label { display: block; font-size: 12.5px; font-weight: 600; color: #6B7280; margin-bottom: 6px; }
+  .fld select, .fld textarea { width: 100%; padding: 10px 12px; border: 1.5px solid #e5e7eb; border-radius: 10px; font: inherit; font-size: 13.5px; font-family: var(--ig-font-body); outline: none; resize: vertical; }
+  .fld select:focus, .fld textarea:focus { border-color: #185FA5; box-shadow: 0 0 0 3px rgba(24,95,165,.12); }
+
+  @media (max-width: 600px) { .ct-meta { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="me-page">
+  <div class="me-wrap">
+
+    {% if messages %}
+    {% for message in messages %}<div style="background:#F0FDF4;border:1px solid #86EFAC;color:#15803D;border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;margin-bottom:18px">{{ message }}</div>{% endfor %}
+    {% endif %}
+
+    <div class="ct-head">
+      <div class="ct-top">
+        <div>
+          <div class="ct-num">{{ facture.numero_facture }}</div>
+          <div class="ct-titre">{{ contrat.bien.titre }}</div>
+          <div class="ct-addr">{{ contrat.bien.adresse }}{% if contrat.bien.commune %}, {{ contrat.bien.commune }}{% endif %}{% if contrat.bien.ville %}, {{ contrat.bien.ville }}{% endif %}</div>
+        </div>
+        <span class="badge-statut {% if est_retard %}s-danger{% elif facture.statut == 'payee' %}s-ok{% elif facture.statut == 'annulee' %}s-muted{% else %}s-warn{% endif %}">
+          {% if est_retard %}En retard{% else %}{{ facture.get_statut_display }}{% endif %}
+        </span>
+      </div>
+
+      {% if jours_retard_paiement %}
+      <div class="latenote">
+        <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        Réglée avec {{ jours_retard_paiement }} jour{{ jours_retard_paiement|pluralize }} de retard par rapport à l'échéance du {{ facture.date_echéance|date:"d F Y" }}.
+      </div>
+      {% elif est_retard %}
+      <div class="latenote" style="background:#FFF5F5;color:#991B1B">
+        <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        Échéance dépassée depuis le {{ facture.date_echéance|date:"d F Y" }}.
+      </div>
+      {% endif %}
+
+      <div class="ct-meta">
+        <div class="cmeta"><div class="cl">{% if est_locataire %}Propriétaire{% else %}Locataire{% endif %}</div><div class="cv">{% if est_locataire %}{{ contrat.proprietaire.get_full_name|default:contrat.proprietaire.username }}{% else %}{{ contrat.locataire.get_full_name|default:contrat.locataire.username|default:"—" }}{% endif %}</div></div>
+        {% if facture.paiement %}
+        <div class="cmeta"><div class="cl">Mois concerné</div><div class="cv">{{ facture.paiement.mois|date:"F Y" }}</div></div>
+        {% endif %}
+        <div class="cmeta"><div class="cl">Échéance</div><div class="cv">{{ facture.date_echéance|date:"d F Y" }}</div></div>
+        <div class="cmeta"><div class="cl">Payée le</div><div class="cv">{{ facture.date_paiement|date:"d F Y"|default:"—" }}</div></div>
+        <div class="cmeta" style="grid-column:1/-1">
+          <div class="cl">Mode de paiement</div>
+          <div class="cv">
+            {% if facture.mode_paiement %}
+              <span class="pmdot {{ facture.mode_paiement }}">{% if facture.mode_paiement == 'wave' %}W{% elif facture.mode_paiement == 'orange_money' %}OM{% elif facture.mode_paiement == 'mtn' %}MTN{% elif facture.mode_paiement == 'carte' %}CB{% else %}•{% endif %}</span>{{ facture.get_mode_paiement_display }}{% if facture.reference_transaction %} — réf. {{ facture.reference_transaction }}{% endif %}
+            {% else %}Non renseigné{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <table class="amt-table">
+        <tr><td>Loyer</td><td>{{ facture.montant_loyer|floatformat:0|intcomma }} FCFA</td></tr>
+        {% if facture.montant_charges %}<tr><td>Charges</td><td>{{ facture.montant_charges|floatformat:0|intcomma }} FCFA</td></tr>{% endif %}
+        {% if facture.montant_autres %}<tr><td>Autres frais</td><td>{{ facture.montant_autres|floatformat:0|intcomma }} FCFA</td></tr>{% endif %}
+        {% if facture.montant_taxe %}<tr><td>Taxe</td><td>{{ facture.montant_taxe|floatformat:0|intcomma }} FCFA</td></tr>{% endif %}
+        <tr class="total"><td>Total</td><td>{{ facture.montant_total|floatformat:0|intcomma }} FCFA</td></tr>
+      </table>
+
+      <div class="ct-actions">
+        <a class="ig-btn-full ghost" href="/dashboard/facturation/{{ facture.id }}/pdf/">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          {% if facture.statut == 'payee' %}Télécharger la quittance{% else %}Télécharger la facture{% endif %}
+        </a>
+        <a class="ig-btn-full ghost" href="{% url 'biens_ui:detail' pk=contrat.bien.id %}">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2"><path d="M3 21V9l9-6 9 6v12"/></svg>
+          Voir le bien
+        </a>
+        <a class="ig-btn-full ghost" href="/contrats/{{ contrat.id }}/suivi/">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2"><path d="M6 2h9l3 3v17H6z"/><path d="M9 12h6M9 16h6"/></svg>
+          Voir le contrat
+        </a>
+        {% if est_proprietaire and facture.statut != 'payee' %}
+        <form method="post" style="margin:0">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="marquer_payee">
+          <button type="submit" class="ig-btn-full green">Marquer payée</button>
+        </form>
+        {% endif %}
+        <a class="ig-btn-full ghost" href="/dashboard/facturation/">← Retour à mes paiements</a>
+      </div>
+    </div>
+
+    {% if est_locataire and facture.statut != 'payee' and facture.statut != 'annulee' %}
+    <div class="me-card">
+      <h3 class="me-card-title">Payer cette facture</h3>
+      <form method="post" action="/dashboard/facturation/signaler-paiement/">
+        {% csrf_token %}
+        <input type="hidden" name="facture_id" value="{{ facture.id }}">
+        <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+        <div class="fld">
+          <label>Moyen de paiement utilisé</label>
+          <select name="moyen_paiement">
+            {% for m in moyens_paiement %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
+          </select>
+        </div>
+        <p style="font-size:12.5px;color:#6B7280;margin-bottom:14px">Effectuez le paiement via le moyen choisi, puis confirmez — la facture sera marquée payée immédiatement et le propriétaire notifié.</p>
+        <button type="submit" class="ig-btn-full primary">Confirmer le paiement</button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if est_locataire %}
+    <div class="me-card">
+      <h3 class="me-card-title">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        Un souci avec cette facture ?
+      </h3>
+      <p class="desc">Montant erroné, retard contesté, problème de paiement — signalez-le directement au propriétaire.</p>
+      <form method="post" action="/dashboard/facturation/signaler-probleme/">
+        {% csrf_token %}
+        <input type="hidden" name="facture_id" value="{{ facture.id }}">
+        <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+        <div class="fld">
+          <label>Type de demande</label>
+          <select name="type_demande">
+            <option value="je_ne_peux_pas_payer">Je ne peux pas payer à temps</option>
+            <option value="report_echeance">Demander un report d'échéance</option>
+            <option value="paiement_echelonne">Payer en plusieurs fois</option>
+            <option value="autre">Autre problème</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label>Message</label>
+          <textarea name="message" rows="3" placeholder="Ex : Bonjour, je pourrai régler le loyer le 10 août. Merci de votre compréhension."></textarea>
+        </div>
+        <button type="submit" class="ig-btn-full warn">Envoyer au propriétaire</button>
+      </form>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

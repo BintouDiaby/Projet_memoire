@@ -38,6 +38,16 @@ class Utilisateur(AbstractUser):
     bio = models.TextField(blank=True, null=True)
     documents_verifies = models.BooleanField(default=False)
     email_verifie = models.BooleanField(default=False)
+    # Code de vérification email (OTP) : fonctionne même quand l'utilisateur
+    # ouvre son email sur un autre réseau/appareil que celui du serveur,
+    # contrairement à un lien de confirmation qui dépend de l'hôte de la requête.
+    otp_code = models.CharField(max_length=6, blank=True, default='')
+    otp_expire_le = models.DateTimeField(null=True, blank=True)
+    # Confidentialité : ce que les entreprises vérifiées peuvent voir/faire
+    # sur la fiche client (dashboard/client_detail.html côté propriétaire)
+    afficher_telephone = models.BooleanField(default=True)
+    afficher_email = models.BooleanField(default=False)
+    accepte_appels = models.BooleanField(default=True)
     # Préférences du tableau de bord personnalisées par utilisateur
     dashboard_preferences = models.JSONField(default=dict, blank=True)
     date_creation = models.DateTimeField(auto_now_add=True)
@@ -61,6 +71,13 @@ class Company(models.Model):
     name = models.CharField(max_length=255)
     types = models.JSONField(default=list, blank=True)
     date_creation = models.DateTimeField(auto_now_add=True)
+    description = models.TextField(blank=True, null=True)
+    adresse = models.CharField(max_length=255, blank=True, null=True)
+    ville = models.CharField(max_length=100, blank=True, null=True)
+    telephone = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    logo = models.ImageField(upload_to='companies/logos/', blank=True, null=True)
+    cover_image = models.ImageField(upload_to='companies/covers/', blank=True, null=True)
 
     class Meta:
         verbose_name = 'Company'

@@ -9,12 +9,8 @@ from .models import Facture, Notification, RappelPaiement
 from .serializers import FactureSerializer, NotificationSerializer, RappelPaiementSerializer
 
 def ui_index(request):
-    """Page front simple pour la facturation"""
-    context = {
-        'title': 'Facturation',
-        'api_url': '/api/facturation/'
-    }
-    return render(request, 'facturation/index.html', context)
+    from django.shortcuts import redirect
+    return redirect('/dashboard/facturation/')
 
 class FactureViewSet(viewsets.ModelViewSet):
     """ViewSet pour la gestion des factures"""

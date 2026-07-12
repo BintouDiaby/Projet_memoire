@@ -1,0 +1,110 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Réclamations — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+.rec-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px}
+.rec-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px}
+.rec-icon{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;flex:0 0 40px}
+.rec-meta{flex:1}
+.rec-titre{font-family:var(--font-display);font-weight:700;font-size:14.5px;color:#111;margin-bottom:3px}
+.rec-sub{font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.rec-desc{font-size:13.5px;color:#444;background:var(--bg);border-radius:9px;padding:11px 13px;margin-bottom:12px;line-height:1.6}
+.rec-reponse{font-size:13px;color:var(--green-text);background:var(--green-light);border-radius:9px;padding:10px 13px;margin-bottom:12px;line-height:1.6}
+.rec-reponse strong{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;color:var(--green)}
+.rep-form{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.rep-form textarea{border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-family:var(--font-body);font-size:13.5px;resize:vertical;min-height:80px;outline:none}
+.rep-form textarea:focus{border-color:var(--green)}
+.rep-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn-green{background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer}
+.btn-red{background:#FEE2E2;color:#B91C1C;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer}
+.btn-muted{background:#f3f4f6;color:#6B7280;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer}
+.tab-bar{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.tab-btn{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:600;border:1.5px solid var(--border);cursor:pointer;background:var(--card);color:var(--muted)}
+.tab-btn.on{background:var(--green-light);color:var(--green);border-color:var(--green)}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='reclamations' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+<button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="Rechercher…"></div>
+  <div class="tspacer"></div>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+<div class="pg-head">
+  <h1>Réclamations</h1>
+  <p>Signalements envoyés par vos locataires après signature du contrat</p>
+</div>
+
+{% if reclamations %}
+<div class="tab-bar">
+  <button class="tab-btn on" onclick="filtrer(this,'tous')">Toutes ({{ reclamations|length }})</button>
+  <button class="tab-btn" onclick="filtrer(this,'ouverte')">Ouvertes</button>
+  <button class="tab-btn" onclick="filtrer(this,'en_cours')">En cours</button>
+  <button class="tab-btn" onclick="filtrer(this,'resolue')">Résolues</button>
+</div>
+
+{% for r in reclamations %}
+<div class="rec-card" data-statut="{{ r.statut }}">
+  <div class="rec-head">
+    <div class="rec-icon" style="{% if r.statut == 'ouverte' %}background:#FEE2E2{% elif r.statut == 'en_cours' %}background:var(--amber-bg){% else %}background:var(--green-light){% endif %}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{% if r.statut == 'ouverte' %}#B91C1C{% elif r.statut == 'en_cours' %}var(--amber-tx){% else %}var(--green){% endif %}" stroke-width="1.8"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+    </div>
+    <div class="rec-meta">
+      <div class="rec-titre">{{ r.titre }}</div>
+      <div class="rec-sub">
+        <span>{{ r.locataire.get_full_name|default:r.locataire.username }}</span>
+        <span>·</span>
+        <span>{{ r.bien.titre|truncatechars:30 }}</span>
+        <span>·</span>
+        <span>{{ r.cree_le|date:"d/m/Y" }}</span>
+        {% if r.priorite == 'urgente' %}<span class="badge b-red">Urgent</span>{% endif %}
+        <span class="badge {% if r.statut == 'ouverte' %}b-red{% elif r.statut == 'en_cours' %}b-amber{% elif r.statut == 'resolue' %}b-green{% else %}b-muted{% endif %}">
+          {{ r.get_statut_display }}
+        </span>
+      </div>
+    </div>
+    <a href="/dashboard/client/{{ r.locataire.id }}/" class="badge b-muted" style="white-space:nowrap;flex-shrink:0">Fiche client →</a>
+  </div>
+
+  <div class="rec-desc">{{ r.description }}</div>
+
+  {% if r.reponse %}
+  <div class="rec-reponse"><strong>Votre réponse</strong>{{ r.reponse }}</div>
+  {% endif %}
+
+  {% if r.statut != 'fermee' %}
+  <form method="post" class="rep-form" action="/dashboard/reclamations/">
+    {% csrf_token %}
+    <input type="hidden" name="reclamation_id" value="{{ r.id }}">
+    <textarea name="reponse" placeholder="Répondre au locataire…">{{ r.reponse }}</textarea>
+    <div class="rep-actions">
+      <button type="submit" name="action" value="repondre" class="btn-muted">Envoyer réponse</button>
+      {% if r.statut != 'resolue' %}
+      <button type="submit" name="action" value="resoudre" class="btn-green">Marquer résolue</button>
+      {% endif %}
+      <button type="submit" name="action" value="fermer" class="btn-red">Fermer</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endfor %}
+
+{% else %}
+<div class="card"><div class="empty"><b>Aucune réclamation</b>Les signalements envoyés par vos locataires apparaîtront ici.</div></div>
+{% endif %}
+
+</div>
+</div>
+</div>
+<script>
+function filtrer(btn, statut) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.rec-card').forEach(c => {
+    c.style.display = (statut === 'tous' || c.dataset.statut === statut) ? '' : 'none';
+  });
+}
+</script>
+</body></html>

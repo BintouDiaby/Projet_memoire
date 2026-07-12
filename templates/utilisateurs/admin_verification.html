@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Vérification des entreprises — Immobilier{% endblock %}
+
+{% block content %}
+  <h1>Vérification des entreprises</h1>
+  <p class="text-muted">Approuvez ou rejetez les entreprises en attente de vérification RCCM/documents.</p>
+
+  {% if messages %}
+  {% for message in messages %}<div class="alert alert-success">{{ message }}</div>{% endfor %}
+  {% endif %}
+
+  <h4 class="mt-4">En attente ({{ entreprises|length }})</h4>
+  <div class="list-group mb-4">
+    {% for u in entreprises %}
+      <div class="list-group-item">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <strong>{{ u.company.name|default:u.get_full_name|default:u.username }}</strong>
+            <span class="badge bg-secondary">{{ u.get_role_display }}</span>
+            <br>
+            <small class="text-muted">
+              {{ u.get_full_name|default:u.username }} · {{ u.email }}
+              {% if u.proprietaire_profile.numero_siret_siren %} · RCCM : {{ u.proprietaire_profile.numero_siret_siren }}{% else %} · <span class="text-danger">RCCM non renseigné</span>{% endif %}
+              · inscrit le {{ u.date_creation|date:"d/m/Y" }}
+            </small>
+          </div>
+          <div class="d-flex gap-2">
+            <form method="post" action="{% url 'admin_verifier_entreprise' u.id %}" style="margin:0">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="approuver">
+              <button type="submit" class="btn btn-success btn-sm">Approuver</button>
+            </form>
+            <form method="post" action="{% url 'admin_verifier_entreprise' u.id %}" style="margin:0">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="rejeter">
+              <button type="submit" class="btn btn-outline-danger btn-sm">Rejeter</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="alert alert-info">Aucune entreprise en attente de vérification.</div>
+    {% endfor %}
+  </div>
+
+  <h4>Récemment vérifiées</h4>
+  <div class="list-group">
+    {% for u in entreprises_verifiees %}
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          <strong>{{ u.company.name|default:u.get_full_name|default:u.username }}</strong>
+          <small class="text-muted"> — {{ u.get_full_name|default:u.username }}</small>
+        </div>
+        <span class="badge bg-success">Vérifiée</span>
+      </div>
+    {% empty %}
+      <div class="alert alert-info">Aucune entreprise vérifiée pour le moment.</div>
+    {% endfor %}
+  </div>
+{% endblock %}
