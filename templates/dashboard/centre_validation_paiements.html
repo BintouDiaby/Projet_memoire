@@ -1,0 +1,119 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Validation des paiements — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<style>
+  .pitem{padding:14px 0}
+  .pitem:first-child{padding-top:0}
+  .pi-top{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .pi-info{flex:1;min-width:220px}
+  .pi-bien{font-weight:700;font-size:13.5px;color:var(--ink)}
+  .pi-sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .pi-amount{font-family:var(--font-display);font-weight:800;font-size:16px;color:var(--ink);white-space:nowrap}
+  .pi-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .pi-btn{border:none;cursor:pointer;border-radius:9px;padding:8px 14px;font-weight:600;font-size:12.5px;font-family:var(--font-body)}
+  .pi-btn.green{background:var(--green);color:#fff}.pi-btn.green:hover{background:var(--green-dark)}
+  .pi-btn.warn{background:#FBEADF;color:#A8420C}.pi-btn.warn:hover{background:#F6DAC4}
+  .pi-motif{display:none;margin-top:10px;background:#FBFBF9;border:1px solid var(--border);border-radius:10px;padding:12px}
+  .pi-motif textarea{width:100%;border:1px solid var(--border-2);border-radius:8px;padding:8px 10px;font-family:var(--font-body);font-size:12.5px;resize:vertical;min-height:52px;margin-bottom:8px}
+  .pi-rejet-motif{background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;border-radius:8px;padding:8px 10px;font-size:12px;margin-top:6px}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='validation_paiements' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+<button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="Rechercher…"></div>
+  <div class="tspacer"></div>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+<div class="pg-head">
+  <h1>Centre de validation des paiements</h1>
+  <p>Paiements déclarés par vos locataires, en attente de votre confirmation</p>
+</div>
+
+{% if messages %}
+{% for message in messages %}<div style="background:#F0FDF4;border:1px solid #86EFAC;color:#15803D;border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;margin-bottom:18px">{{ message }}</div>{% endfor %}
+{% endif %}
+
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg> À valider {% if nb_a_valider %}<span class="badge b-blue">{{ nb_a_valider }}</span>{% endif %}</h2>
+  </div>
+  {% for f in a_valider %}
+  <div class="pitem {% if not forloop.first %}row{% endif %}" style="{% if not forloop.first %}padding-top:14px{% endif %}">
+    <div class="pi-top">
+      <div class="pi-info">
+        <div class="pi-bien">{{ f.contrat.bien.titre }}</div>
+        <div class="pi-sub">{{ f.contrat.locataire.get_full_name|default:f.contrat.locataire.username }} · déclare avoir réglé via {{ f.get_mode_paiement_display }}{% if f.numero_paiement_declare %} (n° {{ f.numero_paiement_declare }}){% endif %}</div>
+        <div class="pi-sub">Réf. {{ f.reference_transaction }} · déclaré le {{ f.date_declaration_paiement|date:"d F Y à H:i" }}</div>
+      </div>
+      <div class="pi-amount">{{ f.montant_total|floatformat:0 }} FCFA</div>
+    </div>
+    <div class="pi-actions">
+      <form method="post" action="{% url 'confirmer_reception_paiement' %}" style="margin:0">
+        {% csrf_token %}
+        <input type="hidden" name="facture_id" value="{{ f.id }}">
+        <input type="hidden" name="action" value="confirmer">
+        <input type="hidden" name="next" value="/dashboard/paiements/validation/">
+        <button type="submit" class="pi-btn green">Confirmer la réception</button>
+      </form>
+      <button type="button" class="pi-btn warn" onclick="document.getElementById('rejet-{{ f.id }}').style.display='block'">Signaler un problème</button>
+      <a href="/dashboard/facturation/{{ f.id }}/" class="pi-btn" style="background:#F4F5F2;color:var(--text)">Voir la facture</a>
+    </div>
+    <form id="rejet-{{ f.id }}" class="pi-motif" method="post" action="{% url 'confirmer_reception_paiement' %}">
+      {% csrf_token %}
+      <input type="hidden" name="facture_id" value="{{ f.id }}">
+      <input type="hidden" name="action" value="rejeter">
+      <input type="hidden" name="next" value="/dashboard/paiements/validation/">
+      <textarea name="motif" placeholder="Ex : Paiement non reçu sur le compte Wave de l'entreprise."></textarea>
+      <button type="submit" class="pi-btn warn">Envoyer et repasser en attente</button>
+    </form>
+  </div>
+  {% empty %}
+  <div class="empty"><b>Aucun paiement à valider</b>Les paiements déclarés par vos locataires apparaîtront ici.</div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Confirmés récemment</h2>
+  </div>
+  {% for f in confirmes_recemment %}
+  <div class="row">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:700;font-size:13.5px;color:var(--ink)">{{ f.contrat.bien.titre }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ f.contrat.locataire.get_full_name|default:f.contrat.locataire.username }} · {{ f.get_mode_paiement_display }} · confirmé le {{ f.date_paiement|date:"d/m/Y" }}</div>
+    </div>
+    <div style="font-weight:700;font-size:13.5px;color:var(--ink);margin-right:10px">{{ f.montant_total|floatformat:0 }} FCFA</div>
+    <span class="badge b-green">Payée</span>
+  </div>
+  {% empty %}
+  <div class="empty"><b>Aucun paiement confirmé récemment</b></div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg> Signalés récemment</h2>
+  </div>
+  {% for f in rejetes_recemment %}
+  <div class="row" style="display:block">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13.5px;color:var(--ink)">{{ f.contrat.bien.titre }}</div>
+        <div style="font-size:12px;color:var(--muted)">{{ f.contrat.locataire.get_full_name|default:f.contrat.locataire.username }} · le {{ f.date_modification|date:"d/m/Y" }}</div>
+      </div>
+      <span class="badge b-red">{{ f.get_statut_display }}</span>
+    </div>
+    {% if f.motif_rejet_paiement %}<div class="pi-rejet-motif">{{ f.motif_rejet_paiement }}</div>{% endif %}
+  </div>
+  {% empty %}
+  <div class="empty"><b>Aucun problème signalé récemment</b></div>
+  {% endfor %}
+</div>
+
+</div>
+</div>
+</div>
+</body></html>

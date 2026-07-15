@@ -7,7 +7,7 @@
 <style>
   .me-page { background: var(--ig-bg, #F4F6F9); min-height: calc(100vh - 60px); padding: 28px 0 56px; }
   .me-wrap  { max-width: 900px; margin: 0 auto; padding: 0 24px; }
-  .me-greeting { margin-bottom: 24px; }
+  .me-greeting { margin-bottom: 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .me-greeting h1 { font-family: var(--ig-font-display); font-weight: 800; font-size: 24px; letter-spacing: -.02em; margin: 0 0 4px; color: #111; }
   .me-greeting p  { font-size: 13.5px; color: #6B7280; margin: 0; }
 
@@ -40,15 +40,22 @@
   <div class="me-wrap">
 
     <div class="me-greeting">
-      <h1>{{ title }}</h1>
-      <p>Vos contrats de location</p>
+      <div>
+        <h1>{{ title }}</h1>
+        <p>Vos contrats de location</p>
+      </div>
+      {% if nb_archives %}
+      <a href="{% if voir_archives %}/contrats/{% else %}/contrats/?archives=1{% endif %}" style="font-size:12.5px;font-weight:600;color:#6B7280;text-decoration:underline">
+        {% if voir_archives %}← Contrats actifs{% else %}Voir les archivés ({{ nb_archives }}){% endif %}
+      </a>
+      {% endif %}
     </div>
 
     {% if contrats %}
       {% for c in contrats %}
-      <a class="me-card" href="/contrats/{{ c.id }}/suivi/">
-        <div class="mc-icon" style="background:{% if c.statut == 'en_cours' %}#EAF3DE{% elif c.statut == 'termine' %}#F4F6F9{% elif c.statut == 'brouillon' %}#FFFBEB{% else %}#FFF5F5{% endif %}">
-          <svg viewBox="0 0 24 24" stroke="{% if c.statut == 'en_cours' %}#3B6D11{% elif c.statut == 'termine' %}#9aa0a6{% elif c.statut == 'brouillon' %}#92400E{% else %}#B91C1C{% endif %}"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+      <a class="me-card" href="{% if c.statut == 'brouillon' or c.statut == 'en_attente_signature' %}/contrats/{{ c.id }}/{% else %}/contrats/{{ c.id }}/suivi/{% endif %}">
+        <div class="mc-icon" style="background:{% if c.statut == 'en_cours' %}#EAF3DE{% elif c.statut == 'termine' %}#F4F6F9{% elif c.statut == 'brouillon' or c.statut == 'en_attente_signature' %}#FFFBEB{% else %}#FFF5F5{% endif %}">
+          <svg viewBox="0 0 24 24" stroke="{% if c.statut == 'en_cours' %}#3B6D11{% elif c.statut == 'termine' %}#9aa0a6{% elif c.statut == 'brouillon' or c.statut == 'en_attente_signature' %}#92400E{% else %}#B91C1C{% endif %}"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
         </div>
         <div class="mc-main">
           <div class="mc-num">{{ c.numero_contrat }}</div>
@@ -58,7 +65,7 @@
             · {{ c.date_debut|date:"d/m/Y" }} → {{ c.date_fin|date:"d/m/Y" }}
           </div>
         </div>
-        <span class="badge-statut {% if c.statut == 'en_cours' %}s-ok{% elif c.statut == 'termine' %}s-muted{% elif c.statut == 'brouillon' %}s-warn{% else %}s-danger{% endif %}">{{ c.get_statut_display }}</span>
+        <span class="badge-statut {% if c.statut == 'en_cours' %}s-ok{% elif c.statut == 'termine' %}s-muted{% elif c.statut == 'brouillon' or c.statut == 'en_attente_signature' %}s-warn{% else %}s-danger{% endif %}">{{ c.get_statut_display }}</span>
       </a>
       {% endfor %}
     {% else %}

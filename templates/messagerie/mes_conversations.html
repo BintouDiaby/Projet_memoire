@@ -96,6 +96,11 @@
   <div class="nav-in">
     <button class="back" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
     <div class="navtitle">Messages</div>
+    {% if nb_archivees %}
+    <a class="navbtn" href="{% if voir_archivees %}/chat/{% else %}/chat/?archives=1{% endif %}">
+      {% if voir_archivees %}← Conversations actives{% else %}Archivées ({{ nb_archivees }}){% endif %}
+    </a>
+    {% endif %}
     <a class="navbtn" href="/explorer/">Explorer</a>
   </div>
 </nav>
@@ -131,7 +136,7 @@
         {% if item.sujet_lieu %}<div class="cbien">{{ item.sujet_lieu|truncatechars:50 }}</div>{% endif %}
         {% if item.dernier %}
         <div class="cprev {% if item.nb_non_lus %}unread{% endif %}">
-          {% if item.dernier.expediteur == request.user %}Vous : {% endif %}{{ item.dernier.contenu|truncatechars:55 }}
+          {% if item.dernier.expediteur == request.user %}Vous : {% endif %}{% if item.dernier.est_supprime %}<i>Message supprimé</i>{% else %}{{ item.dernier.contenu|truncatechars:55 }}{% endif %}
         </div>
         {% else %}
         <div class="cprev placeholder">Démarrez la conversation</div>

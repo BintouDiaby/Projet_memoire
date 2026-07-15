@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Dossier — {{ contrat.numero_contrat }} — ImmoGérer{% endblock %}
+
+{% block extra_head %}
+<style>
+  .me-page { background: var(--ig-bg, #F4F6F9); min-height: calc(100vh - 60px); padding: 28px 0 56px; }
+  .me-wrap { max-width: 820px; margin: 0 auto; padding: 0 24px; }
+  .me-greeting { margin-bottom: 8px; }
+  .me-greeting h1 { font-family: var(--ig-font-display); font-weight: 800; font-size: 22px; margin: 0 0 4px; color: #111; }
+  .me-greeting p { font-size: 13px; color: #6B7280; margin: 0 0 20px; }
+  .warn-box { background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 10px; padding: 12px 16px; font-size: 12.5px; color: #92400E; margin-bottom: 22px; }
+
+  .me-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 20px 22px; margin-bottom: 16px; }
+  .me-card h2 { font-family: var(--ig-font-display); font-weight: 700; font-size: 14.5px; margin: 0 0 14px; color: #111; }
+  .drow { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-top: 1px solid #f0f1ef; font-size: 12.5px; }
+  .drow:first-child { border-top: none; }
+  .drow .l { color: #374151; }
+  .drow .r { color: #6B7280; }
+  .badge { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
+  .b-red { background: #FEE2E2; color: #B91C1C; } .b-amber { background: #FEF3C7; color: #92400E; } .b-green { background: #EAF3DE; color: #27500A; } .b-muted { background: #F4F6F9; color: #6B7280; }
+  .empty-mini { font-size: 12.5px; color: #9aa0a6; padding: 8px 0; }
+
+  @media print { .no-print { display: none !important; } .me-page { background: #fff; padding: 0; } }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="me-page">
+  <div class="me-wrap">
+
+    <div class="me-greeting">
+      <h1>Dossier — {{ contrat.numero_contrat }}</h1>
+      <p>{{ contrat.bien.titre }} — {{ contrat.locataire.get_full_name|default:contrat.locataire.username }}</p>
+    </div>
+
+    <div class="warn-box">
+      Ce dossier compile les éléments du contrat pour vous aider à décider de la suite à donner. ImmoGérer ne
+      saisit aucune juridiction et n'engage aucune procédure — seule votre entreprise, le cas échéant avec son
+      conseil, décide d'aller plus loin.
+    </div>
+
+    <div class="no-print" style="margin-bottom:18px">
+      <button onclick="window.print()" class="ig-btn-full ghost" style="display:inline-flex;align-items:center;gap:8px;border-radius:10px;font-weight:600;font-size:13px;padding:9px 16px;cursor:pointer;border:1px solid #e5e7eb;background:#fff;color:#111">Imprimer / Exporter en PDF</button>
+      <a href="/dashboard/facturation/" style="margin-left:10px;font-size:13px;font-weight:600;color:#185FA5">← Retour</a>
+    </div>
+
+    <div class="me-card">
+      <h2>Contrat signé</h2>
+      <div class="drow"><span class="l">Numéro</span><span class="r">{{ contrat.numero_contrat }}</span></div>
+      <div class="drow"><span class="l">Signé le</span><span class="r">{{ contrat.date_signature|date:"d F Y"|default:"—" }}</span></div>
+      <div class="drow"><span class="l">Loyer mensuel</span><span class="r">{{ contrat.prix_mensuel|floatformat:0|intcomma }} FCFA</span></div>
+      <div class="drow"><span class="l">Période</span><span class="r">{{ contrat.date_debut|date:"d/m/Y" }} → {{ contrat.date_fin|date:"d/m/Y" }}</span></div>
+    </div>
+
+    <div class="me-card">
+      <h2>Historique des paiements ({{ paiements|length }})</h2>
+      {% for p in paiements %}
+      <div class="drow">
+        <span class="l">{{ p.mois|date:"F Y" }}</span>
+        <span class="badge {% if p.statut == 'recu' %}b-green{% elif p.statut == 'impaye' %}b-red{% elif p.statut == 'retard_majeur' %}b-red{% elif p.statut == 'retard_mineur' %}b-amber{% else %}b-muted{% endif %}">{{ p.get_statut_display }}</span>
+      </div>
+      {% empty %}<div class="empty-mini">Aucun paiement.</div>{% endfor %}
+    </div>
+
+    <div class="me-card">
+      <h2>Factures impayées ({{ factures_impayees|length }})</h2>
+      {% for f in factures_impayees %}
+      <div class="drow">
+        <span class="l">{{ f.numero_facture }} — {{ f.montant_total|floatformat:0|intcomma }} FCFA</span>
+        <span class="r">échéance {{ f.date_echéance|date:"d/m/Y" }}</span>
+      </div>
+      {% empty %}<div class="empty-mini">Aucune facture impayée.</div>{% endfor %}
+    </div>
+
+    <div class="me-card">
+      <h2>Mises en demeure ({{ mises_en_demeure|length }})</h2>
+      {% for m in mises_en_demeure %}
+      <div class="drow">
+        <span class="l">{{ m.date_creation|date:"d/m/Y" }} — délai au {{ m.date_limite_regularisation|date:"d/m/Y" }}</span>
+        <span class="badge {% if m.statut == 'regularisee' %}b-green{% elif m.statut == 'expiree' or m.statut == 'procedure' %}b-red{% else %}b-muted{% endif %}">{{ m.get_statut_display }}</span>
+      </div>
+      {% empty %}<div class="empty-mini">Aucune mise en demeure.</div>{% endfor %}
+    </div>
+
+    <div class="me-card">
+      <h2>Notifications envoyées ({{ notifications|length }})</h2>
+      {% for n in notifications %}
+      <div class="drow"><span class="l">{{ n.titre }}</span><span class="r">{{ n.date_creation|date:"d/m/Y H:i" }}</span></div>
+      {% empty %}<div class="empty-mini">Aucune notification.</div>{% endfor %}
+    </div>
+
+    <div class="me-card">
+      <h2>Messages échangés ({{ messages_echanges|length }})</h2>
+      {% for msg in messages_echanges %}
+      <div class="drow"><span class="l">{{ msg.expediteur.get_full_name|default:msg.expediteur.username }} : {{ msg.contenu|truncatechars:70 }}</span><span class="r">{{ msg.cree_le|date:"d/m/Y" }}</span></div>
+      {% empty %}<div class="empty-mini">Aucun message.</div>{% endfor %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

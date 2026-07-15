@@ -1,0 +1,59 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Planning — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+.pl-day{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-2);padding:16px 0 8px}
+.pl-day:first-child{padding-top:0}
+.pl-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border)}
+.pl-row:first-child{border-top:none}
+.pl-time{width:48px;flex:0 0 48px;font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--ink)}
+.pl-dot{width:9px;height:9px;border-radius:50%;flex:0 0 9px}
+.pl-dot.tache{background:var(--accent)}
+.pl-dot.visite{background:var(--blue)}
+.pl-dot.paiement{background:var(--green)}
+.pl-dot.conge{background:#8b938c}
+.pl-titre{font-weight:600;font-size:13.5px;color:var(--ink)}
+.pl-label{font-size:11.5px;color:var(--muted)}
+.pl-who{font-size:11.5px;color:var(--blue);font-weight:600;margin-left:auto;flex-shrink:0}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='planning_equipe' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+  <button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tspacer"></div>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+
+<div class="pg-head">
+  <h1>Planning de l'équipe</h1>
+  <p>Tâches à échéance par employé, rendez-vous partagés à venir, et congés acceptés</p>
+</div>
+
+<div class="card">
+  {% regroup evenements by date as jours %}
+  {% for jour in jours %}
+  <div class="pl-day">{{ jour.grouper|date:"l d F Y" }}{% if jour.grouper == today %} · Aujourd'hui{% endif %}</div>
+  {% for e in jour.list %}
+  <a href="{{ e.lien }}" style="text-decoration:none;color:inherit">
+    <div class="pl-row">
+      <div class="pl-time">{% if e.heure %}{{ e.heure|date:"H:i" }}{% endif %}</div>
+      <div class="pl-dot {{ e.type }}"></div>
+      <div>
+        <div class="pl-titre">{{ e.titre }}</div>
+        <div class="pl-label">{{ e.label }}</div>
+      </div>
+      {% if e.employe %}<span class="pl-who">{{ e.employe.get_full_name|default:e.employe.username }}</span>{% else %}<span class="pl-who" style="color:var(--muted)">Partagé</span>{% endif %}
+    </div>
+  </a>
+  {% endfor %}
+  {% empty %}
+  <div class="empty"><b>Rien de prévu</b>Les tâches, rendez-vous et congés à venir de votre équipe apparaîtront ici.</div>
+  {% endfor %}
+</div>
+
+</div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .app -->
+</body></html>

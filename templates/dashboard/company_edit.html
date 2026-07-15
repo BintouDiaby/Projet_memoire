@@ -94,9 +94,64 @@
         </div>
       </div>
 
+      <div class="row">
+        <div class="field">
+          <label for="id_rccm">Numéro RCCM</label>
+          <input type="text" id="id_rccm" name="numero_siret_siren" value="{{ company.numero_rccm|default:prof.numero_siret_siren|default:'' }}" placeholder="Ex : CI-ABJ-2024-B-12345">
+        </div>
+        <div class="field">
+          <label for="id_ncc">Numéro de Compte Contribuable (NCC)</label>
+          <input type="text" id="id_ncc" name="numero_ncc" value="{{ company.numero_ncc|default:'' }}" placeholder="Ex : 9606123E">
+        </div>
+      </div>
+      <p style="font-size:12px;color:#6B7280;margin:-8px 0 16px">RCCM et NCC sont des mentions obligatoires OHADA/SYSCOHADA et sont requis pour la certification des factures auprès de la DGI (Facture Normalisée Électronique).</p>
+
       <div class="field">
-        <label for="id_rccm">Numéro RCCM / SIRET</label>
-        <input type="text" id="id_rccm" name="numero_siret_siren" value="{{ prof.numero_siret_siren|default:'' }}">
+        <label for="id_tva">Régime TVA appliqué aux loyers</label>
+        <select id="id_tva" name="taux_tva_loyer">
+          {% for code, label in company_taxes_choices %}
+          <option value="{{ code }}" {% if company.taux_tva_loyer == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <p style="font-size:12px;color:#6B7280;margin:6px 0 0">Par défaut : exonération légale (traitement standard de la location nue à usage d'habitation) — à confirmer avec votre comptable.</p>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="id_lat">Latitude (position sur la carte)</label>
+          <input type="number" step="any" id="id_lat" name="latitude" value="{{ company.latitude|default:'' }}" placeholder="Ex : 5.3364">
+        </div>
+        <div class="field">
+          <label for="id_lng">Longitude</label>
+          <input type="number" step="any" id="id_lng" name="longitude" value="{{ company.longitude|default:'' }}" placeholder="Ex : -4.0267">
+        </div>
+      </div>
+      <p style="font-size:12px;color:#6B7280;margin:-8px 0 16px">Renseignez la position de votre agence pour afficher une carte et un itinéraire sur votre fiche publique.</p>
+
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer">
+          <input type="checkbox" name="disponible_maintenant" {% if company.disponible_maintenant %}checked{% endif %} style="width:auto">
+          Actuellement disponible
+        </label>
+        <p style="font-size:12px;color:#6B7280;margin:4px 0 0">Décochez temporairement si vous êtes ouvert mais indisponible (pause, congés courts…).</p>
+      </div>
+
+      <div class="field">
+        <label for="id_delai">Délai de réponse habituel (minutes)</label>
+        <input type="number" min="0" id="id_delai" name="delai_reponse_minutes" value="{{ company.delai_reponse_minutes|default:'' }}" placeholder="Ex : 5">
+      </div>
+
+      <div class="field">
+        <label>Horaires d'ouverture</label>
+        {% for h in horaires_form %}
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="width:90px;font-size:13px;text-transform:capitalize;flex-shrink:0">{{ h.jour }}</span>
+          <input type="time" name="horaire_{{ h.jour }}_debut" value="{{ h.debut }}" style="width:auto;padding:7px 9px">
+          <span style="color:var(--muted)">à</span>
+          <input type="time" name="horaire_{{ h.jour }}_fin" value="{{ h.fin }}" style="width:auto;padding:7px 9px">
+        </div>
+        {% endfor %}
+        <p style="font-size:12px;color:#6B7280;margin:2px 0 0">Laissez les deux champs vides pour un jour fermé.</p>
       </div>
 
       <button type="submit" class="submit">Enregistrer</button>

@@ -1,0 +1,14 @@
+Bonjour {{ employe.first_name|default:employe.username }},
+
+{{ invite_par.get_full_name|default:invite_par.username }} vous a ajouté(e) comme collaborateur ({{ poste_label }}) sur l'espace {{ company_name }} sur ImmoGérer.
+
+Vos identifiants de connexion :
+
+Nom d'utilisateur : {{ employe.username }}
+Mot de passe temporaire : {{ mot_de_passe }}
+
+Connectez-vous ici : {{ login_url }}
+
+Nous vous recommandons de changer ce mot de passe dès votre première connexion (menu Paramètres).
+
+L'équipe ImmoGérer

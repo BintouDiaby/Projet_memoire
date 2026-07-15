@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Bien, PhotoBien, Visite
+from .models import Bien, PhotoBien, Visite, AvisBien
 
 
 class PhotoBienInline(admin.TabularInline):
@@ -49,3 +49,10 @@ class VisiteAdmin(admin.ModelAdmin):
     list_display = ('bien', 'locataire', 'date_visite', 'interet')
     list_filter = ('interet', 'date_reservation')
     search_fields = ('bien__titre', 'locataire__username')
+
+
+@admin.register(AvisBien)
+class AvisBienAdmin(admin.ModelAdmin):
+    list_display = ('bien', 'auteur', 'note', 'date_creation')
+    list_filter = ('note', 'date_creation')
+    search_fields = ('bien__titre', 'auteur__username')

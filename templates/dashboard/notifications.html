@@ -43,6 +43,13 @@
     </div>
     <div style="font-size:11.5px;color:var(--muted-2);white-space:nowrap;flex-shrink:0">il y a {{ n.date|timesince }}</div>
     <a href="{{ n.mark_url|default:n.lien }}" style="background:var(--green-light);color:var(--green);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;flex-shrink:0;white-space:nowrap">Voir →</a>
+    {% if n.id %}
+    <form method="post" action="{% url 'notification_supprimer' n.id %}" style="margin:0;flex-shrink:0" onsubmit="return confirm('Supprimer cette notification ?');">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'dashboard_notifications' %}">
+      <button type="submit" title="Supprimer" aria-label="Supprimer" style="background:none;border:1.5px solid var(--border);border-radius:8px;width:32px;height:32px;display:grid;place-items:center;color:var(--muted);cursor:pointer;font-size:14px">✕</button>
+    </form>
+    {% endif %}
   </div>
   {% endfor %}
 </div>

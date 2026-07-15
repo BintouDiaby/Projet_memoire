@@ -68,7 +68,7 @@
   .invoices{display:flex;flex-direction:column;gap:12px}
   .inv{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--sh);display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center}
   .inv .bar{width:4px;align-self:stretch;border-radius:4px;background:var(--line-2)}
-  .inv.payee .bar{background:var(--green)}.inv.attente .bar{background:var(--amber)}.inv.retard .bar{background:var(--red)}
+  .inv.payee .bar{background:var(--green)}.inv.attente .bar{background:var(--amber)}.inv.retard .bar{background:var(--red)}.inv.validation .bar{background:var(--blue)}
   .inv .mid .ref{font-size:11.5px;color:var(--muted-2);font-weight:600;letter-spacing:.03em}
   .inv .mid .ti{font-family:var(--ig-font-display);font-weight:700;font-size:15px;color:var(--ink);margin:2px 0 3px}
   .inv .mid .meta{font-size:12.5px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
@@ -79,6 +79,7 @@
   .chip.payee{background:var(--green-soft);color:var(--green)}.chip.payee svg{stroke:var(--green)}
   .chip.attente{background:var(--amber-soft);color:var(--amber)}.chip.attente svg{stroke:var(--amber)}
   .chip.retard{background:var(--red-soft);color:var(--red)}.chip.retard svg{stroke:var(--red)}
+  .chip.validation{background:#E6F1FB;color:var(--blue)}.chip.validation svg{stroke:var(--blue)}
   .inv .rowbtns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 
   .cols{display:grid;grid-template-columns:1fr 300px;gap:22px;align-items:start;margin-top:8px}
@@ -133,13 +134,18 @@
   .pmethods{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px}
   .pm{border:1.5px solid var(--line);border-radius:11px;padding:11px;display:flex;align-items:center;gap:9px;cursor:pointer;transition:.14s;font-size:13px;font-weight:600;color:#39414A}
   .pm .lg{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:#fff;font-family:var(--ig-font-display);font-weight:800;font-size:11px;flex:0 0 30px}
-  .pm.wave .lg{background:#1DA1F2}.pm.om .lg{background:#FF7900}.pm.mtn .lg{background:#FFCC00;color:#1c1405}.pm.cb .lg{background:#334155}
+  .pm.wave .lg{background:#1DA1F2}.pm.om .lg{background:#FF7900}.pm.mtn .lg{background:#FFCC00;color:#1c1405}.pm.cb .lg{background:#334155}.pm.cash .lg{background:#3B6D11;font-size:9.5px}
   .pm.sel{border-color:var(--blue);background:var(--blue-soft)}
 
   .fld{margin-bottom:14px}
   .fld label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px}
   .fld textarea,.fld select{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:13.5px;outline:none;resize:vertical;font-family:var(--ig-font-body)}
   .fld textarea:focus,.fld select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.12)}
+
+  .psaved{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--ig-bg,#F4F6F9);border:1.5px solid var(--line);border-radius:10px;padding:11px 13px;font-size:13.5px;font-weight:600;color:var(--ink)}
+  .psaved button{border:none;background:none;color:var(--blue);font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+  .pcheckbox{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:12px;color:var(--muted);cursor:pointer}
+  .pcheckbox input{width:14px;height:14px;margin:0}
 
   @media(max-width:900px){.stats{grid-template-columns:1fr 1fr}.cols{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.hero .cta{min-width:0}}
   @media(max-width:560px){.inv{grid-template-columns:auto 1fr}.inv .right{grid-column:1/-1;align-items:stretch;flex-direction:row;justify-content:space-between}}
@@ -184,7 +190,7 @@
       </div>
       <div class="cta">
         <a class="btn white" href="/dashboard/facturation/{{ prochaine_echeance.id }}/"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Voir la facture</a>
-        <button class="btn" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff" onclick="openPay('{{ prochaine_echeance.id }}','{{ prochaine_echeance.numero_facture }}','{{ prochaine_echeance.contrat.bien.titre|escapejs }}','{{ prochaine_echeance.contrat.proprietaire.get_full_name|default:prochaine_echeance.contrat.proprietaire.username|escapejs }}',{{ prochaine_echeance.montant_total|floatformat:0 }})"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Payer maintenant</button>
+        <button class="btn" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff" onclick="openPay('{{ prochaine_echeance.id }}','{{ prochaine_echeance.numero_facture }}','{{ prochaine_echeance.contrat.bien.titre|escapejs }}','{{ prochaine_echeance.contrat.proprietaire.get_full_name|default:prochaine_echeance.contrat.proprietaire.username|escapejs }}',{{ prochaine_echeance.montant_total|floatformat:0 }},'{% if prochaine_echeance.paiement %}{{ prochaine_echeance.paiement.mois|date:"F Y"|escapejs }}{% endif %}')"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Payer maintenant</button>
         <a class="btn" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff" href="/dashboard/facturation/{{ prochaine_echeance.id }}/pdf/"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Télécharger la facture</a>
         <a class="btn" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff" href="/chat/nouveau/{{ prochaine_echeance.contrat.bien.id }}/"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Contacter le propriétaire</a>
       </div>
@@ -215,7 +221,7 @@
 
     <div class="invoices">
       {% for f in factures %}
-      <div class="inv fact-item {% if f.est_retard %}retard{% elif f.statut == 'payee' %}payee{% else %}attente{% endif %}"
+      <div class="inv fact-item {% if f.est_retard %}retard{% elif f.statut == 'payee' %}payee{% elif f.statut == 'en_validation' %}validation{% else %}attente{% endif %}"
            data-statut="{{ f.statut }}" data-retard="{% if f.est_retard %}oui{% else %}non{% endif %}">
         <div class="bar"></div>
         <a class="mid" href="/dashboard/facturation/{{ f.id }}/" style="text-decoration:none;color:inherit">
@@ -228,15 +234,17 @@
         </a>
         <div class="right">
           <div class="amt num">{{ f.montant_total|floatformat:0|intcomma }} <small style="font-weight:400;color:var(--muted)">F</small></div>
-          <span class="chip {% if f.est_retard %}retard{% elif f.statut == 'payee' %}payee{% else %}attente{% endif %}">
+          <span class="chip {% if f.est_retard %}retard{% elif f.statut == 'payee' %}payee{% elif f.statut == 'en_validation' %}validation{% else %}attente{% endif %}">
             {% if f.est_retard %}En retard{% else %}{{ f.get_statut_display }}{% endif %}
           </span>
           <div class="rowbtns">
             <a href="/dashboard/facturation/{{ f.id }}/" class="btn ghost sm">Voir la facture</a>
             {% if f.statut == 'payee' %}
             <a href="/dashboard/facturation/{{ f.id }}/pdf/" class="btn ghost sm"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Quittance</a>
+            {% elif f.statut == 'en_validation' %}
+            <span style="font-size:12px;color:var(--blue);font-weight:600">En attente de validation</span>
             {% else %}
-            <button class="btn primary sm" onclick="openPay('{{ f.id }}','{{ f.numero_facture }}','{{ f.contrat.bien.titre|escapejs }}','{{ f.contrat.proprietaire.get_full_name|default:f.contrat.proprietaire.username|escapejs }}',{{ f.montant_total|floatformat:0 }})">Payer</button>
+            <button class="btn primary sm" onclick="openPay('{{ f.id }}','{{ f.numero_facture }}','{{ f.contrat.bien.titre|escapejs }}','{{ f.contrat.proprietaire.get_full_name|default:f.contrat.proprietaire.username|escapejs }}',{{ f.montant_total|floatformat:0 }},'{% if f.paiement %}{{ f.paiement.mois|date:"F Y"|escapejs }}{% endif %}')">Payer</button>
             {% endif %}
           </div>
         </div>
@@ -298,35 +306,108 @@
   </div>
 </div>
 
-<!-- MODAL PAIEMENT -->
+<!-- MODAL PAIEMENT — parcours en 4 étapes (vérification, moyen, infos, confirmation) -->
 <div class="overlay" id="payOverlay">
   <div class="sheet">
-    <div class="sheet-h"><h3>Signaler mon paiement</h3><button class="sheet-x" onclick="closePay()"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="sheet-h">
+      <h3 id="payStepTitle">Paiement du loyer</h3>
+      <button type="button" class="sheet-x" onclick="closePay()"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
     <form method="post" action="/dashboard/facturation/signaler-paiement/" id="payForm">
       {% csrf_token %}
       <input type="hidden" name="facture_id" id="pFactureId">
+      <input type="hidden" name="moyen_paiement" id="pMoyen">
+      <input type="hidden" name="numero_paiement" id="pNumero">
       <input type="hidden" name="next" value="{{ request.path }}">
-      <div class="sheet-b">
+
+      <!-- ÉTAPE 1 : vérification -->
+      <div class="sheet-b pay-step" data-step="1">
         <div class="recap">
           <div class="r"><span class="k">Bien</span><span class="v" id="pBien"></span></div>
           <div class="r"><span class="k">Propriétaire</span><span class="v" id="pOwner"></span></div>
-          <div class="r"><span class="k">Référence</span><span class="v" id="pRef"></span></div>
+          <div class="r"><span class="k">Période</span><span class="v" id="pPeriode"></span></div>
           <div class="r big"><span class="k">Montant</span><span class="v num" id="pAmt"></span></div>
         </div>
-        <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px" id="pHelp">Effectuez le paiement via le moyen choisi, puis confirmez ci-dessous — la facture sera marquée payée immédiatement et le propriétaire notifié.</p>
+        <button type="button" class="btn primary" style="width:100%;padding:12px" onclick="payGoTo(2)">Continuer</button>
+      </div>
+
+      <!-- ÉTAPE 2 : choix du moyen -->
+      <div class="sheet-b pay-step" data-step="2" style="display:none">
         <div class="plab">Moyen de paiement</div>
         <div class="pmethods" id="pmethods">
           <div class="pm wave" data-m="Wave"><span class="lg">W</span> Wave</div>
           <div class="pm om" data-m="Orange Money"><span class="lg">OM</span> Orange Money</div>
           <div class="pm mtn" data-m="MTN MoMo"><span class="lg">MTN</span> MTN MoMo</div>
           <div class="pm cb" data-m="Carte bancaire"><span class="lg">CB</span> Carte</div>
+          <div class="pm cash" data-m="Espèces" style="grid-column:1/-1"><span class="lg">ESP</span> Espèces (rendez-vous en agence)</div>
         </div>
-        <input type="hidden" name="moyen_paiement" id="pMoyen">
-        <button type="submit" class="btn primary" style="width:100%;padding:12px" id="payGo" disabled>Confirmer le paiement</button>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button type="button" class="btn ghost" style="flex:1;padding:12px" onclick="payGoTo(1)">Retour</button>
+          <button type="button" class="btn primary" style="flex:2;padding:12px" id="payStep2Go" disabled onclick="payAfterMethod()">Continuer</button>
+        </div>
+      </div>
+
+      <!-- ÉTAPE 3 : informations du paiement (mobile money) OU demande de rendez-vous (espèces) -->
+      <div class="sheet-b pay-step" data-step="3" style="display:none">
+        <div id="pMobileMoneyWrap">
+          <div class="fld" id="pNumeroSavedWrap" style="display:none">
+            <label>Numéro utilisé pour le paiement</label>
+            <div class="psaved"><span id="pNumeroSavedText"></span><button type="button" onclick="pEditNumero()">Modifier</button></div>
+          </div>
+          <div class="fld" id="pNumeroInputWrap">
+            <label id="pNumeroLabel">Numéro utilisé pour le paiement</label>
+            <input type="text" id="pNumeroInput" placeholder="Ex : 07 XX XX XX XX" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:13.5px">
+            <label class="pcheckbox"><input type="checkbox" name="enregistrer_moyen" id="pEnregistrerMoyen" checked> Enregistrer ce moyen de paiement</label>
+          </div>
+        </div>
+        <div id="pCashWrap" style="display:none">
+          <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px">Proposez un créneau pour régler cette facture en espèces à l'agence. L'entreprise pourra accepter, proposer un autre horaire, ou refuser.</p>
+          <div class="fld">
+            <label>Date souhaitée</label>
+            <input type="date" name="date_souhaitee" id="pRdvDate" min="{% now 'Y-m-d' %}" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:13.5px">
+          </div>
+          <div class="fld">
+            <label>Heure souhaitée</label>
+            <input type="time" name="heure_souhaitee" id="pRdvHeure" value="10:00" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:13.5px">
+          </div>
+          <div class="fld">
+            <label>Message pour l'entreprise (facultatif)</label>
+            <textarea name="message" id="pRdvMessage" rows="2" placeholder="Ex : Je peux venir en fin de matinée."></textarea>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button type="button" class="btn ghost" style="flex:1;padding:12px" onclick="payGoTo(2)">Retour</button>
+          <button type="button" class="btn primary" style="flex:2;padding:12px" id="payStep3Go" onclick="payStep3Continuer()">Continuer</button>
+        </div>
+      </div>
+
+      <!-- ÉTAPE 4 : confirmation -->
+      <div class="sheet-b pay-step" data-step="4" style="display:none">
+        <p id="payStep4Intro" style="font-size:12.5px;color:var(--muted);margin-bottom:14px">Vérifiez les informations avant de déclarer votre paiement — le propriétaire devra confirmer la réception pour finaliser.</p>
+        <div class="recap">
+          <div class="r"><span class="k">Propriétaire</span><span class="v" id="pOwnerConfirm"></span></div>
+          <div class="r"><span class="k">Montant</span><span class="v num" id="pAmtConfirm"></span></div>
+          <div class="r"><span class="k">Mode</span><span class="v" id="pModeConfirm"></span></div>
+          <div class="r" id="pNumeroConfirmRow"><span class="k">Numéro</span><span class="v" id="pNumeroConfirm"></span></div>
+          <div class="r" id="pRdvConfirmRow" style="display:none"><span class="k">Créneau souhaité</span><span class="v" id="pRdvConfirmText"></span></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button type="button" class="btn ghost" style="flex:1;padding:12px" onclick="payGoTo(3)">Retour</button>
+          <button type="submit" class="btn primary" style="flex:2;padding:12px" id="payFinalGo">Confirmer le paiement</button>
+        </div>
+      </div>
+
+      <!-- ÉTAPE 5 : traitement (transitoire, juste avant la soumission réelle) -->
+      <div class="sheet-b pay-step" data-step="5" style="display:none;text-align:center;padding:36px 20px">
+        <div class="spinner" style="width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;margin:0 auto 16px;animation:payspin .8s linear infinite"></div>
+        <p id="payProcessingText" style="font-size:13.5px;color:var(--muted)">Enregistrement du paiement…</p>
       </div>
     </form>
   </div>
 </div>
+<style>
+@keyframes payspin { to { transform: rotate(360deg); } }
+</style>
 
 <!-- MODAL SIGNALER UNE DIFFICULTÉ DE PAIEMENT -->
 <div class="overlay" id="issueOverlay">
@@ -358,37 +439,144 @@
 
 <script>
   var payOverlay=document.getElementById('payOverlay');
-  function openPay(factureId,ref,bien,owner,amount){
+  var payAmountLabel='';
+  var payOwnerLabel='';
+  function openPay(factureId,ref,bien,owner,amount,periode){
     document.getElementById('pFactureId').value=factureId;
-    document.getElementById('pRef').textContent=ref;
     document.getElementById('pBien').textContent=bien;
     document.getElementById('pOwner').textContent=owner;
-    document.getElementById('pAmt').textContent=amount.toLocaleString('fr-FR').replace(/ |,/g,' ')+' FCFA';
-    document.getElementById('pMoyen').value='';
-    document.getElementById('payGo').disabled=true;
+    document.getElementById('pPeriode').textContent=periode||'-';
+    payAmountLabel=amount.toLocaleString('fr-FR').replace(/ |,/g,' ')+' FCFA';
+    payOwnerLabel=owner;
+    document.getElementById('pAmt').textContent=payAmountLabel;
+    document.getElementById('pNumero').value='';
+    document.getElementById('pNumeroInput').value='';
+    document.getElementById('pNumeroSavedWrap').style.display='none';
+    document.getElementById('pNumeroInputWrap').style.display='';
+    document.getElementById('pRdvDate').value='';
+    document.getElementById('pRdvHeure').value='10:00';
+    document.getElementById('pRdvMessage').value='';
+    document.getElementById('pMobileMoneyWrap').style.display='';
+    document.getElementById('pCashWrap').style.display='none';
     document.querySelectorAll('#pmethods .pm').forEach(function(p){p.classList.remove('sel');});
+    document.getElementById('payStep2Go').disabled=true;
+    payForm.action = SIGNALER_URL;
+    payGoTo(1);
     payOverlay.classList.add('open');
   }
   function closePay(){ payOverlay.classList.remove('open'); }
+
+  function payGoTo(step){
+    document.querySelectorAll('.pay-step').forEach(function(s){ s.style.display = (s.dataset.step==String(step)) ? '' : 'none'; });
+    var moyen = document.getElementById('pMoyen').value;
+    var estEspeces = moyen === 'Espèces';
+    var titles={1:'Paiement du loyer',2:'Choisissez un moyen de paiement',3: estEspeces ? 'Proposer un rendez-vous' : 'Informations du paiement',4:'Verifiez et confirmez',5: estEspeces ? 'Envoi de la demande' : 'Paiement en cours'};
+    document.getElementById('payStepTitle').textContent = titles[step] || 'Paiement du loyer';
+    if (step === 4) {
+      document.getElementById('pOwnerConfirm').textContent = payOwnerLabel;
+      document.getElementById('pAmtConfirm').textContent = payAmountLabel;
+      document.getElementById('pModeConfirm').textContent = estEspeces ? 'Espèces (rendez-vous en agence)' : moyen;
+      if (estEspeces) {
+        document.getElementById('pNumeroConfirmRow').style.display = 'none';
+        var d = document.getElementById('pRdvDate').value;
+        var h = document.getElementById('pRdvHeure').value;
+        document.getElementById('pRdvConfirmRow').style.display = '';
+        document.getElementById('pRdvConfirmText').textContent = (d ? d.split('-').reverse().join('/') : '-') + ' à ' + (h || '-');
+        document.getElementById('payStep4Intro').textContent = "Vérifiez les informations avant d'envoyer votre demande de rendez-vous — l'entreprise pourra accepter, proposer un autre créneau, ou refuser.";
+        document.getElementById('payFinalGo').textContent = 'Envoyer la demande';
+      } else {
+        document.getElementById('pRdvConfirmRow').style.display = 'none';
+        document.getElementById('payStep4Intro').textContent = 'Vérifiez les informations avant de déclarer votre paiement — le propriétaire devra confirmer la réception pour finaliser.';
+        document.getElementById('payFinalGo').textContent = 'Confirmer le paiement';
+        var numero = document.getElementById('pNumeroInput').value.trim();
+        document.getElementById('pNumero').value = numero;
+        if (numero) {
+          document.getElementById('pNumeroConfirmRow').style.display = '';
+          document.getElementById('pNumeroConfirm').textContent = numero;
+        } else {
+          document.getElementById('pNumeroConfirmRow').style.display = 'none';
+        }
+      }
+    }
+    if (step === 5) {
+      document.getElementById('payProcessingText').textContent = estEspeces ? 'Envoi de la demande de rendez-vous…' : 'Enregistrement du paiement…';
+    }
+  }
+
   var payForm=document.getElementById('payForm');
   var SIGNALER_URL='/dashboard/facturation/signaler-paiement/';
+  var DEMANDER_RDV_URL='{% url "demander_rdv_paiement" %}';
   var STRIPE_URL='{% url "stripe_creer_session" %}';
+  var MOYENS_ENREGISTRES={{ moyens_paiement_json|default:"{}"|safe }};
+  var MODE_KEYS={'Wave':'wave','Orange Money':'orange_money','MTN MoMo':'mtn'};
+
+  function preparerEtape3(moyen){
+    var saved = MOYENS_ENREGISTRES[MODE_KEYS[moyen]];
+    if (saved) {
+      document.getElementById('pNumeroSavedText').textContent = moyen + ' ' + saved.numero_masque;
+      document.getElementById('pNumeroSavedWrap').style.display='';
+      document.getElementById('pNumeroInputWrap').style.display='none';
+      document.getElementById('pNumeroInput').value = saved.numero;
+      document.getElementById('pEnregistrerMoyen').checked = false;
+    } else {
+      document.getElementById('pNumeroSavedWrap').style.display='none';
+      document.getElementById('pNumeroInputWrap').style.display='';
+      document.getElementById('pNumeroInput').value='';
+      document.getElementById('pEnregistrerMoyen').checked = true;
+    }
+  }
+  function pEditNumero(){
+    document.getElementById('pNumeroSavedWrap').style.display='none';
+    document.getElementById('pNumeroInputWrap').style.display='';
+    document.getElementById('pEnregistrerMoyen').checked = true;
+  }
   document.querySelectorAll('#pmethods .pm').forEach(function(p){
     p.addEventListener('click',function(){
       document.querySelectorAll('#pmethods .pm').forEach(function(x){x.classList.remove('sel');});
       p.classList.add('sel');
       document.getElementById('pMoyen').value=p.dataset.m;
-      document.getElementById('payGo').disabled=false;
-      if (p.dataset.m === 'Carte bancaire') {
-        payForm.action = STRIPE_URL;
-        document.getElementById('payGo').textContent = 'Payer par carte →';
-        document.getElementById('pHelp').textContent = 'Vous allez être redirigé vers une page de paiement sécurisée Stripe.';
-      } else {
-        payForm.action = SIGNALER_URL;
-        document.getElementById('payGo').textContent = 'Confirmer le paiement';
-        document.getElementById('pHelp').textContent = 'Effectuez le paiement via le moyen choisi, puis confirmez ci-dessous — la facture sera marquée payée immédiatement et le propriétaire notifié.';
-      }
+      document.getElementById('payStep2Go').disabled=false;
     });
+  });
+
+  function payAfterMethod(){
+    var moyen = document.getElementById('pMoyen').value;
+    if (moyen === 'Carte bancaire') {
+      payForm.action = STRIPE_URL;
+      payForm.submit();
+      return;
+    }
+    if (moyen === 'Espèces') {
+      document.getElementById('pMobileMoneyWrap').style.display='none';
+      document.getElementById('pCashWrap').style.display='';
+      payForm.action = DEMANDER_RDV_URL;
+      payGoTo(3);
+      return;
+    }
+    document.getElementById('pMobileMoneyWrap').style.display='';
+    document.getElementById('pCashWrap').style.display='none';
+    payForm.action = SIGNALER_URL;
+    preparerEtape3(moyen);
+    payGoTo(3);
+  }
+
+  function payStep3Continuer(){
+    var moyen = document.getElementById('pMoyen').value;
+    if (moyen === 'Espèces' && !document.getElementById('pRdvDate').value) {
+      alert('Merci de choisir une date souhaitée.');
+      return;
+    }
+    payGoTo(4);
+  }
+
+  payForm.addEventListener('submit', function(e){
+    if (payForm.action.indexOf('stripe') !== -1) return;
+    var step5 = document.querySelector('.pay-step[data-step="5"]');
+    if (step5.style.display === 'none') {
+      e.preventDefault();
+      payGoTo(5);
+      setTimeout(function(){ payForm.submit(); }, 900);
+    }
   });
   var issueOverlay=document.getElementById('issueOverlay');
   function openIssue(factureId){

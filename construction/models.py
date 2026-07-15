@@ -112,6 +112,41 @@ class ProjetConstruction(models.Model):
         self.save(update_fields=['pourcentage_avancement'])
 
 
+class Devis(models.Model):
+    """Devis chiffré préparé par l'entreprise pour un projet, que le client
+    accepte ou refuse. Plusieurs devis peuvent se succéder sur un même
+    projet (ex. devis refusé puis révisé)."""
+
+    class Statut(models.TextChoices):
+        ENVOYE  = 'envoye',  'Envoyé'
+        ACCEPTE = 'accepte', 'Accepté'
+        REFUSE  = 'refuse',  'Refusé'
+        EXPIRE  = 'expire',  'Expiré'
+
+    projet   = models.ForeignKey(ProjetConstruction, on_delete=models.CASCADE, related_name='devis')
+    montant  = models.DecimalField(max_digits=14, decimal_places=0)
+    detail   = models.TextField(help_text="Prestations, matériaux, délais...")
+    validite_jours = models.PositiveIntegerField(default=30)
+    statut   = models.CharField(max_length=20, choices=Statut.choices, default=Statut.ENVOYE)
+    motif_refus = models.TextField(blank=True)
+    cree_par = models.ForeignKey(Utilisateur, on_delete=models.SET_NULL, null=True, related_name='devis_prepares')
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_reponse  = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-date_creation']
+        verbose_name = 'Devis'
+        verbose_name_plural = 'Devis'
+
+    def __str__(self):
+        return f"Devis {self.montant} FCFA — {self.projet}"
+
+    @property
+    def date_limite_validite(self):
+        from datetime import timedelta
+        return (self.date_creation + timedelta(days=self.validite_jours)).date()
+
+
 class EtapeChantier(models.Model):
 
     class StatutEtape(models.TextChoices):

@@ -1,0 +1,56 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mes tâches — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+.tache-row{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-top:1px solid var(--border)}
+.tache-row:first-child{border-top:none}
+.tache-check{width:22px;height:22px;border-radius:7px;border:2px solid var(--border-2);flex:0 0 22px;cursor:pointer;background:none;padding:0;display:grid;place-items:center;margin-top:1px}
+.tache-check.done{background:var(--green);border-color:var(--green)}
+.tache-check svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:3}
+.tache-titre{font-weight:700;font-size:14px;color:var(--ink)}
+.tache-titre.done{text-decoration:line-through;color:var(--muted)}
+.tache-desc{font-size:12.5px;color:var(--muted);margin-top:3px}
+.tache-meta{font-size:11.5px;color:var(--muted-2);margin-top:4px}
+.tache-retard{color:#B91C1C;font-weight:600}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='mes_taches' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+  <button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tspacer"></div>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+
+<div class="pg-head">
+  <h1>Mes tâches</h1>
+  <p>Tâches qui vous ont été assignées</p>
+</div>
+
+<div class="card">
+  {% for t in taches %}
+  <div class="tache-row">
+    <form method="post" action="{% url 'marquer_tache_faite' tache_id=t.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'mes_taches' %}">
+      <button type="submit" class="tache-check {% if t.statut == 'fait' %}done{% endif %}">{% if t.statut == 'fait' %}<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{% endif %}</button>
+    </form>
+    <div style="flex:1;min-width:0">
+      <div class="tache-titre {% if t.statut == 'fait' %}done{% endif %}">{{ t.titre }}</div>
+      {% if t.description %}<div class="tache-desc">{{ t.description }}</div>{% endif %}
+      <div class="tache-meta">
+        {% if t.date_limite %}<span class="{% if t.date_limite < today and t.statut != 'fait' %}tache-retard{% endif %}">Échéance : {{ t.date_limite|date:"d/m/Y" }}</span> · {% endif %}
+        Assignée par {{ t.creee_par.get_full_name|default:t.creee_par.username }}
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="empty"><b>Aucune tâche</b>Les tâches que le Directeur vous assigne apparaîtront ici.</div>
+  {% endfor %}
+</div>
+
+</div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .app -->
+</body></html>

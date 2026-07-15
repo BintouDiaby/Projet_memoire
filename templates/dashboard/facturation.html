@@ -52,8 +52,17 @@
 <div class="content">
 
 <div class="pg-head">
-  <h1>Facturation</h1>
-  <p>Factures générées automatiquement chaque 1er du mois pour vos contrats actifs</p>
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap">
+    <div>
+      <h1>Facturation</h1>
+      <p>Factures générées automatiquement chaque 1er du mois pour vos contrats actifs</p>
+    </div>
+    {% if nb_archives %}
+    <a href="{% if voir_archives %}/dashboard/facturation/{% else %}/dashboard/facturation/?archives=1{% endif %}" style="font-size:12.5px;font-weight:600;color:var(--muted);text-decoration:underline">
+      {% if voir_archives %}← Factures actives{% else %}Voir les archivées ({{ nb_archives }}){% endif %}
+    </a>
+    {% endif %}
+  </div>
 </div>
 
 <!-- KPIs -->
@@ -157,9 +166,14 @@
 {% else %}
 <div class="card">
   <div class="empty">
+    {% if voir_archives %}
+    <b>Aucune facture archivée</b>
+    <a href="/dashboard/facturation/" style="color:var(--green);font-weight:600;margin-top:8px;display:inline-block">← Factures actives</a>
+    {% else %}
     <b>Aucune facture générée</b>
     Les factures sont créées automatiquement le 1er du mois pour chaque contrat actif.<br>
     <a href="/dashboard/contrats/" style="color:var(--green);font-weight:600;margin-top:8px;display:inline-block">→ Voir mes contrats</a>
+    {% endif %}
   </div>
 </div>
 {% endif %}

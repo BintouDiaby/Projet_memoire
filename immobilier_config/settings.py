@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from decouple import config
+import pillow_avif  # noqa: enregistre le support AVIF pour Pillow/ImageField (photos uploadées)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -54,6 +55,7 @@ INSTALLED_APPS = [
     'dashboard.apps.DashboardConfig',
     'messagerie',
     'construction',
+    'assistant',
 ]
 
 MIDDLEWARE = [
@@ -191,3 +193,9 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='ImmoGérer <noreply@i
 
 # Stripe (paiement par carte bancaire) — clé restreinte de test, lue depuis .env.
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
+
+# FNE — Facture Normalisée Électronique (DGI Côte d'Ivoire). URL de test par
+# défaut (sandbox DGI) ; FNE_API_KEY reste vide tant que l'entreprise n'a pas
+# terminé son inscription/validation auprès de la DGI (voir facturation/fne_service.py).
+FNE_API_URL = config('FNE_API_URL', default='http://54.247.95.108/ws')
+FNE_API_KEY = config('FNE_API_KEY', default='')

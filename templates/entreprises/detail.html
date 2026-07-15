@@ -8,6 +8,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+{% if company.latitude and company.longitude %}
+<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+<script src="/static/vendor/leaflet/leaflet.js"></script>
+{% endif %}
 <style>
   :root{
     --primary:#185FA5;--primary-dark:#1A3E6A;
@@ -80,6 +84,35 @@
 
   .empty{text-align:center;padding:40px 20px;color:var(--muted)}
 
+  /* avis */
+  .avis-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+  .avis-moyenne{font-family:var(--font-display);font-weight:800;font-size:22px}
+  .avis-stars{color:var(--accent);letter-spacing:1px;font-size:15px;white-space:nowrap}
+  .avis-count{color:var(--muted);font-size:13px}
+  .avis-item{padding:14px 0;border-top:1px solid var(--border)}
+  .avis-item:first-child{border-top:none;padding-top:0}
+  .avis-item-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+  .avis-auteur{font-weight:600;font-size:13.5px}
+  .avis-date{font-size:11.5px;color:var(--muted-2)}
+  .avis-commentaire{font-size:13.5px;color:var(--text);line-height:1.55}
+  .avis-del{background:none;border:none;color:var(--muted-2);cursor:pointer;font-size:12px;padding:0;text-decoration:underline}
+  .avis-del:hover{color:#B4441F}
+  .avis-form{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+  .avis-form>label{display:block;font-size:12.5px;font-weight:600;margin-bottom:6px}
+  .avis-star-picker{display:flex;flex-direction:row-reverse;justify-content:flex-end;gap:2px;margin-bottom:12px}
+  .avis-star-picker input{display:none}
+  .avis-star-picker label{cursor:pointer;line-height:1;margin:0}
+  .avis-star-picker label span{font-size:26px;color:var(--border);transition:.1s}
+  .avis-star-picker input:checked ~ label span{color:var(--accent)}
+  .avis-star-picker label:hover span,
+  .avis-star-picker label:hover ~ label span{color:var(--accent)}
+  .avis-form textarea{width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:var(--font-body);font-size:13.5px;resize:vertical;min-height:70px;box-sizing:border-box}
+  .alert-info{display:flex;gap:10px;align-items:flex-start;background:var(--blue-light);color:var(--blue-text);border-radius:10px;padding:12px 14px;font-size:13px}
+  .alert-info svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0;margin-top:1px}
+  .alert-err{display:flex;gap:10px;align-items:flex-start;background:#FEF2F2;color:#B4441F;border-radius:10px;padding:12px 14px;font-size:13px;margin-bottom:16px}
+  .alert-ok{display:flex;gap:10px;align-items:flex-start;background:var(--green-light);color:var(--green-text);border-radius:10px;padding:12px 14px;font-size:13px;margin-bottom:16px}
+  .alert-err svg,.alert-ok svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0;margin-top:1px}
+
   @media (max-width:980px){.biens-grid{grid-template-columns:repeat(2,1fr)}.nav{display:none}}
   @media (max-width:600px){.biens-grid{grid-template-columns:1fr}.header-card{flex-direction:column;text-align:center}}
 </style>
@@ -108,6 +141,15 @@
 <div class="wrap">
   <a class="back" href="/entreprises/"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Retour à l'annuaire</a>
 
+  {% if messages %}
+  {% for message in messages %}
+  <div class="{% if message.tags == 'error' %}alert-err{% else %}alert-ok{% endif %}">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    {{ message }}
+  </div>
+  {% endfor %}
+  {% endif %}
+
   <div class="header-card">
     <div class="lg-big">{% if company.logo %}<img src="{{ company.logo.url }}" alt="">{% else %}{{ company.name|slice:":1"|upper }}{% endif %}</div>
     <div>
@@ -120,7 +162,14 @@
       </div>
       <div class="badges-row">
         {% if verifie %}<span class="vbadge"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Entreprise vérifiée</span>{% endif %}
-        {% if numero_rccm %}<span class="vbadge"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> RCCM vérifié</span>{% endif %}
+        {% if numero_rccm %}<span class="vbadge"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> RCCM {{ numero_rccm }}</span>{% endif %}
+        {% if statut_dispo.etat == 'ouvert' %}
+        <span class="vbadge" style="background:var(--green-light);color:var(--green-text)">🟢 En ligne{% if statut_dispo.delai_reponse_minutes %} · répond en ~{{ statut_dispo.delai_reponse_minutes }} min{% endif %}</span>
+        {% elif statut_dispo.etat == 'pause' %}
+        <span class="vbadge" style="background:#FEF3C7;color:#92400E">🟡 Ouverte, actuellement indisponible</span>
+        {% elif statut_dispo.etat == 'ferme' %}
+        <span class="vbadge" style="background:#FEE2E2;color:#991B1B">🔴 Fermée{% if statut_dispo.prochain_jour %} · {% if statut_dispo.demain %}ouvre demain{% else %}ouvre {{ statut_dispo.prochain_jour }}{% endif %} à {{ statut_dispo.prochaine_heure }}{% endif %}</span>
+        {% endif %}
       </div>
       <div class="tags-row">
         {% for t in company.types %}<span class="tag {% if t == 'construction' %}construction{% endif %}">{{ t }}</span>{% endfor %}
@@ -152,12 +201,95 @@
   </div>
   {% endif %}
 
+  {% if horaires_affichage or company.latitude and company.longitude %}
+  <div class="card">
+    <div class="section-title">Localisation &amp; horaires</div>
+    <div style="display:grid;grid-template-columns:{% if company.latitude and company.longitude %}1fr 1fr{% else %}1fr{% endif %};gap:20px">
+      {% if horaires_affichage %}
+      <div>
+        {% for h in horaires_affichage %}
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border);text-transform:capitalize">
+          <span style="color:var(--muted)">{{ h.jour }}</span>
+          <span style="font-weight:600">{% if h.horaire %}{{ h.horaire }}{% else %}Fermé{% endif %}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if company.latitude and company.longitude %}
+      <div>
+        <div id="company-map" style="height:200px;border-radius:10px;overflow:hidden;margin-bottom:10px"></div>
+        <a class="btn btn-primary" style="width:100%;justify-content:center" target="_blank" rel="noopener"
+           href="https://www.google.com/maps/dir/?api=1&destination={{ company.latitude }},{{ company.longitude }}">
+          <svg viewBox="0 0 24 24"><path d="M21.6 12 12 3l-9.6 9M4 10v11h16V10"/></svg>
+          Itinéraire
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
   <div class="card">
     <div class="section-title">Statistiques</div>
     <div class="stats-row">
       <div class="stat-box"><div class="v">{{ nb_biens_total }}</div><div class="k">Bien{{ nb_biens_total|pluralize }} publié{{ nb_biens_total|pluralize }}</div></div>
       <div class="stat-box"><div class="v">{{ nb_locations }}</div><div class="k">Location{{ nb_locations|pluralize }} en cours</div></div>
     </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Avis des locataires</div>
+
+    <div class="avis-head">
+      {% if note_moyenne_entreprise %}
+      <span class="avis-moyenne">{{ note_moyenne_entreprise }}/5</span>
+      <span class="avis-stars">{% for i in "12345" %}{% if forloop.counter <= note_moyenne_entreprise %}★{% else %}☆{% endif %}{% endfor %}</span>
+      <span class="avis-count">{{ nb_avis }} avis</span>
+      {% else %}
+      <span class="avis-count">Aucun avis pour l'instant.</span>
+      {% endif %}
+    </div>
+
+    {% for a in avis_liste %}
+    <div class="avis-item">
+      <div class="avis-item-head">
+        <div>
+          <span class="avis-auteur">{{ a.auteur.get_full_name|default:a.auteur.username }}</span>
+          <span class="avis-stars">{% for i in "12345" %}{% if forloop.counter <= a.note %}★{% else %}☆{% endif %}{% endfor %}</span>
+        </div>
+        <span class="avis-date">{{ a.date_creation|date:"d/m/Y" }}</span>
+      </div>
+      <div class="avis-commentaire">{{ a.commentaire }}</div>
+      {% if a.auteur_id == user.id %}
+      <form method="post" action="{% url 'avis_entreprise_supprimer' avis_id=a.id %}" style="margin-top:6px" onsubmit="return confirm('Supprimer votre avis ?');">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="/entreprises/{{ company.id }}/">
+        <button type="submit" class="avis-del">Supprimer mon avis</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    {% if peut_noter_entreprise %}
+    <form method="post" action="{% url 'avis_entreprise_ajouter' company_id=company.id %}" class="avis-form">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="/entreprises/{{ company.id }}/">
+      <label>Votre note</label>
+      <div class="avis-star-picker">
+        {% for i in "54321" %}
+        <input type="radio" name="note" id="avis-ent-star{{ i }}" value="{{ i }}" required>
+        <label for="avis-ent-star{{ i }}"><span>★</span></label>
+        {% endfor %}
+      </div>
+      <label for="avis-ent-commentaire">Votre commentaire</label>
+      <textarea id="avis-ent-commentaire" name="commentaire" placeholder="Partagez votre expérience avec cette entreprise…" required></textarea>
+      <button type="submit" class="btn btn-primary" style="margin-top:12px">Publier mon avis</button>
+    </form>
+    {% elif mon_avis_entreprise %}
+    <div class="alert-info" style="margin-top:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Vous avez déjà laissé un avis sur cette entreprise.</div>
+    {% elif user.is_authenticated and user.role == 'locataire' %}
+    <div class="alert-info" style="margin-top:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Vous pourrez laisser un avis une fois que vous aurez loué un bien de cette entreprise.</div>
+    {% endif %}
   </div>
 
   <div class="section-title">Biens publiés ({{ biens|length }})</div>
@@ -178,5 +310,16 @@
   <div class="empty" style="margin-bottom:40px">Aucun bien publié pour le moment.</div>
   {% endif %}
 </div>
+
+{% if company.latitude and company.longitude %}
+{% load l10n %}
+<script>
+  var map = L.map('company-map').setView([{{ company.latitude|unlocalize }}, {{ company.longitude|unlocalize }}], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+  L.marker([{{ company.latitude|unlocalize }}, {{ company.longitude|unlocalize }}]).addTo(map);
+</script>
+{% endif %}
 
 </body></html>

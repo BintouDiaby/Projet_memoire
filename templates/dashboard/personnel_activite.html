@@ -1,0 +1,101 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ employe.get_full_name|default:employe.username }} — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:15px 16px;box-shadow:var(--sh)}
+.stat .v{font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--ink);line-height:1}
+.stat .l{font-size:12px;color:var(--muted);margin-top:5px}
+.info-row{display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid var(--border);font-size:13.5px}
+.info-row:first-child{border-top:none}
+.info-row .k{color:var(--muted)}
+.info-row .v{font-weight:600;color:var(--ink)}
+.btn-mini{background:none;border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--text);font-family:var(--font-body);text-decoration:none;display:inline-block}
+.tache-row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-top:1px solid var(--border)}
+.tache-row:first-child{border-top:none}
+.tache-check{width:20px;height:20px;border-radius:6px;border:2px solid var(--border-2);flex:0 0 20px;cursor:pointer;background:none;padding:0;display:grid;place-items:center;margin-top:1px}
+.tache-check.done{background:var(--green);border-color:var(--green)}
+.tache-check svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:3}
+.tache-titre{font-weight:600;font-size:13.5px;color:var(--ink)}
+.tache-titre.done{text-decoration:line-through;color:var(--muted)}
+.tache-desc{font-size:12px;color:var(--muted);margin-top:2px}
+.tache-meta{font-size:11.5px;color:var(--muted-2);margin-top:3px}
+.tache-form{display:grid;grid-template-columns:2fr 1fr auto;gap:10px;align-items:end}
+.tache-form label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.tache-form input,.tache-form textarea{width:100%;border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:13.5px;font-family:var(--font-body);color:var(--text)}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='personnel' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+  <button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tspacer"></div>
+  <a class="btn-mini" href="{% url 'modifier_collaborateur' user_id=employe.id %}">Modifier</a>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+
+<div class="pg-head">
+  <h1>{{ employe.get_full_name|default:employe.username }}</h1>
+  <p>{{ employe.collaborateur_profile.get_poste_display }} — {% if employe.is_active %}Actif{% else %}Désactivé{% endif %}</p>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="v">{{ nb_biens_publies }}</div><div class="l">Biens publiés</div></div>
+  <div class="stat"><div class="v">{{ nb_contrats_crees }}</div><div class="l">Contrats créés</div></div>
+  <div class="stat"><div class="v">{{ nb_messages_envoyes }}</div><div class="l">Messages envoyés</div></div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> Informations</h2>
+  </div>
+  <div class="info-row"><span class="k">Email</span><span class="v">{{ employe.email }}</span></div>
+  <div class="info-row"><span class="k">Téléphone</span><span class="v">{{ employe.telephone|default:"—" }}</span></div>
+  <div class="info-row"><span class="k">Poste</span><span class="v">{{ employe.collaborateur_profile.get_poste_display }}</span></div>
+  <div class="info-row"><span class="k">Ajouté le</span><span class="v">{{ employe.collaborateur_profile.date_ajout|date:"d/m/Y" }}</span></div>
+  <div class="info-row"><span class="k">Ajouté par</span><span class="v">{{ employe.collaborateur_profile.invite_par.get_full_name|default:employe.collaborateur_profile.invite_par.username|default:"—" }}</span></div>
+  <div class="info-row"><span class="k">Dernière connexion</span><span class="v">{{ employe.last_login|date:"d/m/Y à H:i"|default:"Jamais connecté" }}</span></div>
+</div>
+
+<p style="font-size:12px;color:var(--muted)">
+  Ces chiffres comptent les biens/contrats/messages créés directement par ce compte — pas encore un journal d'activité détaillé (planifié pour une prochaine étape).
+</p>
+
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Tâches</h2>
+    <span class="badge b-blue">{{ taches|length }}</span>
+  </div>
+
+  <form method="post" action="{% url 'creer_tache' user_id=employe.id %}" style="margin-bottom:16px">
+    {% csrf_token %}
+    <div class="tache-form">
+      <div><label>Nouvelle tâche</label><input name="titre" placeholder="Ex : Préparer le contrat de Bintou" required></div>
+      <div><label>Date limite</label><input type="date" name="date_limite"></div>
+      <button type="submit" class="addbtn" style="border:none">Assigner</button>
+    </div>
+  </form>
+
+  {% for t in taches %}
+  <div class="tache-row">
+    <form method="post" action="{% url 'marquer_tache_faite' tache_id=t.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'voir_collaborateur' user_id=employe.id %}">
+      <button type="submit" class="tache-check {% if t.statut == 'fait' %}done{% endif %}">{% if t.statut == 'fait' %}<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{% endif %}</button>
+    </form>
+    <div style="flex:1;min-width:0">
+      <div class="tache-titre {% if t.statut == 'fait' %}done{% endif %}">{{ t.titre }}</div>
+      {% if t.description %}<div class="tache-desc">{{ t.description }}</div>{% endif %}
+      <div class="tache-meta">{% if t.date_limite %}Échéance : {{ t.date_limite|date:"d/m/Y" }} · {% endif %}Assignée par {{ t.creee_par.get_full_name|default:t.creee_par.username }}</div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="empty">Aucune tâche assignée pour l'instant.</div>
+  {% endfor %}
+</div>
+
+</div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .app -->
+</body></html>

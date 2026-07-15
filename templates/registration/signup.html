@@ -64,35 +64,6 @@
         <form method="post" action="{% url 'signup' %}" novalidate>
           {% csrf_token %}
 
-          <!-- Sélection du rôle -->
-          <div class="field-group">
-            <label>Vous êtes</label>
-            <div class="role-picker">
-              {% for value, label in form.role.field.choices %}
-              <label class="role-card">
-                <input type="radio" name="role" value="{{ value }}"
-                       {% if form.role.value == value or not form.role.value and value == 'locataire' %}checked{% endif %}>
-                <div class="role-content">
-                  <span class="role-icon">
-                    {% if value == 'proprietaire' %}🏠
-                    {% elif value == 'locataire' %}🔑
-                    {% elif value == 'gestionnaire' %}💼
-                    {% else %}👤{% endif %}
-                  </span>
-                  <div class="role-name">{{ label }}</div>
-                  <div class="role-desc">
-                    {% if value == 'proprietaire' %}Je mets en location mes biens
-                    {% elif value == 'locataire' %}Je cherche un logement
-                    {% elif value == 'gestionnaire' %}Je gère un parc immobilier
-                    {% endif %}
-                  </div>
-                </div>
-              </label>
-              {% endfor %}
-            </div>
-            {% if form.role.errors %}<div class="field-error">{{ form.role.errors|join:", " }}</div>{% endif %}
-          </div>
-
           <div class="row-2">
             <div class="field-group">
               <label for="id_first_name">Prénom</label>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon profil construction — ImmoGérer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--primary:#185FA5;--accent:#C9A84C;--green:#3B6D11;--green-light:#EAF3DE;--text:#111;--muted:#666;--border:#e5e7eb;--bg:#F4F6F9;--card:#fff;--r:14px;--font-display:"Plus Jakarta Sans",system-ui,sans-serif;--font-body:"Inter",system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);font-size:14.5px;line-height:1.55}
+  a{text-decoration:none;color:inherit}
+  .wrap{max-width:900px;margin:0 auto;padding:0 24px}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;font-weight:600;font-size:13.5px;padding:9px 16px;cursor:pointer;border:1px solid transparent;transition:.16s;font-family:var(--font-body)}
+  .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+  .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{filter:brightness(1.08)}
+  .btn-ghost{background:var(--card);border:1px solid var(--border);color:var(--muted)}.btn-ghost:hover{color:var(--primary);border-color:var(--primary)}
+  .btn-danger{background:none;border:1px solid #FCA5A5;color:#B91C1C}.btn-danger:hover{background:#FEF2F2}
+
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(244,246,249,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .topbar .wrap{display:flex;align-items:center;gap:16px;height:60px;max-width:1100px}
+  .brand{font-family:var(--font-display);font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px}
+  .spacer{flex:1}
+
+  .page-head{padding:28px 0 20px}
+  .page-head h1{font-family:var(--font-display);font-weight:800;font-size:22px}
+  .page-head p{font-size:13.5px;color:var(--muted);margin-top:4px}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:20px}
+  .card-title{font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:16px;display:flex;align-items:center;gap:9px}
+  .card-title svg{width:17px;height:17px;stroke:var(--primary);fill:none;stroke-width:2}
+
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px}
+  input[type=text],input[type=number],input[type=tel],input[type=url],textarea,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13.5px;font-family:var(--font-body);margin-bottom:14px}
+  textarea{resize:vertical}
+  .row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .hint{font-size:12px;color:var(--muted);margin-top:-10px;margin-bottom:14px}
+
+  .realisations-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px}
+  .real-card{border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .real-img{height:130px;background:#eee url('') center/cover}
+  .real-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .real-body{padding:12px 14px}
+  .real-titre{font-weight:700;font-size:13.5px}
+  .real-meta{font-size:12px;color:var(--muted);margin-top:2px}
+  .real-actions{display:flex;gap:6px;margin-top:10px}
+  .real-actions .btn{padding:6px 10px;font-size:12px}
+
+  details.add-form summary{cursor:pointer;font-weight:600;color:var(--primary);font-size:13.5px;padding:6px 0}
+  details.add-form[open] summary{margin-bottom:10px}
+
+  footer{border-top:1px solid var(--border);padding:20px 0;color:var(--muted);font-size:13px;margin-top:24px;text-align:center}
+
+  @media(max-width:640px){.row-2{grid-template-columns:1fr}.realisations-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#185FA5" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/></svg>
+      ImmoGérer
+    </a>
+    <div class="spacer"></div>
+    <a class="btn btn-ghost" href="{% url 'construction:dashboard' %}">← Dashboard construction</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>Mon profil construction</h1>
+    <p>{{ company.name }} — visible publiquement sur votre fiche entreprise</p>
+  </div>
+
+  <!-- PROFIL -->
+  <form method="post" class="card">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="profil">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      Description &amp; services
+    </div>
+
+    <label for="description">Description de l'entreprise</label>
+    <textarea id="description" name="description" rows="4" placeholder="Présentez votre entreprise, votre expérience, vos points forts…">{{ profil.description }}</textarea>
+
+    <label for="specialites">Services proposés</label>
+    <input type="text" id="specialites" name="specialites" value="{{ profil.specialites|join:', ' }}" placeholder="Ex : Villa, Duplex, Rénovation, Plans architecturaux">
+    <div class="hint">Séparez chaque service par une virgule — ils s'affichent en tags sur votre profil public.</div>
+
+    <div class="row-2">
+      <div>
+        <label for="annee_creation">Année de création</label>
+        <input type="number" id="annee_creation" name="annee_creation" value="{{ profil.annee_creation|default:'' }}" placeholder="2015">
+      </div>
+      <div>
+        <label for="telephone">Téléphone</label>
+        <input type="tel" id="telephone" name="telephone" value="{{ profil.telephone }}" placeholder="+225 07 00 00 00 00">
+      </div>
+    </div>
+    <div class="row-2">
+      <div>
+        <label for="adresse">Adresse</label>
+        <input type="text" id="adresse" name="adresse" value="{{ profil.adresse }}" placeholder="Cocody, Abidjan">
+      </div>
+      <div>
+        <label for="site_web">Site web</label>
+        <input type="url" id="site_web" name="site_web" value="{{ profil.site_web }}" placeholder="https://…">
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Enregistrer le profil</button>
+  </form>
+
+  <!-- RÉALISATIONS -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      Réalisations ({{ realisations|length }})
+    </div>
+
+    {% if realisations %}
+    <div class="realisations-grid">
+      {% for r in realisations %}
+      <div class="real-card">
+        <div class="real-img">{% if r.photo %}<img src="{{ r.photo.url }}" alt="{{ r.titre }}">{% endif %}</div>
+        <div class="real-body">
+          <div class="real-titre">{{ r.titre }}</div>
+          <div class="real-meta">{% if r.annee %}{{ r.annee }} · {% endif %}{{ r.localisation|default:"" }}</div>
+          <div class="real-actions">
+            <button type="button" class="btn btn-ghost" onclick="document.getElementById('edit-{{ r.id }}').style.display='block'">Modifier</button>
+            <form method="post" action="{% url 'construction:realisation_supprimer' realisation_id=r.id %}" onsubmit="return confirm('Supprimer cette réalisation ?');" style="margin:0">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger">Supprimer</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% for r in realisations %}
+    <div id="edit-{{ r.id }}" style="display:none;border-top:1px solid var(--border);padding-top:16px;margin-top:6px">
+      <form method="post" action="{% url 'construction:realisation_modifier' realisation_id=r.id %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label>Titre</label>
+        <input type="text" name="titre" value="{{ r.titre }}" required>
+        <label>Description</label>
+        <textarea name="description" rows="2">{{ r.description }}</textarea>
+        <div class="row-2">
+          <div>
+            <label>Année</label>
+            <input type="number" name="annee" value="{{ r.annee|default:'' }}">
+          </div>
+          <div>
+            <label>Localisation</label>
+            <input type="text" name="localisation" value="{{ r.localisation }}">
+          </div>
+        </div>
+        <label>Type de projet</label>
+        <select name="type_projet">
+          {% for val, lab in types %}<option value="{{ val }}" {% if r.type_projet == val %}selected{% endif %}>{{ lab }}</option>{% endfor %}
+        </select>
+        <label>Nouvelle photo (facultatif)</label>
+        <input type="file" name="photo" accept="image/*" style="margin-bottom:14px">
+        <div style="display:flex;gap:8px">
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+          <button type="button" class="btn btn-ghost" onclick="document.getElementById('edit-{{ r.id }}').style.display='none'">Annuler</button>
+        </div>
+      </form>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="color:var(--muted);font-size:13.5px;text-align:center;padding:20px 0">Aucune réalisation publiée. Ajoutez vos premiers chantiers réalisés pour rassurer vos futurs clients.</p>
+    {% endif %}
+
+    <details class="add-form" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <summary>+ Ajouter une réalisation</summary>
+      <form method="post" action="{% url 'construction:realisation_ajouter' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label>Titre</label>
+        <input type="text" name="titre" required placeholder="Ex : Villa moderne à Grand-Bassam">
+        <label>Description</label>
+        <textarea name="description" rows="2" placeholder="Quelques détails sur ce projet…"></textarea>
+        <div class="row-2">
+          <div>
+            <label>Année</label>
+            <input type="number" name="annee" placeholder="2024">
+          </div>
+          <div>
+            <label>Localisation</label>
+            <input type="text" name="localisation" placeholder="Cocody, Abidjan">
+          </div>
+        </div>
+        <label>Type de projet</label>
+        <select name="type_projet">
+          {% for val, lab in types %}<option value="{{ val }}">{{ lab }}</option>{% endfor %}
+        </select>
+        <label>Photo</label>
+        <input type="file" name="photo" accept="image/*" style="margin-bottom:14px">
+        <button type="submit" class="btn btn-primary">Publier la réalisation</button>
+      </form>
+    </details>
+  </div>
+
+</div>
+
+<footer><div class="wrap">ImmoGérer · Profil construction</div></footer>
+</body>
+</html>

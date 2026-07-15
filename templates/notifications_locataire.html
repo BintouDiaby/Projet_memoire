@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications — ImmoGérer{% endblock %}
+
+{% block extra_head %}
+<style>
+  .me-page { background: var(--ig-bg, #F4F6F9); min-height: calc(100vh - 60px); padding: 28px 0 56px; }
+  .me-wrap  { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+  .me-greeting { margin-bottom: 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .me-greeting h1 { font-family: var(--ig-font-display); font-weight: 800; font-size: 24px; letter-spacing: -.02em; margin: 0 0 4px; color: #111; }
+  .me-greeting p  { font-size: 13.5px; color: #6B7280; margin: 0; }
+
+  .me-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
+  .nitem { display: flex; align-items: center; border-top: 1px solid #f0f1ef; transition: .12s; }
+  .nitem:first-child { border-top: none; }
+  .nitem:hover { background: #FAFAF9; }
+  .nitem.non-lue { background: #F0F6FF; }
+  .nitem-link { display: flex; gap: 12px; align-items: flex-start; padding: 16px 18px; text-decoration: none; color: inherit; flex: 1; min-width: 0; }
+  .nitem .ic { width: 34px; height: 34px; border-radius: 9px; background: #E6F1FB; display: grid; place-items: center; flex: 0 0 34px; }
+  .nitem .ic svg { width: 16px; height: 16px; stroke: #185FA5; fill: none; stroke-width: 1.8; }
+  .nitem .body { flex: 1; min-width: 0; }
+  .nitem .t { font-size: 13.5px; color: #111; margin-bottom: 2px; }
+  .nitem.non-lue .t { font-weight: 700; }
+  .nitem .d { font-size: 12.5px; color: #6B7280; }
+  .nitem .when { font-size: 11.5px; color: #9aa0a6; white-space: nowrap; flex-shrink: 0 }
+  .nitem .dot { width: 8px; height: 8px; border-radius: 50%; background: #185FA5; flex-shrink: 0; margin-top: 6px; }
+  .ndel { margin: 0 14px 0 0; flex-shrink: 0; }
+  .ndel-btn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: #9aa0a6; cursor: pointer; font-size: 15px; line-height: 1; display: grid; place-items: center; opacity: 0; transition: .12s; }
+  .nitem:hover .ndel-btn { opacity: 1; }
+  .ndel-btn:hover { background: #FEE2E2; color: #B91C1C; border-color: #FEE2E2; }
+
+  .ig-btn-full { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; font-weight: 600; font-size: 13px; padding: 8px 14px; cursor: pointer; border: none; text-decoration: none; transition: .15s; font-family: var(--ig-font-body); background: #fff; border: 1px solid #e5e7eb; color: #111; }
+  .ig-btn-full:hover { border-color: #185FA5; color: #185FA5; }
+
+  .me-empty { text-align: center; padding: 56px 24px; background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; }
+  .me-empty .eic { width: 56px; height: 56px; border-radius: 16px; background: #E6F1FB; display: grid; place-items: center; margin: 0 auto 16px; }
+  .me-empty .eic svg { width: 26px; height: 26px; stroke: #185FA5; fill: none; stroke-width: 1.5; }
+  .me-empty h3 { font-family: var(--ig-font-display); font-weight: 700; font-size: 18px; margin: 0 0 6px; }
+  .me-empty p  { color: #6B7280; font-size: 13.5px; margin: 0; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="me-page">
+  <div class="me-wrap">
+
+    <div class="me-greeting">
+      <div>
+        <h1>Notifications</h1>
+        <p>{% if nb_non_lues %}{{ nb_non_lues }} notification{{ nb_non_lues|pluralize }} non lue{{ nb_non_lues|pluralize }}{% else %}Vous êtes à jour{% endif %}</p>
+      </div>
+      {% if nb_non_lues %}
+      <form method="post" action="{% url 'notifications_marquer_toutes_lues' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'mes_notifications_locataire' %}">
+        <button type="submit" class="ig-btn-full">Tout marquer comme lu</button>
+      </form>
+      {% endif %}
+    </div>
+
+    {% if notifications %}
+    <div class="me-card">
+      {% for n in notifications %}
+      <div class="nitem {% if not n.lue %}non-lue{% endif %}">
+        <a class="nitem-link" href="/dashboard/notifications/lire/{{ n.id }}/?next={{ n.lien|default:'/mes-notifications/' }}">
+          {% if not n.lue %}<span class="dot"></span>{% else %}<span style="width:8px;flex-shrink:0"></span>{% endif %}
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+          <div class="body">
+            <div class="t">{{ n.titre }}</div>
+            <div class="d">{{ n.message }}</div>
+          </div>
+          <div class="when">{{ n.date_creation|timesince }}</div>
+        </a>
+        <form method="post" action="{% url 'notification_supprimer' n.id %}" class="ndel" onsubmit="return confirm('Supprimer cette notification ?');">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{% url 'mes_notifications_locataire' %}">
+          <button type="submit" class="ndel-btn" title="Supprimer" aria-label="Supprimer">✕</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="me-empty">
+      <div class="eic"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+      <h3>Aucune notification</h3>
+      <p>Vos messages, rappels et mises à jour de dossier apparaîtront ici.</p>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

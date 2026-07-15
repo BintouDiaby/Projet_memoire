@@ -60,7 +60,19 @@ def generer_factures_mensuelles(self):
                         date_emission=timezone.now()
                     )
                     factures_creees += 1
-                    
+
+                    # Certification FNE (Facture Normalisée Électronique - DGI).
+                    # N'interrompt jamais la génération : si la FNE n'est pas encore
+                    # configurée ou injoignable, la facture reste valable en interne,
+                    # simplement non certifiée (facture.fne_certifiee reste False).
+                    try:
+                        from .fne_service import certifier_facture
+                        ok, msg = certifier_facture(facture)
+                        if not ok:
+                            logger.warning(f"Certification FNE non aboutie pour {facture.numero_facture} : {msg}")
+                    except Exception as e:
+                        logger.error(f"Erreur certification FNE pour {facture.numero_facture}: {str(e)}")
+
                     # Créer une notification pour le locataire
                     if contrat.locataire:
                         Notification.objects.create(
@@ -92,60 +104,32 @@ def creer_rappels_paiement(paiement):
     """Créer les rappels de paiement pour un paiement"""
     try:
         date_limite = paiement.date_limite
-        
+
         # Premier rappel: 2 jours après
         RappelPaiement.objects.get_or_create(
             paiement=paiement,
             type_rappel=RappelPaiement.Type.PREMIER_RAPPEL,
             defaults={'date_programmee': date_limite + timedelta(days=2)}
         )
-        
+
         # Deuxième rappel: 7 jours après
         RappelPaiement.objects.get_or_create(
             paiement=paiement,
             type_rappel=RappelPaiement.Type.DEUXIEME_RAPPEL,
             defaults={'date_programmee': date_limite + timedelta(days=7)}
         )
-        
+
         # Avis final: 15 jours après
         RappelPaiement.objects.get_or_create(
             paiement=paiement,
             type_rappel=RappelPaiement.Type.AVIS_FINAL,
             defaults={'date_programmee': date_limite + timedelta(days=15)}
         )
-        
+
         logger.info(f"Rappels créés pour paiement {paiement.id}")
-        
+
     except Exception as e:
         logger.error(f"Erreur création rappels: {str(e)}")
-        mois_courant = timezone.now().date().replace(day=1)
-        paiements = Paiement.objects.filter(mois=mois_courant, statut=Paiement.Statut.EN_ATTENTE)
-        
-        factures_creees = 0
-        for paiement in paiements:
-            # Créer la facture
-            facture = Facture.objects.create(
-                paiement=paiement,
-                contrat=paiement.contrat,
-                date_echéance=paiement.date_limite,
-                montant_loyer=paiement.montant_du,
-                montant_total=paiement.montant_du,
-                statut=Facture.Statut.GENEREE
-            )
-            facture.generer_numero()
-            facture.save()
-            
-            # Créer les rappels de paiement
-            creer_rappels_paiement(paiement)
-            
-            factures_creees += 1
-        
-        logger.info(f"✅ {factures_creees} factures générées pour le mois")
-        return {'factures_creees': factures_creees}
-    
-    except Exception as e:
-        logger.error(f"❌ Erreur lors de la génération des factures : {str(e)}")
-        raise
 
 
 @shared_task

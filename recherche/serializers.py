@@ -20,9 +20,15 @@ class RechercheSauvegardeeSerializer(serializers.ModelSerializer):
 
 
 class BienFavoriSerializer(serializers.ModelSerializer):
-    """Serializer pour les biens favoris"""
+    """Serializer pour les biens favoris.
+
+    Correction (app mobile) : `bien_id` n'avait pas `source='bien'`, donc
+    DRF passait l'objet `Bien` résolu directement dans le kwarg `bien_id` à
+    `BienFavori.objects.create()`, provoquant un TypeError (Django attend un
+    entier pour la colonne `bien_id`, pas une instance de modèle)."""
     bien = BienListSerializer(read_only=True)
     bien_id = serializers.PrimaryKeyRelatedField(
+        source='bien',
         write_only=True,
         queryset=__import__('biens.models', fromlist=['Bien']).Bien.objects.all()
     )

@@ -165,10 +165,13 @@ def _redirect_apres_login(user):
 
 
 def login_view(request):
-    """Vue de connexion avec gestion du `remember_me` et redirection par rôle."""
-    if request.user.is_authenticated:
-        return _redirect_apres_login(request.user)
+    """Vue de connexion avec gestion du `remember_me` et redirection par rôle.
 
+    Ne redirige PAS automatiquement un utilisateur déjà connecté : sinon,
+    pour se connecter avec un autre compte depuis le même navigateur sans
+    s'être explicitement déconnecté avant (ex. le Directeur qui teste le
+    compte d'un employé), la page de connexion se contenterait de renvoyer
+    vers l'ancienne session sans jamais traiter les nouveaux identifiants."""
     form = ConnexionForm(request)
     if request.method == 'POST':
         form = ConnexionForm(request, data=request.POST)
@@ -192,10 +195,10 @@ def login_view(request):
 
 
 def company_login(request):
-    """Vue de connexion dédiée aux comptes entreprise (GET + POST autonome)."""
-    if request.user.is_authenticated:
-        return _redirect_apres_login(request.user)
-
+    """Vue de connexion dédiée aux comptes entreprise (GET + POST autonome).
+    Ne redirige pas automatiquement un utilisateur déjà connecté — même
+    raison que `login_view` : permettre de changer de compte sans passer
+    par une déconnexion explicite."""
     form = ConnexionForm(request)
     if request.method == 'POST':
         form = ConnexionForm(request, data=request.POST)
@@ -302,9 +305,11 @@ def signup(request):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        # Le template n'envoie pas le champ `role` — l'imposer en tant que proprietaire
+        # Cette page est l'inscription "particulier" (locataire) — les comptes
+        # propriétaire/gestionnaire passent par company_signup. Le template
+        # n'envoie donc pas le champ `role`, on l'impose ici.
         post = request.POST.copy()
-        post.setdefault('role', Utilisateur.Role.PROPRIETAIRE)
+        post.setdefault('role', Utilisateur.Role.LOCATAIRE)
         form = UtilisateurCreationForm(post)
         if form.is_valid():
             user = form.save()
@@ -346,11 +351,6 @@ def signup(request):
     context = {
         'form': form,
         'stats': _public_landing_stats(),
-        'role_descriptions': {
-            Utilisateur.Role.PROPRIETAIRE: "Je mets en location ou en vente mes biens.",
-            Utilisateur.Role.LOCATAIRE: "Je cherche un logement à louer.",
-            Utilisateur.Role.GESTIONNAIRE: "Je gère un parc immobilier pour des propriétaires.",
-        },
     }
     return render(request, 'registration/signup.html', context)
 
@@ -477,13 +477,42 @@ def company_profile_edit(request):
         company.ville = request.POST.get('ville', '').strip()
         company.telephone = request.POST.get('telephone', '').strip()
         company.email = request.POST.get('email', '').strip()
+        company.facebook = request.POST.get('facebook', '').strip()
+        company.instagram = request.POST.get('instagram', '').strip()
         if request.FILES.get('logo'):
             company.logo = request.FILES['logo']
         if request.FILES.get('cover_image'):
             company.cover_image = request.FILES['cover_image']
+        rccm = request.POST.get('numero_siret_siren', '').strip()
+        if rccm:
+            company.numero_rccm = rccm
+        ncc = request.POST.get('numero_ncc', '').strip()
+        if ncc:
+            company.numero_ncc = ncc
+        taux_tva_loyer = request.POST.get('taux_tva_loyer', '').strip()
+        if taux_tva_loyer in dict(Company.Taxes.choices):
+            company.taux_tva_loyer = taux_tva_loyer
+
+        lat = request.POST.get('latitude', '').strip()
+        lng = request.POST.get('longitude', '').strip()
+        try:
+            company.latitude = float(lat) if lat else None
+            company.longitude = float(lng) if lng else None
+        except ValueError:
+            pass
+
+        horaires = {}
+        for jour in Company.JOURS_SEMAINE:
+            debut = request.POST.get(f'horaire_{jour}_debut', '').strip()
+            fin = request.POST.get(f'horaire_{jour}_fin', '').strip()
+            horaires[jour] = f"{debut}-{fin}" if debut and fin else ''
+        company.horaires = horaires
+        company.disponible_maintenant = request.POST.get('disponible_maintenant') == 'on'
+        delai = request.POST.get('delai_reponse_minutes', '').strip()
+        company.delai_reponse_minutes = int(delai) if delai.isdigit() else None
+
         company.save()
 
-        rccm = request.POST.get('numero_siret_siren', '').strip()
         if rccm:
             prof.numero_siret_siren = rccm
         if not prof.nom_entreprise:
@@ -493,7 +522,17 @@ def company_profile_edit(request):
         messages.success(request, "Profil entreprise mis à jour.")
         return redirect(request.POST.get('next') or 'dashboard_company')
 
-    return render(request, 'dashboard/company_edit.html', {'company': company, 'prof': prof})
+    horaires_form = []
+    for jour in Company.JOURS_SEMAINE:
+        h = (company.horaires or {}).get(jour, '')
+        debut, fin = h.split('-') if '-' in h else ('', '')
+        horaires_form.append({'jour': jour, 'debut': debut, 'fin': fin})
+
+    return render(request, 'dashboard/company_edit.html', {
+        'company': company, 'prof': prof,
+        'company_taxes_choices': Company.Taxes.choices,
+        'horaires_form': horaires_form,
+    })
 
 
 @login_required

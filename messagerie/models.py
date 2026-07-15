@@ -27,6 +27,11 @@ class Conversation(models.Model):
     cree_le = models.DateTimeField(auto_now_add=True)
     mis_a_jour_le = models.DateTimeField(auto_now=True)
 
+    # Archivage indépendant par côté : chacun range sa propre liste sans faire
+    # disparaître la conversation chez l'autre.
+    archive_demandeur = models.BooleanField(default=False)
+    archive_proprietaire = models.BooleanField(default=False)
+
     class Meta:
         ordering = ['-mis_a_jour_le']
         constraints = [
@@ -65,6 +70,18 @@ class Conversation(models.Model):
     def dernier_message(self):
         return self.messages.order_by('-cree_le').first()
 
+    def est_archive_pour(self, user):
+        if user.id == self.demandeur_id:
+            return self.archive_demandeur
+        return self.archive_proprietaire
+
+    def archiver_pour(self, user, valeur=True):
+        if user.id == self.demandeur_id:
+            self.archive_demandeur = valeur
+        else:
+            self.archive_proprietaire = valeur
+        self.save(update_fields=['archive_demandeur', 'archive_proprietaire'])
+
 
 class Message(models.Model):
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
@@ -72,6 +89,13 @@ class Message(models.Model):
     contenu = models.TextField()
     lu = models.BooleanField(default=False)
     cree_le = models.DateTimeField(auto_now_add=True)
+
+    # Édition et suppression (par l'auteur uniquement) — suppression douce :
+    # le message laisse une trace « supprimé » plutôt que de disparaître sans
+    # explication chez l'autre interlocuteur.
+    est_modifie = models.BooleanField(default=False)
+    date_modification = models.DateTimeField(blank=True, null=True)
+    est_supprime = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['cree_le']

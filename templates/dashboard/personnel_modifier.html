@@ -1,0 +1,52 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Modifier {{ employe.get_full_name|default:employe.username }} — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+.pers-form{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:16px}
+.pers-form label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.pers-form input,.pers-form select{width:100%;border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-size:13.5px;font-family:var(--font-body);color:var(--text);background:#fff;outline:none;transition:.14s}
+.pers-form input:focus,.pers-form select:focus{border-color:var(--green)}
+.pers-form .full{grid-column:1 / -1}
+.btn-mini{background:none;border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);font-family:var(--font-body);text-decoration:none;display:inline-block}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='personnel' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+  <button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tspacer"></div>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+
+<div class="pg-head">
+  <h1>Modifier {{ employe.get_full_name|default:employe.username }}</h1>
+  <p>Coordonnées et poste du collaborateur</p>
+</div>
+
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="pers-form">
+      <div><label>Prénom</label><input name="prenom" value="{{ employe.first_name }}" required></div>
+      <div><label>Nom</label><input name="nom" value="{{ employe.last_name }}" required></div>
+      <div><label>Téléphone</label><input name="telephone" value="{{ employe.telephone|default:'' }}"></div>
+      <div><label>Email</label><input type="email" name="email" value="{{ employe.email }}" required></div>
+      <div class="full">
+        <label>Fonction</label>
+        <select name="poste">
+          {% for value, label in postes %}<option value="{{ value }}" {% if employe.collaborateur_profile.poste == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button type="submit" class="addbtn" style="border:none">Enregistrer</button>
+      <a href="{% url 'personnel' %}" class="btn-mini">Annuler</a>
+    </div>
+  </form>
+</div>
+
+</div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .app -->
+</body></html>

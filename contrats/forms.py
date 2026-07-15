@@ -15,10 +15,15 @@ class ContratCreationForm(forms.ModelForm):
             'bien', 'locataire', 'date_debut', 'date_fin',
             'prix_mensuel', 'prix_depot_garantie', 'charges_mensuelles',
             'nombre_mois_minimum', 'jour_paiement', 'conditions_speciales',
+            'jours_avant_rappel', 'jours_avant_frais', 'montant_frais_retard', 'jours_avant_mise_en_demeure',
         ]
         widgets = {
-            'date_debut': forms.DateInput(attrs={'type': 'date'}),
-            'date_fin': forms.DateInput(attrs={'type': 'date'}),
+            # `format='%Y-%m-%d'` force l'ISO quel que soit LANGUAGE_CODE — un
+            # <input type="date"> HTML n'accepte que ce format ; sans ça, la
+            # valeur pré-remplie (ex: 12/07/2026 en locale fr-fr) est invalide
+            # pour le champ, qui reste vide et bloque silencieusement l'envoi.
+            'date_debut': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'date_fin': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'conditions_speciales': forms.Textarea(attrs={'rows': 3}),
         }
 

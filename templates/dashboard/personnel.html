@@ -1,0 +1,171 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Personnel — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:15px 16px;box-shadow:var(--sh)}
+.stat .v{font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--ink);line-height:1}
+.stat .l{font-size:12px;color:var(--muted);margin-top:5px}
+.pers-row{display:flex;align-items:center;gap:14px;padding:14px 0;border-top:1px solid var(--border)}
+.pers-row:first-child{border-top:none;padding-top:2px}
+.pers-av{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:15px;flex:0 0 44px;color:#fff}
+.av-blue{background:var(--blue)}.av-green{background:var(--green)}
+.pers-name{font-weight:700;font-size:14px;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pers-sub{font-size:12px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pers-sub .dot{width:3px;height:3px;border-radius:50%;background:var(--muted-2)}
+.pers-actions{display:flex;gap:8px;align-items:center}
+.btn-mini{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text);font-family:var(--font-body);text-decoration:none;display:inline-block;transition:.14s}
+.btn-mini:hover{border-color:var(--border-2);background:#fbfbfa}
+.btn-mini.danger:hover{color:#B91C1C;border-color:#f0c8c0}
+.pers-form{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:16px}
+.pers-form label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.pers-form input,.pers-form select{width:100%;border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-size:13.5px;font-family:var(--font-body);color:var(--text);background:#fff;outline:none;transition:.14s}
+.pers-form input:focus,.pers-form select:focus{border-color:var(--green)}
+.pers-form .full{grid-column:1 / -1}
+.phone-wrap{display:flex;align-items:stretch}
+.phone-wrap .pfx{display:flex;align-items:center;padding:0 11px;border:1px solid var(--border);border-right:none;border-radius:9px 0 0 9px;background:#f6f7f4;font-size:13px;color:var(--muted);font-weight:600}
+.phone-wrap input{border-radius:0 9px 9px 0}
+.perm-hint{grid-column:1/-1;display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:var(--text);background:var(--green-light);border-radius:10px;padding:11px 13px}
+.perm-hint svg{width:15px;height:15px;stroke:var(--green);fill:none;stroke-width:2;flex:0 0 15px;margin-top:1px}
+.perm-hint b{color:var(--green-text)}
+.roles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.role-item{border:1px solid var(--border);border-radius:12px;padding:14px}
+.role-item .rt{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:700;font-size:13.5px;color:var(--ink);margin-bottom:7px}
+.role-item .rt .pin{width:9px;height:9px;border-radius:3px;flex:0 0 9px}
+.role-item .rp{font-size:12px;color:var(--muted);line-height:1.55}
+@media(max-width:860px){.stats{grid-template-columns:1fr}.pers-form{grid-template-columns:1fr}.pers-actions{flex-direction:column;align-items:flex-end}}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='personnel' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+  <button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tspacer"></div>
+  <a class="addbtn" href="#ajouter"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Ajouter un employé</a>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+
+{% if messages %}
+{% for message in messages %}
+<div style="background:{% if message.tags == 'error' %}#FEF2F2{% else %}#F0FDF4{% endif %};border:1px solid {% if message.tags == 'error' %}#FCA5A5{% else %}#86EFAC{% endif %};color:{% if message.tags == 'error' %}#B91C1C{% else %}#15803D{% endif %};border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;margin-bottom:18px">{{ message }}</div>
+{% endfor %}
+{% endif %}
+
+<div class="pg-head">
+  <h1>Personnel</h1>
+  <p>Gérez les accès de votre équipe. Tous les membres partagent les mêmes biens, contrats et paiements ; le poste indique le rôle de chacun.</p>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="v">{{ nb_comptes_actifs }}</div><div class="l">Comptes actifs</div></div>
+  <div class="stat"><div class="v">{{ nb_employes }}</div><div class="l">Employé{{ nb_employes|pluralize }} (hors directeur)</div></div>
+  <div class="stat"><div class="v">{{ nb_roles }}</div><div class="l">Postes disponibles</div></div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0M16 5a3.5 3.5 0 0 1 0 7"/></svg> Équipe</h2>
+    <span class="badge b-blue">{{ membres|length|add:1 }} membre{{ membres|length|add:1|pluralize }}</span>
+  </div>
+
+  {% for m in membres %}
+  <div class="pers-row">
+    <div class="pers-av av-blue">{{ m.first_name|default:m.username|first|upper }}</div>
+    <div style="flex:1;min-width:0">
+      <div class="pers-name">{{ m.get_full_name|default:m.username }} <span class="badge b-blue">{{ m.collaborateur_profile.get_poste_display }}</span></div>
+      <div class="pers-sub"><span>{{ m.email }}</span>{% if m.telephone %}<span class="dot"></span><span>{{ m.telephone }}</span>{% endif %}</div>
+    </div>
+    <span class="badge {% if m.is_active %}b-green{% else %}b-muted{% endif %}">
+      {% if m.is_active %}<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Actif{% else %}Désactivé{% endif %}
+    </span>
+    <div class="pers-actions">
+      <a class="btn-mini" href="{% url 'voir_collaborateur' user_id=m.id %}">Voir</a>
+      <a class="btn-mini" href="{% url 'modifier_collaborateur' user_id=m.id %}">Modifier</a>
+      <form method="post" action="{% url 'reset_mdp_collaborateur' user_id=m.id %}" onsubmit="return confirm('Générer un nouveau mot de passe temporaire pour {{ m.get_full_name|default:m.username|escapejs }} ?');" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-mini">Réinit. mot de passe</button>
+      </form>
+      <form method="post" action="{% url 'toggle_collaborateur_actif' user_id=m.id %}" onsubmit="return confirm('{% if m.is_active %}Désactiver ce compte ? La personne ne pourra plus se connecter.{% else %}Réactiver ce compte ?{% endif %}');" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-mini danger">{% if m.is_active %}Désactiver{% else %}Réactiver{% endif %}</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="pers-row">
+    <div class="pers-av av-green">{{ directeur.first_name|default:directeur.username|first|upper }}</div>
+    <div style="flex:1;min-width:0">
+      <div class="pers-name">{{ directeur.get_full_name|default:directeur.username }} {% if directeur.id == request.user.id %}<span class="badge b-muted">Vous</span>{% endif %} <span class="badge b-green">Directeur</span></div>
+      <div class="pers-sub"><span>{{ directeur.email }}</span><span class="dot"></span><span>Accès complet</span></div>
+    </div>
+    <span class="badge b-green"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Actif</span>
+    <div class="pers-actions">
+      <a class="btn-mini" href="/dashboard/entreprise/profil/">Mon profil</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="ajouter">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8"/><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0"/></svg> Ajouter un employé</h2>
+  </div>
+  <form method="post" action="{% url 'ajouter_collaborateur' %}">
+    {% csrf_token %}
+    <div class="pers-form">
+      <div><label>Prénom</label><input name="prenom" required></div>
+      <div><label>Nom</label><input name="nom" required></div>
+      <div>
+        <label>Téléphone</label>
+        <div class="phone-wrap"><span class="pfx">+225</span><input name="telephone" placeholder="07 00 00 00 00"></div>
+      </div>
+      <div><label>Email</label><input type="email" name="email" required></div>
+      <div class="full">
+        <label>Fonction</label>
+        <select name="poste" id="posteSelect" onchange="majPerm()">
+          {% for value, label in postes %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="perm-hint">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div><b>Accès accordé :</b> <span id="permText">Biens · Réservations · Devis · Messages · Clients CRM · Rendez-vous</span></div>
+      </div>
+    </div>
+    <button type="submit" class="addbtn" style="border:none"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Ajouter l'employé</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Postes &amp; périmètre d'accès</h2>
+  </div>
+  <div class="roles-grid">
+    <div class="role-item"><div class="rt"><span class="pin" style="background:var(--blue)"></span> Commercial</div><div class="rp">Biens, réservations, devis, messages, clients CRM et rendez-vous.</div></div>
+    <div class="role-item"><div class="rt"><span class="pin" style="background:var(--accent)"></span> Comptable</div><div class="rp">Facturation, validation des paiements et statistiques.</div></div>
+    <div class="role-item"><div class="rt"><span class="pin" style="background:var(--green)"></span> Gestionnaire locatif</div><div class="rp">Contrats, réclamations, clients CRM et rendez-vous.</div></div>
+    <div class="role-item"><div class="rt"><span class="pin" style="background:#8b938c"></span> Assistant</div><div class="rp">Vue globale de l'entreprise uniquement — aucun module métier dédié pour l'instant.</div></div>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin:14px 0 0">
+    Ces accès sont appliqués automatiquement selon le poste choisi — un employé qui tente d'ouvrir une page hors de son périmètre est redirigé.
+  </p>
+</div>
+
+</div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .app -->
+
+<script>
+  var PERMS = {
+    commercial: 'Biens · Réservations · Devis · Messages · Clients CRM · Rendez-vous',
+    comptable: 'Facturation · Validation paiements · Statistiques',
+    gestionnaire_locatif: 'Contrats · Réclamations · Clients CRM · Rendez-vous',
+    assistant: 'Vue globale de l\'entreprise uniquement'
+  };
+  function majPerm(){
+    var v = document.getElementById('posteSelect').value;
+    document.getElementById('permText').textContent = PERMS[v] || '';
+  }
+  majPerm();
+</script>
+</body></html>

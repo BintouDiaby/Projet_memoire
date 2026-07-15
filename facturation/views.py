@@ -24,11 +24,13 @@ class FactureViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Filtrer les factures selon l'utilisateur"""
         user = self.request.user
-        if user.role == 'proprietaire':
-            return Facture.objects.filter(contrat__proprietaire=user)
+        if user.role in ('proprietaire', 'gestionnaire'):
+            return Facture.objects.filter(contrat__proprietaire__in=user.comptes_entreprise())
         elif user.role == 'locataire':
             return Facture.objects.filter(contrat__locataire=user)
-        return Facture.objects.all()
+        elif user.is_staff or user.role == 'admin':
+            return Facture.objects.all()
+        return Facture.objects.none()
     
     @action(detail=True, methods=['post'])
     def marquer_payee(self, request, pk=None):

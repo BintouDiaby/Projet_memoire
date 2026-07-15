@@ -224,7 +224,7 @@
          href="{% if t.key == 'construction' %}/construction/{% else %}/explorer/?tab={{ t.key }}{% endif %}"
          role="tab"
          aria-selected="{% if tab == t.key %}true{% else %}false{% endif %}">
-        {{ t.emoji }} {{ t.label }}
+        {{ t.label }}
         {% if t.count %}<span class="tab-cnt">{{ t.count }}</span>{% endif %}
       </a>
       {% endfor %}

@@ -68,32 +68,58 @@
       {% endif %}
     </div>
   </div>
+  <div style="margin:0 14px 12px;padding:8px 12px;background:var(--bg);border-radius:10px;font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px">
+    <svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" style="flex:0 0 13px"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+    <span>Connecté : <b style="color:var(--ink)">{{ request.user.get_full_name|default:request.user.username }}</b>{% if request.user.role == 'proprietaire' %} (Directeur){% elif request.user.collaborateur_profile %} ({{ request.user.collaborateur_profile.get_poste_display }}){% endif %}</span>
+  </div>
   <div class="side-lab">Pilotage</div>
   <nav class="snav">
     <a href="/dashboard/company/"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3zM13 21h8V11h-8zM13 3v6h8V3zM3 21h8v-6H3z"/></svg> Vue globale</a>
-    <a href="/dashboard/biens/" class="{% if active_page == 'biens' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12M3 21h18"/></svg> Biens <span class="z">{{ biens_count }}</span></a>
-    {% if 'construction' in types %}<a href="/construction/dashboard/"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg> Construction</a>{% endif %}
+    {% if request.user.role != 'proprietaire' %}
+    <a href="/mes-taches/" class="{% if active_page == 'mes_taches' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Mes tâches {% if nb_taches_a_faire %}<span class="z badge-a">{{ nb_taches_a_faire }}</span>{% endif %}</a>
+    <a href="/mes-conges/" class="{% if active_page == 'mes_conges' %}active{% endif %}"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg> Mes congés</a>
+    <a href="/mon-planning/" class="{% if active_page == 'planning' %}active{% endif %}"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg> Mon planning</a>
+    {% endif %}
+    {% if request.user.peut_commercial %}<a href="/dashboard/biens/" class="{% if active_page == 'biens' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12M3 21h18"/></svg> Biens <span class="z">{{ biens_count }}</span></a>{% endif %}
+    {% if 'construction' in types %}
+    <a href="/construction/dashboard/"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg> Construction</a>
+    <a href="/construction/entreprise/{{ company.id }}/"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Nos réalisations</a>
+    {% endif %}
   </nav>
   <div class="side-lab">Relation client</div>
   <nav class="snav">
-    <a href="/chat/dashboard/" class="{% if active_page == 'messages' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Messages {% if nb_messages_non_lus %}<span class="z badge-r">{{ nb_messages_non_lus }}</span>{% endif %}</a>
+    {% if request.user.peut_commercial or request.user.peut_gestion_locative %}<a href="/chat/dashboard/" class="{% if active_page == 'messages' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Messages {% if nb_messages_non_lus %}<span class="z badge-r">{{ nb_messages_non_lus }}</span>{% endif %}</a>{% endif %}
     <a href="/dashboard/notifications/" class="{% if active_page == 'notifications' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg> Notifications {% if nb_notifs %}<span class="z badge-r">{{ nb_notifs }}</span>{% endif %}</a>
-    <a href="/dashboard/rdv/" class="{% if active_page == 'rdv' %}active{% endif %}"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Rendez-vous {% if nb_rdv_en_attente %}<span class="z badge-a">{{ nb_rdv_en_attente }}</span>{% endif %}</a>
-    <a href="/dashboard/reservations/" class="{% if active_page == 'reservations' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/></svg> Réservations {% if nb_reservations_en_attente %}<span class="z badge-a">{{ nb_reservations_en_attente }}</span>{% endif %}</a>
-    {% if 'construction' in types %}<a href="/dashboard/devis/" class="{% if active_page == 'devis' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg> Demandes de devis {% if nb_devis_en_attente %}<span class="z badge-o">{{ nb_devis_en_attente }}</span>{% endif %}</a>{% endif %}
-    <a href="/dashboard/clients/" class="{% if active_page == 'clients' %}active{% endif %}"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0M16 5a3.5 3.5 0 0 1 0 7"/></svg> Clients CRM</a>
-    <a href="/dashboard/reclamations/" class="{% if active_page == 'reclamations' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg> Réclamations {% if nb_reclamations_ouvertes %}<span class="z badge-r">{{ nb_reclamations_ouvertes }}</span>{% endif %}</a>
+    {% if request.user.peut_commercial or request.user.peut_gestion_locative or request.user.peut_comptable %}<a href="/dashboard/rdv/" class="{% if active_page == 'rdv' %}active{% endif %}"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Rendez-vous {% if nb_rdv_en_attente %}<span class="z badge-a">{{ nb_rdv_en_attente }}</span>{% endif %}</a>{% endif %}
+    {% if request.user.peut_commercial %}<a href="/dashboard/reservations/" class="{% if active_page == 'reservations' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/></svg> Réservations {% if nb_reservations_en_attente %}<span class="z badge-a">{{ nb_reservations_en_attente }}</span>{% endif %}</a>{% endif %}
+    {% if 'construction' in types and request.user.peut_commercial %}<a href="/dashboard/devis/" class="{% if active_page == 'devis' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg> Demandes de devis {% if nb_devis_en_attente %}<span class="z badge-o">{{ nb_devis_en_attente }}</span>{% endif %}</a>{% endif %}
+    {% if request.user.peut_commercial or request.user.peut_gestion_locative %}<a href="/dashboard/clients/" class="{% if active_page == 'clients' %}active{% endif %}"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0M16 5a3.5 3.5 0 0 1 0 7"/></svg> Clients CRM</a>{% endif %}
+    {% if request.user.peut_gestion_locative %}<a href="/dashboard/reclamations/" class="{% if active_page == 'reclamations' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg> Réclamations {% if nb_reclamations_ouvertes %}<span class="z badge-r">{{ nb_reclamations_ouvertes }}</span>{% endif %}</a>{% endif %}
   </nav>
+  {% if request.user.peut_gestion_locative or request.user.peut_comptable %}
   <div class="side-lab">Finances</div>
   <nav class="snav">
-    <a href="/dashboard/contrats/" class="{% if active_page == 'contrats' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg> Contrats</a>
-    <a href="/dashboard/facturation/" class="{% if active_page == 'facturation' %}active{% endif %}"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Facturation</a>
-    <a href="/dashboard/company/"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Statistiques</a>
+    {% if request.user.peut_gestion_locative %}<a href="/dashboard/contrats/" class="{% if active_page == 'contrats' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg> Contrats</a>{% endif %}
+    {% if request.user.peut_comptable %}<a href="/dashboard/facturation/" class="{% if active_page == 'facturation' %}active{% endif %}"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Facturation</a>
+    <a href="/dashboard/paiements/validation/" class="{% if active_page == 'validation_paiements' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg> Validation paiements {% if nb_a_valider %}<span class="z badge-a">{{ nb_a_valider }}</span>{% endif %}</a>
+    <a href="/dashboard/statistiques/" class="{% if active_page == 'statistiques' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Statistiques</a>{% endif %}
   </nav>
+  {% endif %}
+  {% if request.user.role == 'proprietaire' %}
+  <div class="side-lab">Organisation</div>
+  <nav class="snav">
+    <a href="/dashboard/personnel/" class="{% if active_page == 'personnel' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8"/><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0"/></svg> Personnel</a>
+    <a href="/dashboard/taches/" class="{% if active_page == 'taches_equipe' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Tâches</a>
+    <a href="/dashboard/planning/" class="{% if active_page == 'planning_equipe' %}active{% endif %}"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg> Planning</a>
+    <a href="/dashboard/performances/" class="{% if active_page == 'performances' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Performances</a>
+    <a href="/dashboard/conges/" class="{% if active_page == 'conges' %}active{% endif %}"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg> Congés {% if nb_conges_en_attente %}<span class="z badge-a">{{ nb_conges_en_attente }}</span>{% endif %}</a>
+  </nav>
+  {% endif %}
   <div class="side-lab">Compte</div>
   <nav class="snav">
     <a href="/dashboard/entreprise/profil/" class="{% if active_page == 'profil' %}active{% endif %}"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> Mon profil</a>
     <a href="/dashboard/entreprise/parametres/" class="{% if active_page == 'parametres' %}active{% endif %}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Paramètres</a>
+    <a href="/aide/"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Centre d'aide</a>
   </nav>
   {% if request.user.is_staff %}
   <div class="side-lab">Administration</div>

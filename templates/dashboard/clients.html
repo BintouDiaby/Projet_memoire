@@ -1,20 +1,53 @@
-{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clients CRM — ImmoGérer</title>
+{% load static humanize %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clients — ImmoGérer</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-.pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px}
-.pipe-col{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;min-width:0}
-.pipe-head{font-family:var(--font-display);font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-2);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:6px}
-.pipe-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 12px;margin-bottom:8px;transition:.14s}
-.pipe-card:hover{border-color:#d1d5db}
+/* funnel résumé */
+.funnel{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.fbox{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:15px 16px;box-shadow:var(--sh)}
+.fbox .v{font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--ink);line-height:1}
+.fbox .l{font-size:12px;color:var(--muted);margin-top:5px}
+.fbox.green .v{color:var(--green)}.fbox.blue .v{color:var(--blue)}
+
+/* légende */
+.legend{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 14px;margin-bottom:18px}
+.legend b{color:var(--ink)}
+.legend .arrow{color:var(--muted-2)}
+.legend .st{display:inline-flex;align-items:center;gap:5px;font-weight:600}
+.legend .st i{width:8px;height:8px;border-radius:3px;display:inline-block}
+
+/* pipeline */
+.pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.pipe-col{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px;min-width:0;border-top:3px solid var(--muted-2)}
+.pipe-col.c-amber{border-top-color:var(--accent)}.pipe-col.c-blue{border-top-color:var(--blue)}.pipe-col.c-green{border-top-color:var(--green)}.pipe-col.c-muted{border-top-color:var(--muted-2)}
+.pipe-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.pipe-head .t{font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--ink)}
+.pipe-head .n{font-size:11px;font-weight:800;padding:1px 8px;border-radius:20px;background:#f3f5f1;color:var(--muted)}
+.pipe-col.c-amber .pipe-head .n{background:var(--accent-light);color:var(--accent)}
+.pipe-col.c-blue .pipe-head .n{background:var(--blue-light);color:var(--blue)}
+.pipe-col.c-green .pipe-head .n{background:var(--green-light);color:var(--green-text)}
+
+.pipe-card{background:#fff;border:1px solid var(--border);border-radius:11px;padding:11px 12px;margin-bottom:9px;box-shadow:var(--sh);transition:.14s;display:block}
+.pipe-card:hover{border-color:var(--border-2);box-shadow:0 6px 16px rgba(22,33,27,.08)}
 .pipe-card:last-child{margin-bottom:0}
-.pipe-name{font-weight:600;font-size:13px;color:#111;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pipe-sub{font-size:11.5px;color:var(--muted);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pipe-link{font-size:11px;font-weight:600;color:var(--primary)}
-.pipe-badge{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:20px}
-.col-border-amber{border-top:3px solid var(--accent)}
-.col-border-blue{border-top:3px solid var(--blue)}
-.col-border-green{border-top:3px solid var(--green)}
-@media(max-width:1100px){.pipeline{grid-template-columns:repeat(3,1fr)}}
+.pc-top{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px}
+.pc-name{font-weight:700;font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.src{font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:20px;white-space:nowrap;flex:0 0 auto}
+.src-msg{background:var(--blue-light);color:var(--blue)}.src-visite{background:var(--accent-light);color:var(--accent)}
+.pc-bien{font-size:11.5px;color:var(--muted);line-height:1.35;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+.pc-amt{font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--ink)}
+.pc-time{font-size:10.5px;color:var(--muted-2);white-space:nowrap}
+.pc-foot{display:flex;align-items:center;justify-content:flex-start;gap:8px;padding-top:9px;border-top:1px solid var(--border)}
+.pc-action{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--green-text);background:var(--green-light);padding:4px 9px;border-radius:20px}
+.pc-action.warn{color:var(--accent);background:var(--accent-light)}
+.pc-action.info{color:var(--blue);background:var(--blue-light)}
+.pc-action svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.4}
+.pc-signed{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--green-text);font-weight:600;padding-top:9px;border-top:1px solid var(--border)}
+.pc-signed svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.4}
+
+.col-empty{border:1px dashed var(--border-2);border-radius:11px;padding:16px 12px;text-align:center;font-size:11.5px;color:var(--muted-2);line-height:1.5}
+@media(max-width:1100px){.pipeline{grid-template-columns:repeat(3,1fr)}.funnel{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:860px){.sidebar{display:none}}
 @media(max-width:700px){.pipeline{grid-template-columns:1fr 1fr}}
 </style>
 </head><body>
@@ -22,96 +55,132 @@
 {% with active_page='clients' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
 <div class="main">
 <div class="topbar">
-<button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
-  <div class="tsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="Rechercher un client…"></div>
+  <button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="search" placeholder="Rechercher un client…" oninput="filtrer(this.value)"></div>
   <div class="tspacer"></div>
   <div class="me"><div class="av">{{ company_initial }}</div></div>
 </div>
 <div class="content">
+
 <div class="pg-head">
-  <h1>Clients CRM</h1>
-  <p>Pipeline de suivi : du premier contact au contrat actif</p>
+  <h1>Clients</h1>
+  <p>Suivez chaque contact du premier échange jusqu'à la signature — et sachez qui relancer aujourd'hui.</p>
 </div>
 
+<!-- Funnel -->
+<div class="funnel">
+  <div class="fbox"><div class="v">{{ nb_contacts_total }}</div><div class="l">Contacts suivis</div></div>
+  <div class="fbox blue"><div class="v">{{ nb_en_cours }}</div><div class="l">En cours (à traiter)</div></div>
+  <div class="fbox green"><div class="v">{{ nb_signes_ce_mois }}</div><div class="l">Signés ce mois</div></div>
+  <div class="fbox"><div class="v">{{ taux_conversion }} %</div><div class="l">Taux de conversion</div></div>
+</div>
+
+<!-- Légende -->
+<div class="legend">
+  <span>Parcours :</span>
+  <span class="st"><i style="background:var(--muted-2)"></i> Prospect</span><span class="arrow">→</span>
+  <span class="st"><i style="background:var(--accent)"></i> Visite</span><span class="arrow">→</span>
+  <span class="st"><i style="background:var(--blue)"></i> Négociation</span><span class="arrow">→</span>
+  <span class="st"><i style="background:var(--green)"></i> Signé</span>
+  <span style="margin-left:auto">Chaque étape est déduite automatiquement de vos messages, visites et contrats.</span>
+</div>
+
+<!-- Pipeline -->
 <div class="pipeline">
 
   <!-- Prospects -->
-  <div class="pipe-col">
-    <div class="pipe-head">
-      <span>Prospects</span>
-      <span class="pipe-badge b-muted">{{ clients_prospects|length }}</span>
-    </div>
+  <div class="pipe-col c-muted">
+    <div class="pipe-head"><span class="t">Prospects</span><span class="n">{{ nb_prospects }}</span></div>
     {% for conv in clients_prospects %}
-    <div class="pipe-card">
-      <div class="pipe-name">{{ conv.demandeur.get_full_name|default:conv.demandeur.username }}</div>
-      <div class="pipe-sub">{{ conv.bien.titre|default:"Discussion"|truncatechars:26 }}</div>
-      <a href="/dashboard/client/{{ conv.demandeur_id }}/" class="pipe-link">Voir fiche →</a>
-    </div>
-    {% empty %}<div style="font-size:12px;color:var(--muted-2);text-align:center;padding:14px 0">Aucun prospect</div>{% endfor %}
+    <a class="pipe-card" data-name="{{ conv.demandeur.get_full_name|default:conv.demandeur.username|lower }}" href="/dashboard/client/{{ conv.demandeur_id }}/">
+      <div class="pc-top"><span class="pc-name">{{ conv.demandeur.get_full_name|default:conv.demandeur.username }}</span><span class="src src-msg">Message</span></div>
+      <div class="pc-bien">{{ conv.bien.titre|default:"Discussion générale" }}</div>
+      <div class="pc-meta">
+        <span class="pc-amt">{% if conv.bien.prix_mensuel %}{{ conv.bien.prix_mensuel|floatformat:0|intcomma }} F/mois{% elif conv.bien.prix_vente %}{{ conv.bien.prix_vente|floatformat:0|intcomma }} F{% else %}—{% endif %}</span>
+        <span class="pc-time">{{ conv.mis_a_jour_le|timesince }}</span>
+      </div>
+      <div class="pc-foot"><span class="pc-action">Relancer</span></div>
+    </a>
+    {% empty %}<div class="col-empty">Aucun prospect pour l'instant.</div>{% endfor %}
   </div>
 
   <!-- Visites programmées -->
-  <div class="pipe-col col-border-amber">
-    <div class="pipe-head" style="color:var(--accent-dark)">
-      <span>Visites prog.</span>
-      <span class="pipe-badge b-amber">{{ clients_visites|length }}</span>
-    </div>
+  <div class="pipe-col c-amber">
+    <div class="pipe-head"><span class="t">Visite programmée</span><span class="n">{{ nb_visites }}</span></div>
     {% for v in clients_visites %}
-    <div class="pipe-card">
-      <div class="pipe-name">{{ v.locataire.get_full_name|default:v.locataire.username }}</div>
-      <div class="pipe-sub">{{ v.bien.titre|truncatechars:22 }} · {{ v.date_visite|date:"d/m" }}</div>
-      <a href="/dashboard/client/{{ v.locataire_id }}/" class="pipe-link">Voir fiche →</a>
-    </div>
-    {% empty %}<div style="font-size:12px;color:var(--muted-2);text-align:center;padding:14px 0">Aucune visite</div>{% endfor %}
+    <a class="pipe-card" data-name="{{ v.locataire.get_full_name|default:v.locataire.username|lower }}" href="/dashboard/client/{{ v.locataire_id }}/">
+      <div class="pc-top"><span class="pc-name">{{ v.locataire.get_full_name|default:v.locataire.username }}</span><span class="src src-visite">Visite</span></div>
+      <div class="pc-bien">{{ v.bien.titre }}</div>
+      <div class="pc-meta">
+        <span class="pc-amt">{% if v.bien.prix_mensuel %}{{ v.bien.prix_mensuel|floatformat:0|intcomma }} F/mois{% elif v.bien.prix_vente %}{{ v.bien.prix_vente|floatformat:0|intcomma }} F{% else %}—{% endif %}</span>
+        <span class="pc-time">{{ v.date_visite|date:"d/m à H:i" }}</span>
+      </div>
+      <div class="pc-foot"><span class="pc-action warn"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> À confirmer</span></div>
+    </a>
+    {% empty %}<div class="col-empty">Les visites arrivent quand un prospect demande un rendez-vous.</div>{% endfor %}
   </div>
 
   <!-- Négociation -->
-  <div class="pipe-col col-border-blue">
-    <div class="pipe-head" style="color:var(--blue)">
-      <span>Négociation</span>
-      <span class="pipe-badge b-blue">{{ clients_negociation|length }}</span>
-    </div>
+  <div class="pipe-col c-blue">
+    <div class="pipe-head"><span class="t">Négociation</span><span class="n">{{ nb_negociation }}</span></div>
     {% for v in clients_negociation %}
-    <div class="pipe-card">
-      <div class="pipe-name">{{ v.locataire.get_full_name|default:v.locataire.username }}</div>
-      <div class="pipe-sub">{{ v.bien.titre|truncatechars:26 }}</div>
-      <a href="/dashboard/client/{{ v.locataire_id }}/" class="pipe-link">Voir fiche →</a>
-    </div>
-    {% empty %}<div style="font-size:12px;color:var(--muted-2);text-align:center;padding:14px 0">Aucune négo.</div>{% endfor %}
+    <a class="pipe-card" data-name="{{ v.locataire.get_full_name|default:v.locataire.username|lower }}" href="/dashboard/client/{{ v.locataire_id }}/">
+      <div class="pc-top"><span class="pc-name">{{ v.locataire.get_full_name|default:v.locataire.username }}</span><span class="src src-visite">Visite faite</span></div>
+      <div class="pc-bien">{{ v.bien.titre }}</div>
+      <div class="pc-meta">
+        <span class="pc-amt">{% if v.bien.prix_mensuel %}{{ v.bien.prix_mensuel|floatformat:0|intcomma }} F/mois{% elif v.bien.prix_vente %}{{ v.bien.prix_vente|floatformat:0|intcomma }} F{% else %}—{% endif %}</span>
+        <span class="pc-time">visite le {{ v.date_visite|date:"d/m" }}</span>
+      </div>
+      <div class="pc-foot"><span class="pc-action info">Relancer pour signature</span></div>
+    </a>
+    {% empty %}<div class="col-empty">Aucune négociation en cours.</div>{% endfor %}
   </div>
 
-  <!-- Contrats actifs -->
-  <div class="pipe-col col-border-green">
-    <div class="pipe-head" style="color:var(--green)">
-      <span>Contrats actifs</span>
-      <span class="pipe-badge b-green">{{ clients_contrats|length }}</span>
-    </div>
+  <!-- Signés -->
+  <div class="pipe-col c-green">
+    <div class="pipe-head"><span class="t">Signé</span><span class="n">{{ nb_contrats }}</span></div>
     {% for c in clients_contrats %}
-    <div class="pipe-card">
-      <div class="pipe-name">{{ c.locataire.get_full_name|default:c.locataire.username }}</div>
-      <div class="pipe-sub">{{ c.bien.titre|truncatechars:26 }}</div>
-      <a href="/dashboard/client/{{ c.locataire_id }}/" class="pipe-link">Voir fiche →</a>
-    </div>
-    {% empty %}<div style="font-size:12px;color:var(--muted-2);text-align:center;padding:14px 0">Aucun contrat actif</div>{% endfor %}
+    <a class="pipe-card" data-name="{{ c.locataire.get_full_name|default:c.locataire.username|lower }}" href="/dashboard/client/{{ c.locataire_id }}/">
+      <div class="pc-top"><span class="pc-name">{{ c.locataire.get_full_name|default:c.locataire.username }}</span><span class="src src-msg">Contrat</span></div>
+      <div class="pc-bien">{{ c.bien.titre }}</div>
+      <div class="pc-meta">
+        <span class="pc-amt">{{ c.prix_mensuel|floatformat:0|intcomma }} F/mois</span>
+        <span class="pc-time">depuis le {{ c.date_creation|date:"d M" }}</span>
+      </div>
+      <div class="pc-signed"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Contrat actif · fiche client</div>
+    </a>
+    {% empty %}<div class="col-empty">Aucun contrat signé pour l'instant.</div>{% endfor %}
   </div>
 
   <!-- Anciens clients -->
-  <div class="pipe-col">
-    <div class="pipe-head">
-      <span>Anciens clients</span>
-      <span class="pipe-badge b-muted">{{ clients_anciens|length }}</span>
-    </div>
+  <div class="pipe-col c-muted">
+    <div class="pipe-head"><span class="t">Anciens clients</span><span class="n">{{ nb_anciens }}</span></div>
     {% for c in clients_anciens %}
-    <div class="pipe-card">
-      <div class="pipe-name">{{ c.locataire.get_full_name|default:c.locataire.username }}</div>
-      <div class="pipe-sub">{{ c.bien.titre|truncatechars:26 }}</div>
-      <a href="/dashboard/client/{{ c.locataire_id }}/" class="pipe-link">Voir fiche →</a>
-    </div>
-    {% empty %}<div style="font-size:12px;color:var(--muted-2);text-align:center;padding:14px 0">Aucun ancien</div>{% endfor %}
+    <a class="pipe-card" data-name="{{ c.locataire.get_full_name|default:c.locataire.username|lower }}" href="/dashboard/client/{{ c.locataire_id }}/">
+      <div class="pc-top"><span class="pc-name">{{ c.locataire.get_full_name|default:c.locataire.username }}</span></div>
+      <div class="pc-bien">{{ c.bien.titre }}</div>
+      <div class="pc-meta">
+        <span class="pc-amt">—</span>
+        <span class="pc-time">{{ c.get_statut_display }}</span>
+      </div>
+      <div class="pc-foot"><span class="pc-action" style="color:var(--muted);background:#f3f5f1">Contrat terminé</span></div>
+    </a>
+    {% empty %}<div class="col-empty">Aucun ancien client.</div>{% endfor %}
   </div>
 
 </div>
-</div>
-</div>
-</div>
+
+</div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .app -->
+
+<script>
+  function filtrer(q){
+    q = (q||'').toLowerCase().trim();
+    document.querySelectorAll('.pipe-card').forEach(function(c){
+      var n = c.getAttribute('data-name') || '';
+      c.style.display = (!q || n.indexOf(q) !== -1) ? '' : 'none';
+    });
+  }
+</script>
 </body></html>

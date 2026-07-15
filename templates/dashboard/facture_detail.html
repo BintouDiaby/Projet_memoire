@@ -20,6 +20,7 @@
   .s-warn   { background: #FFFBEB; color: #92400E; }
   .s-danger { background: #FFF5F5; color: #B91C1C; }
   .s-muted  { background: #F4F6F9; color: #6B7280; }
+  .s-info   { background: #E6F1FB; color: #185FA5; }
 
   .latenote { display: flex; align-items: center; gap: 9px; background: #FFFBEB; border-radius: 10px; padding: 10px 13px; margin-bottom: 18px; font-size: 12.5px; color: #7a4a06; font-weight: 500; }
   .latenote svg { width: 15px; height: 15px; stroke: #B45309; fill: none; stroke-width: 2; flex: 0 0 15px; }
@@ -65,6 +66,25 @@
 <div class="me-page">
   <div class="me-wrap">
 
+    {% if request.GET.paiement_declare %}
+    <div class="me-card" style="text-align:center;border-color:#86EFAC;background:#F0FDF4">
+      <div style="width:48px;height:48px;border-radius:50%;background:#DCFCE7;display:grid;place-items:center;margin:0 auto 12px">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#15803D" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+      <h3 class="me-card-title" style="justify-content:center;color:#15803D">Paiement déclaré avec succès</h3>
+      <p class="desc" style="text-align:center">Merci {{ request.user.first_name|default:request.user.username }}. Votre paiement a été transmis à {{ contrat.proprietaire.company.name|default:contrat.proprietaire.get_full_name }} pour confirmation.</p>
+      <table class="amt-table" style="max-width:320px;margin:0 auto 16px">
+        <tr><td>Montant</td><td>{{ facture.montant_total|floatformat:0|intcomma }} FCFA</td></tr>
+        <tr><td>Référence</td><td>{{ request.GET.paiement_declare }}</td></tr>
+        <tr><td>Date</td><td>{{ facture.date_declaration_paiement|date:"d F Y" }}</td></tr>
+      </table>
+      <div class="ct-actions" style="justify-content:center">
+        <a class="ig-btn-full ghost" href="/dashboard/facturation/{{ facture.id }}/pdf/">Télécharger le reçu</a>
+        <a class="ig-btn-full ghost" href="/contrats/{{ contrat.id }}/suivi/">Retour au contrat</a>
+      </div>
+    </div>
+    {% endif %}
+
     {% if messages %}
     {% for message in messages %}<div style="background:#F0FDF4;border:1px solid #86EFAC;color:#15803D;border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;margin-bottom:18px">{{ message }}</div>{% endfor %}
     {% endif %}
@@ -76,10 +96,20 @@
           <div class="ct-titre">{{ contrat.bien.titre }}</div>
           <div class="ct-addr">{{ contrat.bien.adresse }}{% if contrat.bien.commune %}, {{ contrat.bien.commune }}{% endif %}{% if contrat.bien.ville %}, {{ contrat.bien.ville }}{% endif %}</div>
         </div>
-        <span class="badge-statut {% if est_retard %}s-danger{% elif facture.statut == 'payee' %}s-ok{% elif facture.statut == 'annulee' %}s-muted{% else %}s-warn{% endif %}">
-          {% if est_retard %}En retard{% else %}{{ facture.get_statut_display }}{% endif %}
-        </span>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          {% if facture.est_archive %}<span class="badge-statut s-muted">Archivée</span>{% endif %}
+          <span class="badge-statut {% if est_retard %}s-danger{% elif facture.statut == 'payee' %}s-ok{% elif facture.statut == 'annulee' %}s-muted{% elif facture.statut == 'en_validation' %}s-info{% else %}s-warn{% endif %}">
+            {% if est_retard %}En retard{% else %}{{ facture.get_statut_display }}{% endif %}
+          </span>
+        </div>
       </div>
+
+      {% if facture.fne_certifiee %}
+      <div class="latenote" style="background:#E5F3EA;color:#155A38;display:flex;align-items:center;gap:8px">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+        Facture Normalisée Électronique certifiée — n° {{ facture.fne_reference }}
+      </div>
+      {% endif %}
 
       {% if jours_retard_paiement %}
       <div class="latenote">
@@ -115,6 +145,7 @@
         {% if facture.montant_charges %}<tr><td>Charges</td><td>{{ facture.montant_charges|floatformat:0|intcomma }} FCFA</td></tr>{% endif %}
         {% if facture.montant_autres %}<tr><td>Autres frais</td><td>{{ facture.montant_autres|floatformat:0|intcomma }} FCFA</td></tr>{% endif %}
         {% if facture.montant_taxe %}<tr><td>Taxe</td><td>{{ facture.montant_taxe|floatformat:0|intcomma }} FCFA</td></tr>{% endif %}
+        {% if paiement.montant_penalites %}<tr style="color:#B4441F"><td>Frais de retard</td><td>{{ paiement.montant_penalites|floatformat:0|intcomma }} FCFA</td></tr>{% endif %}
         <tr class="total"><td>Total</td><td>{{ facture.montant_total|floatformat:0|intcomma }} FCFA</td></tr>
       </table>
 
@@ -131,18 +162,289 @@
           <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2"><path d="M6 2h9l3 3v17H6z"/><path d="M9 12h6M9 16h6"/></svg>
           Voir le contrat
         </a>
-        {% if est_proprietaire and facture.statut != 'payee' %}
+        {% if est_proprietaire and facture.statut != 'payee' and facture.statut != 'en_validation' %}
         <form method="post" style="margin:0">
           {% csrf_token %}
           <input type="hidden" name="action" value="marquer_payee">
           <button type="submit" class="ig-btn-full green">Marquer payée</button>
         </form>
         {% endif %}
+        {% if est_proprietaire and facture.statut == 'payee' or est_proprietaire and facture.statut == 'annulee' %}
+        <form method="post" action="{% url 'facture_archiver' facture_id=facture.id %}" style="margin:0">
+          {% csrf_token %}
+          <button type="submit" class="ig-btn-full ghost">{% if facture.est_archive %}Désarchiver{% else %}Archiver{% endif %}</button>
+        </form>
+        {% endif %}
         <a class="ig-btn-full ghost" href="/dashboard/facturation/">← Retour à mes paiements</a>
       </div>
     </div>
 
-    {% if est_locataire and facture.statut != 'payee' and facture.statut != 'annulee' %}
+    {% if est_proprietaire and etape_recouvrement %}
+    <div class="me-card" style="padding:14px 18px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#9aa0a6">Échelle de recouvrement</span>
+      <span style="font-size:16px">{{ etape_recouvrement.1 }}</span>
+      <span style="font-size:13px;font-weight:600;color:#111">{{ etape_recouvrement.2 }}</span>
+    </div>
+    {% endif %}
+
+    {% if est_proprietaire and mise_en_demeure_recommandee %}
+    <div class="me-card" style="border-color:#FCA5A5;background:#FEF2F2">
+      <h3 class="me-card-title">
+        <svg viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        Dossier en situation d'impayé
+      </h3>
+      <p class="desc">
+        Ce paiement est en retard depuis {{ jours_retard }} jour{{ jours_retard|pluralize }}. Conformément aux clauses du contrat de location, vous pouvez envoyer une mise en demeure afin d'inviter le locataire à régulariser sa situation avant toute procédure éventuelle.
+      </p>
+      <button type="button" class="ig-btn-full warn" onclick="document.getElementById('miseForm').style.display='block'; this.style.display='none'">Envoyer une mise en demeure</button>
+      <form id="miseForm" method="post" action="{% url 'contrats_ui:envoyer_mise_en_demeure' paiement_id=paiement.id %}" style="display:none;margin-top:14px">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+        <div class="fld"><label>Objet</label><input type="text" name="objet" value="Mise en demeure pour non-paiement" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font:inherit;font-size:13.5px"></div>
+        <div class="fld"><label>Date limite de régularisation</label><input type="date" name="date_limite_regularisation" required min="{% now 'Y-m-d' %}" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font:inherit;font-size:13.5px"></div>
+        <div class="fld">
+          <label>Mode d'envoi</label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#374151;margin-bottom:6px;font-weight:400"><input type="checkbox" name="envoi_application" checked style="width:auto"> Application</label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#374151;margin-bottom:6px;font-weight:400"><input type="checkbox" name="envoi_email" style="width:auto"> Email</label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#374151;font-weight:400"><input type="checkbox" name="envoi_pdf" style="width:auto"> PDF</label>
+        </div>
+        <div class="fld"><label>Message complémentaire (optionnel)</label><textarea name="message_complementaire" rows="2" placeholder="Ex : Merci de nous contacter au plus vite pour convenir d'un arrangement."></textarea></div>
+        <button type="submit" class="ig-btn-full warn">Envoyer la mise en demeure</button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if mise_en_demeure %}
+    <div class="me-card" style="border-color:{% if mise_en_demeure.statut == 'regularisee' %}#86EFAC{% elif mise_en_demeure.statut == 'expiree' %}#FCA5A5{% else %}#93C5FD{% endif %};background:{% if mise_en_demeure.statut == 'regularisee' %}#F0FDF4{% elif mise_en_demeure.statut == 'expiree' %}#FEF2F2{% else %}#F0F6FF{% endif %}">
+      <h3 class="me-card-title">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+        Mise en demeure — {{ mise_en_demeure.get_statut_display }}
+      </h3>
+      {% if est_locataire %}
+      <div class="letter" style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;font-size:13px;color:#374151;white-space:pre-line;line-height:1.7;margin-bottom:14px">{{ mise_en_demeure.texte_lettre }}</div>
+      {% else %}
+      <p class="desc">
+        Envoyée le {{ mise_en_demeure.date_creation|date:"d F Y" }} — délai de régularisation jusqu'au {{ mise_en_demeure.date_limite_regularisation|date:"d F Y" }}.
+      </p>
+      {% endif %}
+      <a class="ig-btn-full ghost" href="{% url 'contrats_ui:mise_en_demeure_pdf' mise_id=mise_en_demeure.id %}" style="margin-bottom:10px;display:inline-flex">Télécharger en PDF</a>
+
+      {% if est_proprietaire and mise_en_demeure.statut == 'expiree' %}
+      <p class="desc" style="color:#B4441F;font-weight:600;margin-top:10px">
+        Le délai accordé au locataire est expiré. Vous pouvez désormais :
+      </p>
+      <div class="ct-actions">
+        <button type="button" class="ig-btn-full ghost" onclick="document.getElementById('delaiForm').style.display='block'">Accorder un délai supplémentaire</button>
+        <form method="post" action="{% url 'contrats_ui:gerer_mise_en_demeure' mise_id=mise_en_demeure.id %}" style="margin:0">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="cloturer">
+          <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+          <button type="submit" class="ig-btn-full green">Clôturer le dossier</button>
+        </form>
+        <form method="post" action="{% url 'contrats_ui:gerer_mise_en_demeure' mise_id=mise_en_demeure.id %}" style="margin:0">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="procedure">
+          <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+          <button type="submit" class="ig-btn-full warn">Engager une procédure contentieuse</button>
+        </form>
+      </div>
+      <form id="delaiForm" method="post" action="{% url 'contrats_ui:gerer_mise_en_demeure' mise_id=mise_en_demeure.id %}" style="display:none;margin-top:14px">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delai_supplementaire">
+        <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+        <div class="fld"><label>Nouvelle date limite</label><input type="date" name="nouvelle_date_limite" required min="{% now 'Y-m-d' %}" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font:inherit;font-size:13.5px"></div>
+        <button type="submit" class="ig-btn-full ghost">Accorder ce délai</button>
+      </form>
+      {% endif %}
+
+      {% if est_proprietaire and mise_en_demeure.statut == 'procedure' %}
+      <a class="ig-btn-full warn" href="{% url 'contrats_ui:dossier_juridique' contrat_id=contrat.id %}">Préparer le dossier juridique</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if est_proprietaire and facture.statut == 'en_validation' %}
+    <div class="me-card" style="border-color:#93C5FD;background:#F0F6FF">
+      <h3 class="me-card-title">
+        <svg viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>
+        Paiement à valider
+      </h3>
+      <p class="desc">
+        {{ facture.contrat.locataire.get_full_name|default:facture.contrat.locataire.username }} déclare avoir réglé cette facture
+        {% if facture.mode_paiement %}via {{ facture.get_mode_paiement_display }}{% endif %}
+        {% if facture.numero_paiement_declare %}(n° {{ facture.numero_paiement_declare }}){% endif %}
+        — réf. {{ facture.reference_transaction }}, le {{ facture.date_declaration_paiement|date:"d F Y à H:i" }}.
+        Vérifiez la réception réelle du paiement avant de confirmer.
+      </p>
+      <div class="ct-actions">
+        <form method="post" action="{% url 'confirmer_reception_paiement' %}" style="margin:0">
+          {% csrf_token %}
+          <input type="hidden" name="facture_id" value="{{ facture.id }}">
+          <input type="hidden" name="action" value="confirmer">
+          <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+          <button type="submit" class="ig-btn-full green">Confirmer la réception</button>
+        </form>
+        <button type="button" class="ig-btn-full warn" onclick="document.getElementById('rejetForm').style.display='block'">Signaler un problème</button>
+      </div>
+      <form id="rejetForm" method="post" action="{% url 'confirmer_reception_paiement' %}" style="display:none;margin-top:14px">
+        {% csrf_token %}
+        <input type="hidden" name="facture_id" value="{{ facture.id }}">
+        <input type="hidden" name="action" value="rejeter">
+        <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+        <div class="fld">
+          <label>Motif (le locataire en sera informé)</label>
+          <textarea name="motif" rows="2" placeholder="Ex : Paiement non reçu sur le compte Wave de l'entreprise."></textarea>
+        </div>
+        <button type="submit" class="ig-btn-full warn">Envoyer et repasser en attente</button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if est_proprietaire and rdv_paiement and rdv_paiement.statut == 'en_attente' %}
+    <div class="me-card" style="border-color:#93C5FD;background:#F0F6FF">
+      <h3 class="me-card-title">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Demande de rendez-vous de paiement (espèces)
+      </h3>
+      <p class="desc">
+        {{ facture.contrat.locataire.get_full_name|default:facture.contrat.locataire.username }} souhaite régler cette facture en espèces à l'agence, le
+        <strong>{{ rdv_paiement.date_demandee|date:"d F Y à H:i" }}</strong>.
+        {% if rdv_paiement.message %}« {{ rdv_paiement.message }} »{% endif %}
+      </p>
+      <div class="ct-actions">
+        <form method="post" action="{% url 'repondre_rdv_paiement' %}" style="margin:0">
+          {% csrf_token %}
+          <input type="hidden" name="rdv_id" value="{{ rdv_paiement.id }}">
+          <input type="hidden" name="action" value="accepter">
+          <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+          <button type="submit" class="ig-btn-full green">Accepter ce créneau</button>
+        </form>
+        <button type="button" class="ig-btn-full warn" onclick="document.getElementById('rdvProposerForm').style.display='block'">Proposer un autre créneau</button>
+        <button type="button" class="ig-btn-full ghost" onclick="document.getElementById('rdvRefuserForm').style.display='block'">Refuser</button>
+      </div>
+      <form id="rdvProposerForm" method="post" action="{% url 'repondre_rdv_paiement' %}" style="display:none;margin-top:14px">
+        {% csrf_token %}
+        <input type="hidden" name="rdv_id" value="{{ rdv_paiement.id }}">
+        <input type="hidden" name="action" value="proposer">
+        <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+        <div class="fld"><label>Nouvelle date</label><input type="date" name="nouvelle_date" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font:inherit;font-size:13.5px"></div>
+        <div class="fld"><label>Nouvelle heure</label><input type="time" name="nouvelle_heure" value="10:00" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font:inherit;font-size:13.5px"></div>
+        <button type="submit" class="ig-btn-full warn">Envoyer la proposition</button>
+      </form>
+      <form id="rdvRefuserForm" method="post" action="{% url 'repondre_rdv_paiement' %}" style="display:none;margin-top:14px">
+        {% csrf_token %}
+        <input type="hidden" name="rdv_id" value="{{ rdv_paiement.id }}">
+        <input type="hidden" name="action" value="refuser">
+        <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+        <div class="fld"><label>Motif (le locataire en sera informé)</label><textarea name="motif" rows="2" placeholder="Ex : Créneau indisponible, merci de nous contacter."></textarea></div>
+        <button type="submit" class="ig-btn-full warn">Envoyer le refus</button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if est_proprietaire and rdv_paiement and rdv_paiement.statut == 'contre_proposition' %}
+    <div class="me-card" style="border-color:#FCD34D;background:#FFFBEB">
+      <h3 class="me-card-title">Créneau proposé — en attente du locataire</h3>
+      <p class="desc">Vous avez proposé le <strong>{{ rdv_paiement.date_proposee|date:"d F Y à H:i" }}</strong> pour le règlement en espèces de cette facture. Le locataire doit encore l'accepter.</p>
+    </div>
+    {% endif %}
+
+    {% if est_proprietaire and rdv_paiement and rdv_paiement.statut == 'confirme' %}
+    <div class="me-card" style="border-color:#86EFAC;background:#F0FDF4">
+      <h3 class="me-card-title">Rendez-vous de paiement confirmé</h3>
+      {% if rdv_jour_arrive %}
+      <p class="desc">Rendez-vous prévu le <strong>{{ rdv_paiement.date_confirmee|date:"d F Y à H:i" }}</strong> pour le règlement en espèces. Ne cliquez ci-dessous qu'une fois les fonds effectivement remis en main propre.</p>
+      <form method="post" action="{% url 'confirmer_paiement_espece' %}" style="margin:0" onsubmit="return confirm('Confirmez-vous avoir réellement reçu les espèces de la part du locataire ?');">
+        {% csrf_token %}
+        <input type="hidden" name="rdv_id" value="{{ rdv_paiement.id }}">
+        <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+        <button type="submit" class="ig-btn-full green">Confirmer la réception des espèces</button>
+      </form>
+      {% else %}
+      <p class="desc">
+        Rendez-vous prévu le <strong>{{ rdv_paiement.date_confirmee|date:"d F Y à H:i" }}</strong> pour le règlement en espèces.
+        Vous pourrez confirmer la réception des fonds à partir de cette date — pas avant, pour éviter toute confirmation par erreur.
+      </p>
+      <button type="button" class="ig-btn-full ghost" disabled style="opacity:.5;cursor:not-allowed">Confirmer la réception des espèces (disponible le {{ rdv_paiement.date_confirmee|date:"d/m" }})</button>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if est_locataire and facture.statut == 'en_validation' %}
+    <div class="me-card" style="border-color:#93C5FD;background:#F0F6FF;text-align:center">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#185FA5" stroke-width="2" style="margin-bottom:8px"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>
+      <h3 class="me-card-title" style="justify-content:center">Paiement en attente de validation</h3>
+      <p class="desc">Votre paiement déclaré (réf. {{ facture.reference_transaction }}) a été transmis au propriétaire. Vous serez notifié(e) dès qu'il aura confirmé la réception.</p>
+    </div>
+    {% endif %}
+
+    {% if est_locataire and rdv_paiement and rdv_paiement.statut == 'en_attente' %}
+    <div class="me-card" style="border-color:#93C5FD;background:#F0F6FF">
+      <h3 class="me-card-title">Demande de rendez-vous envoyée</h3>
+      <p class="desc">Votre demande de rendez-vous pour régler cette facture en espèces le <strong>{{ rdv_paiement.date_demandee|date:"d F Y à H:i" }}</strong> a été transmise à l'entreprise. Vous serez notifié(e) de sa réponse.</p>
+    </div>
+    {% endif %}
+
+    {% if est_locataire and rdv_paiement and rdv_paiement.statut == 'contre_proposition' %}
+    <div class="me-card" style="border-color:#FCD34D;background:#FFFBEB">
+      <h3 class="me-card-title">Autre créneau proposé par l'entreprise</h3>
+      <p class="desc">L'entreprise propose le <strong>{{ rdv_paiement.date_proposee|date:"d F Y à H:i" }}</strong> pour régler cette facture en espèces.</p>
+      <div class="ct-actions">
+        <form method="post" action="{% url 'repondre_contre_proposition_rdv' %}" style="margin:0">
+          {% csrf_token %}
+          <input type="hidden" name="rdv_id" value="{{ rdv_paiement.id }}">
+          <input type="hidden" name="action" value="accepter">
+          <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+          <button type="submit" class="ig-btn-full green">Accepter ce créneau</button>
+        </form>
+        <form method="post" action="{% url 'repondre_contre_proposition_rdv' %}" style="margin:0">
+          {% csrf_token %}
+          <input type="hidden" name="rdv_id" value="{{ rdv_paiement.id }}">
+          <input type="hidden" name="action" value="refuser">
+          <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+          <button type="submit" class="ig-btn-full ghost">Refuser</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if est_locataire and rdv_paiement and rdv_paiement.statut == 'confirme' %}
+    <div class="me-card" style="border-color:#86EFAC;background:#F0FDF4">
+      <h3 class="me-card-title">Rendez-vous de paiement confirmé</h3>
+      <p class="desc">
+        Présentez-vous le <strong>{{ rdv_paiement.date_confirmee|date:"d F Y à H:i" }}</strong>
+        {% if facture.contrat.proprietaire.company.adresse %}à {{ facture.contrat.proprietaire.company.adresse }}{% if facture.contrat.proprietaire.company.ville %}, {{ facture.contrat.proprietaire.company.ville }}{% endif %}{% else %}à l'agence{% endif %}
+        pour régler cette facture en espèces. La quittance sera disponible dès que l'entreprise aura confirmé la réception.
+      </p>
+    </div>
+    {% endif %}
+
+    {% if est_locataire and rdv_paiement and rdv_paiement.statut == 'refuse' %}
+    <div class="me-card" style="border-color:#FCA5A5;background:#FEF2F2">
+      <h3 class="me-card-title">Demande de rendez-vous refusée</h3>
+      <p class="desc">{% if rdv_paiement.motif_refus %}Motif : {{ rdv_paiement.motif_refus }}{% else %}L'entreprise a refusé cette demande.{% endif %} Vous pouvez faire une nouvelle demande ci-dessous.</p>
+    </div>
+    {% endif %}
+
+    {% if est_locataire and facture.statut != 'payee' and facture.statut != 'annulee' and facture.statut != 'en_validation' %}
+    {% if not rdv_paiement or rdv_paiement.statut == 'refuse' %}
+    <div class="me-card">
+      <h3 class="me-card-title">Payer en espèces (rendez-vous en agence)</h3>
+      <p class="desc">Proposez un créneau pour régler cette facture en espèces à l'agence. L'entreprise pourra accepter, proposer un autre horaire, ou refuser.</p>
+      <form method="post" action="{% url 'demander_rdv_paiement' %}">
+        {% csrf_token %}
+        <input type="hidden" name="facture_id" value="{{ facture.id }}">
+        <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
+        <div class="fld"><label>Date souhaitée</label><input type="date" name="date_souhaitee" min="{% now 'Y-m-d' %}" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font:inherit;font-size:13.5px"></div>
+        <div class="fld"><label>Heure souhaitée</label><input type="time" name="heure_souhaitee" value="10:00" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font:inherit;font-size:13.5px"></div>
+        <div class="fld"><label>Message (facultatif)</label><textarea name="message" rows="2" placeholder="Ex : Je peux venir en fin de matinée."></textarea></div>
+        <button type="submit" class="ig-btn-full ghost">Demander un rendez-vous</button>
+      </form>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {% if est_locataire and facture.statut != 'payee' and facture.statut != 'annulee' and facture.statut != 'en_validation' %}
     <div class="me-card">
       <h3 class="me-card-title">Payer cette facture</h3>
       <form method="post" action="/dashboard/facturation/signaler-paiement/">
@@ -155,8 +457,12 @@
             {% for m in moyens_paiement %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
           </select>
         </div>
-        <p style="font-size:12.5px;color:#6B7280;margin-bottom:14px">Effectuez le paiement via le moyen choisi, puis confirmez — la facture sera marquée payée immédiatement et le propriétaire notifié.</p>
-        <button type="submit" class="ig-btn-full primary">Confirmer le paiement</button>
+        <div class="fld">
+          <label>Numéro utilisé pour le paiement (mobile money)</label>
+          <input type="text" name="numero_paiement" placeholder="Ex : 07 XX XX XX XX">
+        </div>
+        <p style="font-size:12.5px;color:#6B7280;margin-bottom:14px">Effectuez le paiement via le moyen choisi, puis déclarez-le ci-dessous — le propriétaire devra confirmer la réception pour finaliser.</p>
+        <button type="submit" class="ig-btn-full primary">Déclarer le paiement</button>
       </form>
     </div>
     {% endif %}

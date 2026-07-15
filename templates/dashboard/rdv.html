@@ -14,10 +14,38 @@
 <div class="content">
 <div class="pg-head">
   <h1>Rendez-vous</h1>
-  <p>Visites de biens et rendez-vous construction à venir</p>
+  <p>Visites de biens, rendez-vous de paiement et rendez-vous construction à venir</p>
 </div>
 
-{% if visites or rdv_construction %}
+{% if visites or rdv_construction or rdv_paiements %}
+
+{% if rdv_paiements %}
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><path d="M2 10h20M6 15h2M11 15h5M2 6h20v12H2z"/></svg> Rendez-vous de paiement (espèces)</h2>
+    <span class="badge b-amber">{{ rdv_paiements|length }} rendez-vous</span>
+  </div>
+  {% for r in rdv_paiements %}
+  <div class="row">
+    <div style="width:46px;height:46px;border-radius:11px;background:{% if r.statut == 'en_attente' %}var(--amber-bg){% elif r.statut == 'contre_proposition' %}var(--blue-light){% else %}var(--green-light){% endif %};display:grid;place-items:center;flex:0 0 46px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{% if r.statut == 'en_attente' %}var(--amber-tx){% elif r.statut == 'contre_proposition' %}var(--primary){% else %}var(--green){% endif %}" stroke-width="1.8"><path d="M2 10h20M6 15h2M11 15h5M2 6h20v12H2z"/></svg>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:13.5px;color:#111">{{ r.locataire.get_full_name|default:r.locataire.username }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ r.facture.contrat.bien.titre|truncatechars:40 }} — {{ r.facture.numero_facture }}</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-weight:700;font-size:13px;color:#111">{{ r.date_confirmee|default:r.date_demandee|date:"d/m/Y" }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ r.date_confirmee|default:r.date_demandee|date:"H:i" }}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-shrink:0;align-items:center">
+      <span class="badge {% if r.statut == 'en_attente' %}b-amber{% elif r.statut == 'contre_proposition' %}b-blue{% else %}b-green{% endif %}">{{ r.get_statut_display }}</span>
+      <a href="/dashboard/facturation/{{ r.facture.id }}/" style="background:var(--blue-light);color:var(--primary);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;flex-shrink:0">Voir la facture</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 
 {% if visites %}
 <div class="card">
@@ -75,7 +103,7 @@
 {% endif %}
 
 {% else %}
-<div class="card"><div class="empty"><b>Aucun rendez-vous prévu</b>Les visites demandées et les rendez-vous construction apparaîtront ici.</div></div>
+<div class="card"><div class="empty"><b>Aucun rendez-vous prévu</b>Les visites demandées, les rendez-vous de paiement en espèces et les rendez-vous construction apparaîtront ici.</div></div>
 {% endif %}
 
 </div><!-- .content -->

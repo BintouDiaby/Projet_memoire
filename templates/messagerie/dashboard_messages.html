@@ -68,7 +68,14 @@
         <span class="badge-count">{{ nb_non_lus_total }} non lu{{ nb_non_lus_total|pluralize }}</span>
         {% endif %}
       </h1>
-      <a href="/dashboard/" style="font-size:13px;font-weight:600;color:#185FA5;text-decoration:none">← Tableau de bord</a>
+      <div style="display:flex;gap:14px;align-items:center">
+        {% if nb_archivees %}
+        <a href="{% if voir_archivees %}/chat/dashboard/{% else %}/chat/dashboard/?archives=1{% endif %}" style="font-size:12.5px;font-weight:600;color:#6B7280;text-decoration:underline">
+          {% if voir_archivees %}← Conversations actives{% else %}Voir les archivées ({{ nb_archivees }}){% endif %}
+        </a>
+        {% endif %}
+        <a href="/dashboard/" style="font-size:13px;font-weight:600;color:#185FA5;text-decoration:none">← Tableau de bord</a>
+      </div>
     </div>
 
     <div class="msg-grid">
@@ -93,7 +100,7 @@
               </div>
               <div class="conv-sub">
                 {{ item.conv.bien.titre|truncatechars:30 }}
-                {% if item.dernier %} · {{ item.dernier.contenu|truncatechars:28 }}{% endif %}
+                {% if item.dernier %} · {% if item.dernier.est_supprime %}<i>Message supprimé</i>{% else %}{{ item.dernier.contenu|truncatechars:28 }}{% endif %}{% endif %}
               </div>
             </div>
             <div class="conv-meta">

@@ -135,6 +135,10 @@
             <div class="fld"><label>Téléphone</label><input type="text" name="telephone" value="{{ company.telephone|default:'' }}"></div>
             <div class="fld"><label>Email professionnel</label><input type="email" name="email" value="{{ company.email|default:'' }}"></div>
           </div>
+          <div class="grid2">
+            <div class="fld"><label>Page Facebook</label><input type="url" name="facebook" placeholder="https://facebook.com/…" value="{{ company.facebook|default:'' }}"></div>
+            <div class="fld"><label>Compte Instagram</label><input type="url" name="instagram" placeholder="https://instagram.com/…" value="{{ company.instagram|default:'' }}"></div>
+          </div>
           <div class="foot"><button type="submit" class="btnx primary"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Enregistrer</button></div>
         </form>
       </div>

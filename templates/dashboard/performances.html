@@ -1,0 +1,57 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Performances — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+.perf-row{display:flex;align-items:center;gap:16px;padding:16px 0;border-top:1px solid var(--border)}
+.perf-row:first-child{border-top:none}
+.perf-rank{width:24px;text-align:center;font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--muted-2);flex:0 0 24px}
+.perf-rank.top{color:var(--accent)}
+.perf-av{width:42px;height:42px;border-radius:11px;background:var(--blue-light);color:var(--blue);display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:15px;flex:0 0 42px}
+.perf-name{font-weight:700;font-size:13.5px;color:var(--ink)}
+.perf-sub{font-size:12px;color:var(--muted);margin-top:1px}
+.perf-metrics{display:flex;gap:22px;flex-shrink:0}
+.perf-metric{text-align:center}
+.perf-metric .v{font-family:var(--font-display);font-weight:800;font-size:17px;color:var(--ink)}
+.perf-metric .l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+@media(max-width:760px){.perf-metrics{gap:12px}}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='performances' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+  <button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tspacer"></div>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+
+<div class="pg-head">
+  <h1>Performances</h1>
+  <p>Comparaison de l'équipe — biens publiés, contrats créés, messages envoyés, tâches terminées</p>
+</div>
+
+<div class="card">
+  {% for p in perf %}
+  <div class="perf-row">
+    <div class="perf-rank {% if forloop.first %}top{% endif %}">{{ forloop.counter }}</div>
+    <div class="perf-av">{{ p.employe.first_name|default:p.employe.username|first|upper }}</div>
+    <div style="flex:1;min-width:0">
+      <div class="perf-name">{{ p.employe.get_full_name|default:p.employe.username }}</div>
+      <div class="perf-sub">{{ p.employe.collaborateur_profile.get_poste_display }}</div>
+    </div>
+    <div class="perf-metrics">
+      <div class="perf-metric"><div class="v">{{ p.nb_biens }}</div><div class="l">Biens</div></div>
+      <div class="perf-metric"><div class="v">{{ p.nb_contrats }}</div><div class="l">Contrats</div></div>
+      <div class="perf-metric"><div class="v">{{ p.nb_messages }}</div><div class="l">Messages</div></div>
+      <div class="perf-metric"><div class="v">{{ p.nb_taches_faites }}</div><div class="l">Tâches faites</div></div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="empty"><b>Pas encore d'équipe</b>Ajoutez des employés depuis la page Personnel pour voir leurs performances ici.</div>
+  {% endfor %}
+</div>
+
+</div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .app -->
+</body></html>

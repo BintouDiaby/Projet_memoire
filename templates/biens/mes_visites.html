@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load humanize %}
 
-{% block title %}Mes visites — ImmoGérer{% endblock %}
+{% block title %}Mes rendez-vous — ImmoGérer{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -46,6 +46,9 @@
   .ig-btn-full.primary:hover { background: #1A3E6A; color: #fff; }
 
   @media (max-width: 560px) { .me-card { flex-wrap: wrap; } .mc-side { width: 100%; align-items: flex-start; } }
+
+  .me-section-title { font-family: var(--ig-font-display); font-weight: 700; font-size: 15px; color: #111; margin: 28px 0 12px; }
+  .me-section-title:first-of-type { margin-top: 0; }
 </style>
 {% endblock %}
 
@@ -55,14 +58,48 @@
 
     <div class="me-greeting">
       <div>
-        <h1>Mes visites</h1>
-        <p>Suivez le statut de vos demandes de visite</p>
+        <h1>Mes rendez-vous</h1>
+        <p>Visites de biens et rendez-vous de paiement</p>
       </div>
       <a href="/explorer/" class="ig-btn-full primary">
         <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         Explorer les biens
       </a>
     </div>
+
+    {% if rdv_paiements %}
+    <div class="me-section-title">Rendez-vous de paiement</div>
+    {% for r in rdv_paiements %}
+    <div class="me-card">
+      <div class="mc-thumb"><svg viewBox="0 0 24 24"><path d="M2 10h20M6 15h2M11 15h5M2 6h20v12H2z"/></svg></div>
+      <div class="mc-main">
+        <div class="mc-titre">{{ r.facture.contrat.bien.titre|truncatechars:40 }}</div>
+        <div class="mc-meta">
+          <span><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>{{ r.facture.numero_facture }}</span>
+          <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>{% if r.statut == 'contre_proposition' %}Créneau proposé : {{ r.date_proposee|date:"d/m/Y à H:i" }}{% else %}{{ r.date_confirmee|default:r.date_demandee|date:"d/m/Y à H:i" }}{% endif %}</span>
+        </div>
+      </div>
+      <div class="mc-side">
+        <span class="badge-statut {% if r.statut == 'confirme' %}s-ok{% elif r.statut == 'honore' %}s-muted{% else %}s-warn{% endif %}">{{ r.get_statut_display }}</span>
+        {% if r.statut == 'contre_proposition' %}
+        <form method="post" action="{% url 'repondre_contre_proposition_rdv' %}" style="display:flex;gap:6px">
+          {% csrf_token %}
+          <input type="hidden" name="rdv_id" value="{{ r.id }}">
+          <input type="hidden" name="next" value="/biens/mes-visites/">
+          <button type="submit" name="action" value="accepter" class="ig-btn-full primary" style="padding:6px 12px;font-size:12px">Accepter</button>
+          <button type="submit" name="action" value="refuser" class="btn-cancel">Refuser</button>
+        </form>
+        {% else %}
+        <a href="/dashboard/facturation/{{ r.facture.id }}/" style="font-size:12px;font-weight:600;color:#185FA5;text-decoration:none">Voir la facture</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if visites %}
+    <div class="me-section-title">Visites de biens</div>
+    {% endif %}
 
     {% if visites %}
       {% for v in visites %}
@@ -89,10 +126,10 @@
         </div>
       </div>
       {% endfor %}
-    {% else %}
+    {% elif not rdv_paiements %}
       <div class="me-empty">
         <div class="eic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
-        <h3>Aucune visite demandée</h3>
+        <h3>Aucun rendez-vous</h3>
         <p>Trouvez un bien qui vous intéresse et demandez une visite depuis sa fiche.</p>
         <a href="/explorer/" class="ig-btn-full primary">Explorer les biens</a>
       </div>

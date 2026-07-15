@@ -222,54 +222,7 @@
 <div class="app">
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="logo">
-      <svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M3 21V9l9-6 9 6v12" stroke="#3B6D11" stroke-width="1.8" stroke-linejoin="round"/><rect x="9" y="13" width="6" height="8" stroke="#C9A84C" stroke-width="1.6"/><path d="M3 21h18" stroke="#3B6D11" stroke-width="1.8" stroke-linecap="round"/></svg>
-      ImmoGérer
-    </div>
-    <a class="firm-tag" href="{% url 'entreprise_profil' %}" style="text-decoration:none;cursor:pointer">
-      <div class="lg">{% if company.logo %}<img src="{{ company.logo.url }}" alt="">{% else %}{{ company_initial }}{% endif %}</div>
-      <div>
-        <div class="nm">{{ company_name }}</div>
-        {% if documents_verifies %}
-        <div class="vf" style="color:var(--green-text)"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Vérifiée</div>
-        {% else %}
-        <div class="vf"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5l3 2"/></svg> Vérification en cours</div>
-        {% endif %}
-      </div>
-    </a>
-    <div class="side-lab">Pilotage</div>
-    <nav class="snav" id="snav">
-      <a href="/dashboard/company/" class="active"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3zM13 21h8V11h-8zM13 3v6h8V3zM3 21h8v-6H3z"/></svg> Vue globale</a>
-      <a href="/dashboard/biens/"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12M3 21h18"/></svg> Biens <span class="z">{{ biens_count }}</span></a>
-      {% if 'location' in types %}<a href="/dashboard/biens/"><svg viewBox="0 0 24 24"><path d="M14 7a4 4 0 1 0-3 6l-5 5 2 2 6-6a4 4 0 0 0 0-7z"/></svg> Locations</a>{% endif %}
-      {% if 'vente' in types %}<a href="/dashboard/biens/"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg> Ventes</a>{% endif %}
-      {% if 'terrain' in types %}<a href="/dashboard/biens/"><svg viewBox="0 0 24 24"><path d="M3 20h18M6 20l3-9 6 0 3 9M9 11l3-5 3 5"/></svg> Terrains</a>{% endif %}
-      {% if 'construction' in types %}<a href="/construction/dashboard/"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V8l6-4 6 4v13M9 21v-5h6v5"/></svg> Construction</a>{% endif %}
-    </nav>
-    <div class="side-lab">Relation client</div>
-    <nav class="snav">
-      <a href="/chat/dashboard/"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Messages {% if nb_messages_non_lus %}<span class="z" style="background:#B91C1C;color:#fff;border-radius:9px;padding:1px 6px">{{ nb_messages_non_lus }}</span>{% endif %}</a>
-      <a href="/dashboard/notifications/"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg> Notifications {% if nb_notifs %}<span class="z" style="background:#B91C1C;color:#fff;border-radius:9px;padding:1px 6px">{{ nb_notifs }}</span>{% endif %}</a>
-      <a href="/dashboard/rdv/"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Rendez-vous {% if nb_rdv_en_attente %}<span class="z" style="background:#92400E;color:#fff;border-radius:9px;padding:1px 6px">{{ nb_rdv_en_attente }}</span>{% endif %}</a>
-      {% if 'construction' in types %}
-      <a href="/dashboard/devis/"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg> Demandes de devis {% if nb_devis_en_attente %}<span class="z" style="background:#C2410C;color:#fff;border-radius:9px;padding:1px 6px">{{ nb_devis_en_attente }}</span>{% endif %}</a>
-      {% endif %}
-      <a href="/dashboard/clients/"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0M16 5a3.5 3.5 0 0 1 0 7"/></svg> Clients CRM</a>
-      <a href="/dashboard/reclamations/"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg> Réclamations {% if nb_reclamations_ouvertes %}<span class="z" style="background:#B91C1C;color:#fff;border-radius:9px;padding:1px 6px">{{ nb_reclamations_ouvertes }}</span>{% endif %}</a>
-    </nav>
-    <div class="side-lab">Finances</div>
-    <nav class="snav">
-      <a href="/dashboard/facturation/"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Paiements</a>
-      <a href="/dashboard/company/"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Statistiques</a>
-    </nav>
-    <div class="side-lab">Compte</div>
-    <nav class="snav">
-      <a href="/dashboard/entreprise/profil/"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> Mon profil</a>
-      <a href="/dashboard/entreprise/parametres/"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Paramètres</a>
-    </nav>
-    <div class="side-foot"><a href="/accounts/logout/" class="logout"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg> Déconnexion</a></div>
-  </aside>
+  {% with active_page='company' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
 
   <!-- MAIN -->
   <div class="main">

@@ -29,12 +29,27 @@ class NotificationService:
 
     @staticmethod
     def unread_count(user):
-        return Notification.objects.filter(destinataire=user, lue=False).count()
+        from construction.models import NotificationConstruction
+        return (
+            Notification.objects.filter(destinataire=user, lue=False).count()
+            + NotificationConstruction.objects.filter(destinataire=user, lue=False).count()
+        )
 
     @staticmethod
     def mark_all_read(user):
+        from construction.models import NotificationConstruction
         Notification.objects.filter(destinataire=user, lue=False).update(lue=True)
+        NotificationConstruction.objects.filter(destinataire=user, lue=False).update(lue=True)
 
     @staticmethod
     def mark_read(user, notification_id):
         Notification.objects.filter(destinataire=user, id=notification_id).update(lue=True)
+
+    @staticmethod
+    def mark_read_construction(user, notification_id):
+        from construction.models import NotificationConstruction
+        NotificationConstruction.objects.filter(destinataire=user, id=notification_id).update(lue=True)
+
+    @staticmethod
+    def delete(user, notification_id):
+        Notification.objects.filter(destinataire=user, id=notification_id).delete()

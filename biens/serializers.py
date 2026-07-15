@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Bien, PhotoBien, Visite
+from .models import Bien, PhotoBien, Visite, Reservation
 from utilisateurs.serializers import UtilisateurSerializer
 
 
@@ -71,14 +71,48 @@ class BienCreateUpdateSerializer(serializers.ModelSerializer):
 
 
 class VisiteSerializer(serializers.ModelSerializer):
-    """Serializer pour les visites"""
+    """Serializer pour les visites.
+
+    Correction (app mobile) : `bien_id` écrivable était absent — `bien`
+    étant déclaré read_only sans contrepartie écrivable, toute création
+    échouait avec une IntegrityError (colonne bien_id NULL). `statut` était
+    aussi absent, empêchant tout affichage/changement de statut côté client
+    (demandes de visite en attente, accepter/refuser)."""
     locataire = UtilisateurSerializer(read_only=True)
     bien = BienListSerializer(read_only=True)
-    
+    bien_id = serializers.PrimaryKeyRelatedField(
+        source='bien', queryset=Bien.objects.all(), write_only=True
+    )
+    statut_display = serializers.CharField(source='get_statut_display', read_only=True)
+
     class Meta:
         model = Visite
         fields = [
-            'id', 'bien', 'locataire', 'date_visite', 'notes',
-            'interet', 'date_reservation'
+            'id', 'bien', 'bien_id', 'locataire', 'date_visite', 'notes',
+            'interet', 'statut', 'statut_display', 'date_reservation'
         ]
-        read_only_fields = ['id', 'date_reservation']
+        read_only_fields = ['id', 'statut', 'date_reservation']
+
+
+class ReservationSerializer(serializers.ModelSerializer):
+    """Serializer pour les réservations (app mobile — le modèle `Reservation`
+    existait déjà mais n'avait aucune route DRF)."""
+    bien = BienListSerializer(read_only=True)
+    bien_id = serializers.PrimaryKeyRelatedField(
+        source='bien', queryset=Bien.objects.all(), write_only=True
+    )
+    client = UtilisateurSerializer(read_only=True)
+    statut_display = serializers.CharField(source='get_statut_display', read_only=True)
+    hold_actif = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = Reservation
+        fields = [
+            'id', 'bien', 'bien_id', 'client', 'statut', 'statut_display',
+            'sans_visite', 'date_expiration', 'montant_acompte', 'notes',
+            'hold_actif', 'date_creation', 'date_modification',
+        ]
+        read_only_fields = [
+            'id', 'statut', 'date_expiration', 'hold_actif',
+            'date_creation', 'date_modification',
+        ]

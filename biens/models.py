@@ -1,6 +1,6 @@
 from django.db import models
 from utilisateurs.models import Utilisateur
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Bien(models.Model):
@@ -116,6 +116,30 @@ class Bien(models.Model):
         return f"{self.titre} - {self.ville}"
 
 
+class AvisBien(models.Model):
+    """Avis d'un locataire sur un bien qu'il a effectivement loué (voir
+    Contrat) — un seul avis par locataire et par bien."""
+    bien = models.ForeignKey(Bien, on_delete=models.CASCADE, related_name='avis')
+    auteur = models.ForeignKey(
+        Utilisateur,
+        on_delete=models.CASCADE,
+        related_name='avis_biens',
+        limit_choices_to={'role': 'locataire'}
+    )
+    note = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    commentaire = models.TextField()
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['bien', 'auteur']
+        ordering = ['-date_creation']
+        verbose_name = 'Avis sur un bien'
+        verbose_name_plural = 'Avis sur les biens'
+
+    def __str__(self):
+        return f"Avis de {self.auteur.username} sur {self.bien.titre} ({self.note}/5)"
+
+
 class PhotoBien(models.Model):
     """Modèle pour les photos additionnelles des biens"""
     bien = models.ForeignKey(Bien, on_delete=models.CASCADE, related_name='photos')
@@ -165,13 +189,19 @@ class Visite(models.Model):
 
 
 class Reservation(models.Model):
-    """Réservation d'un bien : engagement préalable du client avant la
-    signature d'un contrat (location) ou la finalisation d'une vente,
-    distinct d'une simple demande de visite."""
+    """Demande de réservation d'un bien, puis réservation confirmée : engagement
+    préalable du client avant la signature d'un contrat (location) ou la
+    finalisation d'une vente, distinct d'une simple demande de visite.
+
+    Le statut EN_ATTENTE représente la « demande » (le propriétaire n'a pas
+    encore répondu) ; CONFIRMEE est la réservation effective, qui bloque le
+    bien pour les autres clients jusqu'à `date_expiration` (72h)."""
 
     class Statut(models.TextChoices):
-        EN_ATTENTE = 'en_attente', 'En attente'
+        EN_ATTENTE = 'en_attente', 'Demande en attente'
+        VISITE_DEMANDEE = 'visite_demandee', 'Visite demandée avant validation'
         CONFIRMEE  = 'confirmee',  'Confirmée'
+        REFUSEE    = 'refusee',    'Refusée'
         ANNULEE    = 'annulee',    'Annulée'
 
     bien = models.ForeignKey(Bien, on_delete=models.CASCADE, related_name='reservations')
@@ -182,6 +212,14 @@ class Reservation(models.Model):
         limit_choices_to={'role': 'locataire'}
     )
     statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
+    sans_visite = models.BooleanField(
+        default=False,
+        help_text="Le client a explicitement choisi de réserver sans avoir visité le bien.",
+    )
+    date_expiration = models.DateTimeField(
+        blank=True, null=True,
+        help_text="Le bien reste bloqué pour les autres clients jusqu'à cette date (72h après confirmation).",
+    )
     montant_acompte = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
     date_creation = models.DateTimeField(auto_now_add=True)
@@ -195,3 +233,14 @@ class Reservation(models.Model):
 
     def __str__(self):
         return f"Réservation de {self.client.username} pour {self.bien.titre}"
+
+    @property
+    def hold_actif(self):
+        """True si cette réservation confirmée bloque encore le bien pour
+        les autres clients (dans les 72h suivant la confirmation)."""
+        from django.utils import timezone
+        return bool(
+            self.statut == self.Statut.CONFIRMEE
+            and self.date_expiration
+            and timezone.now() < self.date_expiration
+        )

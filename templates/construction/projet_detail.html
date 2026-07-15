@@ -164,6 +164,77 @@
     <!-- MAIN -->
     <div>
 
+      <!-- DEVIS -->
+      {% if devis_actuel or peut_preparer_devis %}
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+          Devis
+        </div>
+
+        {% if devis_actuel %}
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+          <div style="font-family:var(--font-display);font-weight:800;font-size:24px;color:var(--green)">{{ devis_actuel.montant|floatformat:0 }} FCFA</div>
+          <span class="statut-badge {% if devis_actuel.statut == 'accepte' %}accepte{% elif devis_actuel.statut == 'refuse' or devis_actuel.statut == 'expire' %}annule{% else %}devis_envoye{% endif %}">{{ devis_actuel.get_statut_display }}</span>
+        </div>
+        <p style="font-size:13.5px;line-height:1.7;color:#374151;white-space:pre-wrap;margin-bottom:12px">{{ devis_actuel.detail }}</p>
+        <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px">
+          Émis le {{ devis_actuel.date_creation|date:"d M Y" }} · Valable jusqu'au {{ devis_actuel.date_limite_validite|date:"d M Y" }}
+          {% if devis_actuel.motif_refus %}<br>Motif du refus : {{ devis_actuel.motif_refus }}{% endif %}
+        </div>
+        <a href="{% url 'construction:devis_pdf' devis_id=devis_actuel.id %}" class="btn btn-ghost" style="margin-bottom:10px">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Télécharger le PDF
+        </a>
+
+        {% if peut_repondre_devis %}
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <form method="post" action="{% url 'construction:devis_repondre' devis_id=devis_actuel.id %}" style="flex:1" onsubmit="return confirm('Accepter ce devis ?');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="accepter">
+            <button type="submit" class="btn btn-green" style="width:100%;justify-content:center">
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              Accepter le devis
+            </button>
+          </form>
+        </div>
+        <details style="margin-top:10px">
+          <summary style="cursor:pointer;font-size:12.5px;color:#B91C1C;font-weight:600">Refuser le devis</summary>
+          <form method="post" action="{% url 'construction:devis_repondre' devis_id=devis_actuel.id %}" style="margin-top:8px" onsubmit="return confirm('Refuser ce devis ?');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="refuser">
+            <textarea name="motif_refus" rows="2" placeholder="Motif du refus (facultatif)…"
+              style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:var(--font-body);resize:vertical;margin-bottom:8px"></textarea>
+            <button type="submit" class="btn btn-ghost" style="width:100%;justify-content:center;color:#B91C1C;border-color:#FCA5A5">Confirmer le refus</button>
+          </form>
+        </details>
+        {% endif %}
+        {% endif %}
+
+        {% if peut_preparer_devis %}
+        <form method="post" action="{% url 'construction:devis_preparer' projet_id=projet.id %}" style="{% if devis_actuel %}margin-top:16px;padding-top:16px;border-top:1px solid var(--border){% endif %}">
+          {% csrf_token %}
+          <div style="margin-bottom:10px">
+            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px">Montant (FCFA)</label>
+            <input type="number" name="montant" min="1" required style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13.5px;font-family:var(--font-body)">
+          </div>
+          <div style="margin-bottom:10px">
+            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px">Détail des prestations</label>
+            <textarea name="detail" rows="4" required placeholder="Matériaux, main d'œuvre, délais estimés…"
+              style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:var(--font-body);resize:vertical"></textarea>
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px">Validité (jours)</label>
+            <input type="number" name="validite_jours" value="30" min="1" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13.5px;font-family:var(--font-body)">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">
+            {% if devis_actuel %}Envoyer un nouveau devis{% else %}Envoyer le devis{% endif %}
+          </button>
+        </form>
+        {% endif %}
+      </div>
+      {% endif %}
+
       <!-- TIMELINE ÉTAPES -->
       <div class="card">
         <div class="card-title">

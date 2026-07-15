@@ -1,0 +1,69 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Congés — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+.conge-row{display:flex;align-items:center;gap:14px;padding:14px 0;border-top:1px solid var(--border)}
+.conge-row:first-child{border-top:none}
+.conge-av{width:40px;height:40px;border-radius:11px;background:var(--blue-light);color:var(--blue);display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:14px;flex:0 0 40px}
+.conge-name{font-weight:700;font-size:13.5px;color:var(--ink)}
+.conge-dates{font-size:12.5px;color:var(--text);margin-top:1px}
+.conge-motif{font-size:12px;color:var(--muted);margin-top:2px}
+.conge-actions{display:flex;gap:8px;flex-shrink:0}
+.btn-mini{background:none;border:1px solid var(--border);border-radius:8px;padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text);font-family:var(--font-body)}
+.btn-mini.accept:hover{border-color:var(--green);color:var(--green)}
+.btn-mini.refuse:hover{border-color:#dc2626;color:#dc2626}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='conges' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+  <button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tspacer"></div>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+
+{% if messages %}
+{% for message in messages %}
+<div style="background:#F0FDF4;border:1px solid #86EFAC;color:#15803D;border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;margin-bottom:18px">{{ message }}</div>
+{% endfor %}
+{% endif %}
+
+<div class="pg-head">
+  <h1>Congés</h1>
+  <p>Demandes de congé de votre équipe</p>
+</div>
+
+<div class="card">
+  {% for c in conges %}
+  <div class="conge-row">
+    <div class="conge-av">{{ c.demandeur.first_name|default:c.demandeur.username|first|upper }}</div>
+    <div style="flex:1;min-width:0">
+      <div class="conge-name">{{ c.demandeur.get_full_name|default:c.demandeur.username }}</div>
+      <div class="conge-dates">{{ c.date_debut|date:"d/m/Y" }} → {{ c.date_fin|date:"d/m/Y" }}</div>
+      {% if c.motif %}<div class="conge-motif">{{ c.motif }}</div>{% endif %}
+    </div>
+    {% if c.statut == 'en_attente' %}
+    <div class="conge-actions">
+      <form method="post" action="{% url 'traiter_conge' conge_id=c.id %}">
+        {% csrf_token %}<input type="hidden" name="action" value="accepter">
+        <button type="submit" class="btn-mini accept">Accepter</button>
+      </form>
+      <form method="post" action="{% url 'traiter_conge' conge_id=c.id %}">
+        {% csrf_token %}<input type="hidden" name="action" value="refuser">
+        <button type="submit" class="btn-mini refuse">Refuser</button>
+      </form>
+    </div>
+    {% else %}
+    <span class="badge {% if c.statut == 'accepte' %}b-green{% else %}b-red{% endif %}">{{ c.get_statut_display }}</span>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="empty"><b>Aucune demande de congé</b>Les demandes de votre équipe apparaîtront ici.</div>
+  {% endfor %}
+</div>
+
+</div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .app -->
+</body></html>

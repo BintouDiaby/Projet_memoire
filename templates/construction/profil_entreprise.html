@@ -38,8 +38,10 @@
   .ph-stat .val{font-family:var(--font-display);font-weight:800;font-size:26px;line-height:1}
   .ph-stat .lab{font-size:11.5px;color:rgba(255,255,255,.65);margin-top:2px}
   .ph-tabs{display:flex;gap:2px;border-top:1px solid rgba(255,255,255,.12)}
-  .ph-tab{padding:13px 20px;font-size:14px;font-weight:600;color:rgba(255,255,255,.65);cursor:pointer;border-bottom:3px solid transparent;transition:.15s}
-  .ph-tab.active,.ph-tab:hover{color:#fff;border-color:var(--accent)}
+  .ph-tab{padding:13px 20px;font-size:14px;font-weight:600;color:rgba(255,255,255,.65);cursor:pointer;border-bottom:3px solid transparent;transition:.15s;background:none;border-left:none;border-right:none;border-top:none;font-family:var(--font-body)}
+  .ph-tab.active,.ph-tab:hover{color:#fff;border-bottom-color:var(--accent)}
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
 
   /* Layout */
   .profil-body{display:grid;grid-template-columns:1fr 320px;gap:24px;padding:32px 0}
@@ -134,9 +136,9 @@
       </div>
     </div>
     <div class="ph-tabs">
-      <div class="ph-tab active">Présentation</div>
-      <div class="ph-tab">Réalisations</div>
-      <div class="ph-tab">Services</div>
+      <button type="button" class="ph-tab active" onclick="ouvrirOnglet('presentation', this)">Présentation</button>
+      <button type="button" class="ph-tab" onclick="ouvrirOnglet('realisations', this)">Réalisations {% if realisations %}({{ realisations|length }}){% endif %}</button>
+      <button type="button" class="ph-tab" onclick="ouvrirOnglet('services', this)">Services {% if profil.specialites %}({{ profil.specialites|length }}){% endif %}</button>
     </div>
   </div>
 </div>
@@ -148,69 +150,122 @@
     <!-- CONTENU PRINCIPAL -->
     <div>
 
-      {% if profil and profil.description %}
-      <div class="card">
-        <div class="card-title">
-          <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-          À propos
+      <!-- PRÉSENTATION -->
+      <div class="tab-panel active" data-panel="presentation">
+        {% if profil and profil.description %}
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            À propos
+          </div>
+          <p style="font-size:14.5px;line-height:1.7;color:#374151">{{ profil.description }}</p>
         </div>
-        <p style="font-size:14.5px;line-height:1.7;color:#374151">{{ profil.description }}</p>
-      </div>
-      {% endif %}
+        {% else %}
+        <div class="card" style="text-align:center;padding:40px 20px">
+          <p style="color:var(--muted);font-size:13.5px">Cette entreprise n'a pas encore rédigé de présentation.</p>
+        </div>
+        {% endif %}
 
-      <!-- SERVICES -->
-      <div class="card">
-        <div class="card-title">
-          <svg viewBox="0 0 24 24"><path d="M9 14l2 2 4-4"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Services proposés
-        </div>
-        <div class="services">
-          {% if profil and profil.specialites %}
-          {% for s in profil.specialites %}
-          <div class="service-item"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{{ s }}</div>
-          {% endfor %}
-          {% else %}
-          <div class="service-item"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Construction de villas</div>
-          <div class="service-item"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Construction de duplex</div>
-          <div class="service-item"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Construction d'immeubles</div>
-          <div class="service-item"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Renovation</div>
-          <div class="service-item"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Plans architecturaux</div>
-          <div class="service-item"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Batiments commerciaux</div>
-          {% endif %}
+        <!-- NOUS CONTACTER -->
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3.08 4.18 2 2 0 0 1 5.09 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L9.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Nous contacter
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            {% if company.telephone %}
+            <div style="display:flex;align-items:center;gap:10px;font-size:13.5px">
+              <svg style="width:16px;height:16px;stroke:var(--primary);fill:none;stroke-width:2;flex-shrink:0" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3.08 4.18 2 2 0 0 1 5.09 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L9.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <a href="tel:{{ company.telephone }}">{{ company.telephone }}</a>
+            </div>
+            {% endif %}
+            {% if company.email %}
+            <div style="display:flex;align-items:center;gap:10px;font-size:13.5px">
+              <svg style="width:16px;height:16px;stroke:var(--primary);fill:none;stroke-width:2;flex-shrink:0" viewBox="0 0 24 24"><path d="M4 4h16v16H4z" fill="none"/><path d="M22 6 12 13 2 6"/></svg>
+              <a href="mailto:{{ company.email }}">{{ company.email }}</a>
+            </div>
+            {% endif %}
+            {% if company.adresse or company.ville %}
+            <div style="display:flex;align-items:center;gap:10px;font-size:13.5px">
+              <svg style="width:16px;height:16px;stroke:var(--primary);fill:none;stroke-width:2;flex-shrink:0" viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              <span>{{ company.adresse }}{% if company.adresse and company.ville %}, {% endif %}{{ company.ville }}</span>
+            </div>
+            {% endif %}
+            {% if company.facebook or company.instagram %}
+            <div style="display:flex;align-items:center;gap:14px;padding-top:4px">
+              {% if company.facebook %}
+              <a href="{{ company.facebook }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--primary)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                Facebook
+              </a>
+              {% endif %}
+              {% if company.instagram %}
+              <a href="{{ company.instagram }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--primary)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                Instagram
+              </a>
+              {% endif %}
+            </div>
+            {% endif %}
+            {% if not company.telephone and not company.email and not company.adresse and not company.ville and not company.facebook and not company.instagram %}
+            <p style="color:var(--muted);font-size:13px">Cette entreprise n'a pas encore renseigné ses coordonnées.</p>
+            {% endif %}
+          </div>
         </div>
       </div>
 
       <!-- RÉALISATIONS -->
-      {% if realisations %}
-      <div class="card">
-        <div class="card-title">
-          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-          Réalisations
-        </div>
-        <div class="realisations">
-          {% for r in realisations %}
-          <div class="real-card">
-            {% if r.photo %}
-            <img class="real-img" src="{{ r.photo.url }}" alt="{{ r.titre }}" loading="lazy">
-            {% else %}
-            <div class="real-placeholder">
-              <svg viewBox="0 0 24 24"><path d="M5 21V7h8v14M13 11h6v10M3 21h18M16 4l3 1"/></svg>
-            </div>
-            {% endif %}
-            <div class="real-info">
-              <div class="real-titre">{{ r.titre }}</div>
-              {% if r.localisation %}<div class="real-loc">{{ r.localisation }}{% if r.annee %} · {{ r.annee }}{% endif %}</div>{% endif %}
-            </div>
+      <div class="tab-panel" data-panel="realisations">
+        {% if realisations %}
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            Réalisations
           </div>
-          {% endfor %}
+          <div class="realisations">
+            {% for r in realisations %}
+            <div class="real-card">
+              {% if r.photo %}
+              <img class="real-img" src="{{ r.photo.url }}" alt="{{ r.titre }}" loading="lazy">
+              {% else %}
+              <div class="real-placeholder">
+                <svg viewBox="0 0 24 24"><path d="M5 21V7h8v14M13 11h6v10M3 21h18M16 4l3 1"/></svg>
+              </div>
+              {% endif %}
+              <div class="real-info">
+                <div class="real-titre">{{ r.titre }}</div>
+                {% if r.localisation %}<div class="real-loc">{{ r.localisation }}{% if r.annee %} · {{ r.annee }}{% endif %}</div>{% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% else %}
+        <div class="card" style="text-align:center;padding:40px 20px">
+          <svg style="width:40px;height:40px;stroke:#d1d5db;fill:none;stroke-width:1.3;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <p style="color:var(--muted);font-size:13.5px">Aucune réalisation publiée pour le moment.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- SERVICES -->
+      <div class="tab-panel" data-panel="services">
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24"><path d="M9 14l2 2 4-4"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Services proposés
+          </div>
+          {% if profil and profil.specialites %}
+          <div class="services">
+            {% for s in profil.specialites %}
+            <div class="service-item"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{{ s }}</div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p style="color:var(--muted);font-size:13.5px">Cette entreprise n'a pas encore renseigné ses services.</p>
+          {% endif %}
         </div>
       </div>
-      {% else %}
-      <div class="card" style="text-align:center;padding:40px 20px">
-        <svg style="width:40px;height:40px;stroke:#d1d5db;fill:none;stroke-width:1.3;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        <p style="color:var(--muted);font-size:13.5px">Aucune réalisation publiée pour le moment.</p>
-      </div>
-      {% endif %}
 
     </div>
 
@@ -275,5 +330,13 @@
     <nav style="display:flex;gap:16px"><a href="/construction/">Construction</a><a href="/explorer/">Explorer</a></nav>
   </div>
 </footer>
+
+<script>
+  function ouvrirOnglet(nom, btn){
+    document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.toggle('active', p.dataset.panel === nom); });
+    document.querySelectorAll('.ph-tab').forEach(function(t){ t.classList.remove('active'); });
+    btn.classList.add('active');
+  }
+</script>
 </body>
 </html>

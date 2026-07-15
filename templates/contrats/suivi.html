@@ -57,6 +57,19 @@
   .jitem .jt { font-size: 13.5px; color: #111; font-weight: 500; }
   .jitem .jd { font-size: 11.5px; color: #9AA0A6; margin-top: 1px; }
 
+  .frise { display: flex; align-items: flex-start; margin-bottom: 14px; }
+  .frise-step { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; position: relative; }
+  .frise-step .fdot { width: 30px; height: 30px; border-radius: 50%; background: #F4F6F9; border: 2px solid #e5e7eb; color: #9AA0A6; display: grid; place-items: center; font-size: 13px; font-weight: 700; z-index: 1; }
+  .frise-step.done .fdot { background: #EAF3DE; border-color: #3B6D11; color: #27500A; }
+  .frise-step.encours .fdot { background: #E7F0F9; border-color: #185FA5; color: #0C447C; }
+  .frise-step .fline { position: absolute; top: 15px; left: 50%; width: 100%; height: 2px; background: #e5e7eb; z-index: 0; }
+  .frise-step.done .fline { background: #3B6D11; }
+  .frise-step:last-child .fline { display: none; }
+  .frise-step .flabel { font-size: 11px; font-weight: 600; color: #6B7280; text-align: center; margin-top: 8px; padding: 0 4px; line-height: 1.3; }
+  .frise-step.done .flabel, .frise-step.encours .flabel { color: #111; }
+  .frise-step .fdate { font-size: 10px; color: #9AA0A6; margin-top: 2px; }
+  @media (max-width:640px) { .frise-step .flabel { font-size: 9.5px; } }
+
   .nextpay { display: flex; align-items: center; gap: 14px; background: #E7F0F9; border-radius: 12px; padding: 14px 16px; flex-wrap: wrap; }
   .nextpay .np-t { font-weight: 700; font-size: 13.5px; color: #0C447C; }
   .nextpay .np-d { font-size: 12px; color: #39414A; }
@@ -86,6 +99,17 @@
   .prow { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-bottom: 1px solid #e5e7eb; }
   .prow:last-child { border-bottom: none; }
   .prow .m { font-size: 13.5px; color: #111; font-weight: 600; }
+
+  .echlist { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+  .echrow { display: flex; align-items: center; gap: 14px; padding: 13px 15px; border-radius: 12px; border: 1px solid #e5e7eb; background: #fff; }
+  .echrow.cur { border-color: #185FA5; background: #F0F6FF; }
+  .echrow .eicon { font-size: 18px; width: 26px; text-align: center; flex-shrink: 0; }
+  .echrow .emonth { font-family: var(--ig-font-display); font-weight: 700; font-size: 13.5px; color: #111; width: 90px; flex-shrink: 0; text-transform: capitalize; }
+  .echrow .etext { font-size: 12.5px; color: #6B7280; }
+  .echrow.paye .etext { color: #27500A; }
+  .echrow.retard .etext { color: #B4441F; font-weight: 600; }
+  .echrow.rdv .etext { color: #0C447C; }
+  .echrow.a_venir .etext { color: #9AA0A6; }
 
   .msgprev { background: #F4F6F9; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
   .msgprev .who { font-weight: 700; font-size: 13px; color: #111; margin-bottom: 3px; }
@@ -159,10 +183,24 @@
       </div>
     </div>
 
+    <div class="card">
+      <h3>Progression du contrat</h3>
+      <div class="frise">
+        {% for etape in frise_etapes %}
+        <div class="frise-step {% if etape.fait %}done{% elif etape.en_cours %}encours{% endif %}">
+          <div class="fdot">{% if etape.fait %}✓{% else %}{{ forloop.counter }}{% endif %}</div>
+          <div class="fline"></div>
+          <div class="flabel">{{ etape.label }}</div>
+          {% if etape.date %}<div class="fdate">{{ etape.date|date:"d M Y" }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
     <div class="tabbar">
       <button class="tabbtn active" data-tab="apercu" onclick="showTab('apercu')">Aperçu</button>
       <button class="tabbtn" data-tab="facture" onclick="showTab('facture')">Facture actuelle</button>
-      <button class="tabbtn" data-tab="paiements" onclick="showTab('paiements')">Paiements</button>
+      <button class="tabbtn" data-tab="paiements" onclick="showTab('paiements')">Échéances</button>
       <button class="tabbtn" data-tab="messages" onclick="showTab('messages')">Messages</button>
       {% if est_locataire %}<button class="tabbtn" data-tab="reclam" onclick="showTab('reclam')">Réclamations</button>{% endif %}
       <button class="tabbtn" data-tab="visites" onclick="showTab('visites')">Visites</button>
@@ -224,7 +262,24 @@
     <!-- PAIEMENTS -->
     <div class="panel" id="tab-paiements">
       <div class="card">
-        <h3>Historique des paiements</h3>
+        <h3>Centre des échéances</h3>
+        {% if echeances %}
+        <div class="echlist">
+          {% for e in echeances %}
+          <div class="echrow {{ e.statut }} {% if e.est_mois_courant %}cur{% endif %}">
+            <span class="eicon">{{ e.icone }}</span>
+            <span class="emonth">{{ e.mois|date:"F Y" }}</span>
+            <span class="etext">{{ e.texte }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="me-empty"><div class="t">Aucune échéance pour le moment</div></div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <h3>Historique complet des paiements</h3>
         {% if paiements %}
         <div class="plist">
           {% for p in paiements %}

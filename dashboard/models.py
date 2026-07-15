@@ -47,54 +47,56 @@ class StatistiquesProprietaire(models.Model):
         return f"Statistiques - {self.proprietaire.username}"
     
     def mettre_a_jour_statistiques(self):
-        """Mettre à jour les statistiques du propriétaire"""
+        """Mettre à jour les statistiques de l'entreprise du propriétaire
+        (tous les comptes — Directeur + employés — de la même Company)."""
         from biens.models import Bien
         from contrats.models import Contrat, Paiement
-        
+
         aujourd_hui = timezone.now().date()
-        
+        comptes = self.proprietaire.comptes_entreprise()
+
         # Compter les propriétés
         self.nombre_proprietes = Bien.objects.filter(
-            proprietaire=self.proprietaire
+            proprietaire__in=comptes
         ).count()
-        
+
         # Compter les contrats actifs
         self.nombre_contrats_actifs = Contrat.objects.filter(
-            proprietaire=self.proprietaire,
+            proprietaire__in=comptes,
             statut='en_cours',
             date_debut__lte=aujourd_hui,
             date_fin__gte=aujourd_hui
         ).count()
-        
+
         # Compter les locataires
         self.nombre_locataires = Contrat.objects.filter(
-            proprietaire=self.proprietaire,
+            proprietaire__in=comptes,
             statut='en_cours'
         ).values('locataire').distinct().count()
-        
+
         # Calculer les revenus
         contrats_actifs = Contrat.objects.filter(
-            proprietaire=self.proprietaire,
+            proprietaire__in=comptes,
             statut='en_cours'
         ).aggregate(
             total=Sum('prix_mensuel'),
             charges=Sum('charges_mensuelles')
         )
-        
+
         self.revenu_mensuel_total = (contrats_actifs['total'] or 0) + (contrats_actifs['charges'] or 0)
         self.revenu_annuel_estime = self.revenu_mensuel_total * 12
-        
+
         # Revenus reçus ce mois
         debut_mois = aujourd_hui.replace(day=1)
         self.revenu_recu_ce_mois = Paiement.objects.filter(
-            contrat__proprietaire=self.proprietaire,
+            contrat__proprietaire__in=comptes,
             statut='recu',
             date_paiement__gte=debut_mois
         ).aggregate(Sum('montant_recu'))['montant_recu__sum'] or 0
-        
+
         # Montants impayés
         impaye_data = Paiement.objects.filter(
-            contrat__proprietaire=self.proprietaire,
+            contrat__proprietaire__in=comptes,
             statut__in=['impaye', 'retard_majeur']
         ).aggregate(
             total=Sum('montant_du'),
@@ -357,6 +359,7 @@ class Notification(models.Model):
         RECLAMATION = 'reclamation', 'Réclamation'
         PAIEMENT = 'paiement', 'Paiement'
         CONTRAT = 'contrat', 'Contrat'
+        MISE_EN_DEMEURE = 'mise_en_demeure', 'Mise en demeure'
         SYSTEME = 'systeme', 'Système'
 
     destinataire = models.ForeignKey(

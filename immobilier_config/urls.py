@@ -202,6 +202,24 @@ def guest_landing(request):
     nb_projets = Bien.objects.filter(statut=Bien.Statut.DISPONIBLE, type_bien__in=['immeuble', 'residence']).count()
     nb_entreprises = Company.objects.count()
 
+    entreprises_vedette = []
+    # Vitrine volontairement limitée aux deux entreprises de démonstration
+    # principales (Abeja King, Azimuts SARL) — toujours lu en base, jamais
+    # de nom en dur.
+    for nom in ('Abeja King', 'Azimuts SARL'):
+        candidats = Company.objects.filter(name=nom)
+        meilleure, meilleur_nb = None, -1
+        for c in candidats:
+            nb_biens_c = Bien.objects.filter(proprietaire__company=c, statut=Bien.Statut.DISPONIBLE).count()
+            if nb_biens_c > meilleur_nb:
+                meilleure, meilleur_nb = c, nb_biens_c
+        if meilleure:
+            entreprises_vedette.append({
+                'company': meilleure,
+                'nb_biens': meilleur_nb,
+                'verifie': meilleure.users.filter(documents_verifies=True).exists(),
+            })
+
     COMMUNES_ABIDJAN = [
         'Abobo', 'Adjamé', 'Anyama', 'Attécoubé', 'Bingerville',
         'Cocody', 'Koumassi', 'Marcory', 'Plateau', 'Port-Bouët',
@@ -218,6 +236,7 @@ def guest_landing(request):
         'nb_bureaux': nb_bureaux,
         'nb_projets': nb_projets,
         'nb_entreprises': nb_entreprises,
+        'entreprises_vedette': entreprises_vedette,
         'communes_list': COMMUNES_ABIDJAN,
         'stats': {
             'utilisateurs_actifs': Utilisateur.objects.count(),
@@ -226,6 +245,12 @@ def guest_landing(request):
         }
     }
     return render(request, 'landing_guest.html', context)
+
+
+def centre_aide(request):
+    """Centre d'aide public : FAQ groupée par catégorie + accès rapide au support."""
+    from .faq_data import FAQ_CATEGORIES
+    return render(request, 'centre_aide.html', {'categories': FAQ_CATEGORIES})
 
 
 def guest_debug(request):
@@ -340,12 +365,12 @@ def explorer_view(request):
 
     base_qs = Bien.objects.filter(statut=Bien.Statut.DISPONIBLE)
     tabs_info = [
-        {'key': 'locations',    'emoji': '🏠', 'label': 'Locations',             'count': base_qs.filter(transaction_type__in=['location', 'both']).count()},
-        {'key': 'vente',        'emoji': '🏡', 'label': 'Maisons à vendre',      'count': base_qs.filter(transaction_type__in=['vente', 'both'], type_bien__in=TYPES_RESIDENTIEL).count()},
-        {'key': 'terrains',     'emoji': '🌍', 'label': 'Terrains',              'count': base_qs.filter(type_bien='terrain').count()},
-        {'key': 'magasins',     'emoji': '🏬', 'label': 'Magasins',              'count': base_qs.filter(type_bien__in=TYPES_COMMERCIAL).count()},
-        {'key': 'bureaux',      'emoji': '🏢', 'label': 'Bureaux',               'count': base_qs.filter(type_bien='bureau').count()},
-        {'key': 'construction', 'emoji': '🏗️', 'label': 'Projets en construction','count': base_qs.filter(type_bien__in=TYPES_CONSTRUCTION).count()},
+        {'key': 'locations',    'label': 'Locations',              'count': base_qs.filter(transaction_type__in=['location', 'both']).count()},
+        {'key': 'vente',        'label': 'Maisons à vendre',       'count': base_qs.filter(transaction_type__in=['vente', 'both'], type_bien__in=TYPES_RESIDENTIEL).count()},
+        {'key': 'terrains',     'label': 'Terrains',               'count': base_qs.filter(type_bien='terrain').count()},
+        {'key': 'magasins',     'label': 'Magasins',               'count': base_qs.filter(type_bien__in=TYPES_COMMERCIAL).count()},
+        {'key': 'bureaux',      'label': 'Bureaux',                'count': base_qs.filter(type_bien='bureau').count()},
+        {'key': 'construction', 'label': 'Projets en construction', 'count': base_qs.filter(type_bien__in=TYPES_CONSTRUCTION).count()},
     ]
 
     villes = base_qs.values_list('ville', flat=True).distinct().order_by('ville')
@@ -432,14 +457,31 @@ def entreprise_publique_detail(request, company_id):
     biens_qs = Bien.objects.filter(proprietaire__company=company).select_related('proprietaire')
     biens = biens_qs.filter(statut=Bien.Statut.DISPONIBLE).order_by('-date_publication')
 
-    numero_rccm = None
-    if contact:
+    numero_rccm = company.numero_rccm or None
+    if not numero_rccm and contact:
         prof = ProprietaireProfile.objects.filter(utilisateur=contact).first()
         if prof and prof.numero_siret_siren:
             numero_rccm = prof.numero_siret_siren
 
     zones = sorted({v for v in biens_qs.exclude(ville__isnull=True).exclude(ville='').values_list('ville', flat=True)})
     nb_locations = Contrat.objects.filter(proprietaire__company=company, statut=Contrat.Statut.EN_COURS).count()
+
+    avis_liste = list(company.avis.select_related('auteur').all())
+    nb_avis = len(avis_liste)
+    note_moyenne_entreprise = round(sum(a.note for a in avis_liste) / nb_avis, 1) if nb_avis else None
+    mon_avis_entreprise = None
+    peut_noter_entreprise = False
+    if request.user.is_authenticated and request.user.role == Utilisateur.Role.LOCATAIRE:
+        mon_avis_entreprise = next((a for a in avis_liste if a.auteur_id == request.user.id), None)
+        if mon_avis_entreprise is None:
+            peut_noter_entreprise = Contrat.objects.filter(
+                proprietaire__company=company, locataire=request.user
+            ).exclude(statut__in=[Contrat.Statut.BROUILLON, Contrat.Statut.EN_ATTENTE_SIGNATURE]).exists()
+
+    horaires_affichage = [
+        {'jour': j, 'horaire': company.horaires.get(j, '')}
+        for j in Company.JOURS_SEMAINE
+    ] if company.horaires else []
 
     return render(request, 'entreprises/detail.html', {
         'company': company,
@@ -451,7 +493,73 @@ def entreprise_publique_detail(request, company_id):
         'zones': zones,
         'nb_biens_total': biens_qs.count(),
         'nb_locations': nb_locations,
+        'avis_liste': avis_liste,
+        'nb_avis': nb_avis,
+        'note_moyenne_entreprise': note_moyenne_entreprise,
+        'mon_avis_entreprise': mon_avis_entreprise,
+        'peut_noter_entreprise': peut_noter_entreprise,
+        'statut_dispo': company.statut_actuel(),
+        'horaires_affichage': horaires_affichage,
     })
+
+
+def avis_entreprise_ajouter(request, company_id):
+    """Un locataire ayant réellement loué un bien de cette entreprise laisse
+    une note + un commentaire. Un seul avis par locataire et par entreprise."""
+    from django.contrib import messages
+    from utilisateurs.models import Company, AvisEntreprise
+
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    company = get_object_or_404(Company, id=company_id)
+    next_url = request.POST.get('next') or f'/entreprises/{company_id}/'
+
+    if request.method == 'POST':
+        if request.user.role != Utilisateur.Role.LOCATAIRE:
+            messages.error(request, "Seuls les locataires peuvent laisser un avis.")
+            return redirect(next_url)
+
+        a_loue = Contrat.objects.filter(proprietaire__company=company, locataire=request.user).exclude(
+            statut__in=[Contrat.Statut.BROUILLON, Contrat.Statut.EN_ATTENTE_SIGNATURE]
+        ).exists()
+        if not a_loue:
+            messages.error(request, "Vous ne pouvez laisser un avis que sur une entreprise dont vous avez loué un bien.")
+            return redirect(next_url)
+
+        if AvisEntreprise.objects.filter(company=company, auteur=request.user).exists():
+            messages.error(request, "Vous avez déjà laissé un avis sur cette entreprise.")
+            return redirect(next_url)
+
+        try:
+            note = int(request.POST.get('note', ''))
+        except (TypeError, ValueError):
+            note = 0
+        commentaire = request.POST.get('commentaire', '').strip()
+        if note < 1 or note > 5 or not commentaire:
+            messages.error(request, "Merci de choisir une note (1 à 5) et d'écrire un commentaire.")
+            return redirect(next_url)
+
+        AvisEntreprise.objects.create(company=company, auteur=request.user, note=note, commentaire=commentaire)
+        messages.success(request, "Merci, votre avis a été publié.")
+
+    return redirect(next_url)
+
+
+def avis_entreprise_supprimer(request, avis_id):
+    """L'auteur supprime son propre avis sur une entreprise."""
+    from django.contrib import messages
+    from utilisateurs.models import AvisEntreprise
+
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    avis = AvisEntreprise.objects.filter(id=avis_id, auteur=request.user).first()
+    next_url = request.POST.get('next') or (f'/entreprises/{avis.company_id}/' if avis else '/entreprises/')
+    if request.method == 'POST' and avis:
+        avis.delete()
+        messages.success(request, "Votre avis a été supprimé.")
+    return redirect(next_url)
 
 
 def mon_espace_locataire(request):
@@ -538,6 +646,19 @@ def mon_espace_locataire(request):
     nb_retards = paiements_retard.count()
     montant_retard = paiements_retard.aggregate(total=Sum('montant_du'))['total'] or 0
 
+    # Mise(s) en demeure en cours — alerte prioritaire sur le simple retard
+    from contrats.models import MiseEnDemeure
+    mise_en_demeure_active = (
+        MiseEnDemeure.objects.filter(
+            contrat__locataire=user,
+            statut__in=[MiseEnDemeure.Statut.ENVOYEE, MiseEnDemeure.Statut.DELAI_SUPPLEMENTAIRE, MiseEnDemeure.Statut.EXPIREE],
+        )
+        .select_related('paiement__facture', 'contrat__bien')
+        .order_by('-date_creation')
+        .first()
+    )
+    facture_mise_en_demeure = getattr(mise_en_demeure_active.paiement, 'facture', None) if mise_en_demeure_active else None
+
     # Factures récentes
     factures_recentes = (
         Facture.objects.filter(contrat__locataire=user)
@@ -559,10 +680,11 @@ def mon_espace_locataire(request):
         )
 
     from dashboard.models import Notification
+    from dashboard.services import NotificationService
     notifications = list(
         Notification.objects.filter(destinataire=user).select_related('expediteur').order_by('-date_creation')[:10]
     )
-    nb_notifs = sum(1 for n in notifications if not n.lue)
+    nb_notifs = NotificationService.unread_count(user)
 
     from messagerie.models import Conversation
     nb_messages_non_lus = sum(
@@ -590,6 +712,8 @@ def mon_espace_locataire(request):
         'prochain_paiement': prochain_paiement,
         'nb_retards': nb_retards,
         'montant_retard': montant_retard,
+        'mise_en_demeure_active': mise_en_demeure_active,
+        'facture_mise_en_demeure': facture_mise_en_demeure,
         'factures_recentes': factures_recentes,
         'nb_favoris': nb_favoris,
         'biens_recommandes': biens_recommandes,
@@ -811,10 +935,14 @@ urlpatterns = [
     path('', landing_page, name='landing'),
     path('choisir-profil/', choisir_profil_entry, name='choisir_profil'),
     path('guest/', guest_landing, name='guest_landing'),
+    path('aide/', centre_aide, name='centre_aide'),
     path('explorer/', explorer_view, name='explorer'),
     path('entreprises/', annuaire_entreprises, name='annuaire_entreprises'),
     path('entreprises/<int:company_id>/', entreprise_publique_detail, name='entreprise_publique_detail'),
+    path('entreprises/<int:company_id>/avis/', avis_entreprise_ajouter, name='avis_entreprise_ajouter'),
+    path('avis-entreprise/<int:avis_id>/supprimer/', avis_entreprise_supprimer, name='avis_entreprise_supprimer'),
     path('mon-espace/', mon_espace_locataire, name='mon_espace_locataire'),
+    path('mes-notifications/', dashboard_views.notifications_locataire_view, name='mes_notifications_locataire'),
     path('mon-profil/', mon_profil, name='mon_profil'),
     path('mon-profil/modifier/', mon_profil_modifier, name='mon_profil_modifier'),
     path('parametres/', parametres, name='parametres'),
@@ -824,22 +952,48 @@ urlpatterns = [
     path('dashboard/company/', dashboard_views.dashboard_company, name='dashboard_company'),
     path('dashboard/biens/', dashboard_views.mes_biens, name='dashboard_biens'),
     path('dashboard/rdv/', dashboard_views.rdv_view, name='dashboard_rdv'),
+    path('dashboard/statistiques/', dashboard_views.statistiques_view, name='dashboard_statistiques'),
+    path('dashboard/personnel/', dashboard_views.personnel_view, name='personnel'),
+    path('dashboard/personnel/ajouter/', dashboard_views.ajouter_collaborateur, name='ajouter_collaborateur'),
+    path('dashboard/personnel/<int:user_id>/modifier/', dashboard_views.modifier_collaborateur, name='modifier_collaborateur'),
+    path('dashboard/personnel/<int:user_id>/toggle/', dashboard_views.toggle_collaborateur_actif, name='toggle_collaborateur_actif'),
+    path('dashboard/personnel/<int:user_id>/reset-mdp/', dashboard_views.reinitialiser_mot_de_passe_collaborateur, name='reset_mdp_collaborateur'),
+    path('dashboard/personnel/<int:user_id>/voir/', dashboard_views.voir_collaborateur, name='voir_collaborateur'),
+    path('dashboard/personnel/<int:user_id>/taches/creer/', dashboard_views.creer_tache, name='creer_tache'),
+    path('mes-taches/', dashboard_views.mes_taches_view, name='mes_taches'),
+    path('mes-taches/<int:tache_id>/toggle/', dashboard_views.marquer_tache_faite, name='marquer_tache_faite'),
+    path('dashboard/performances/', dashboard_views.performances_view, name='performances'),
+    path('mes-conges/', dashboard_views.mes_conges_view, name='mes_conges'),
+    path('dashboard/conges/', dashboard_views.conges_view, name='conges'),
+    path('dashboard/conges/<int:conge_id>/traiter/', dashboard_views.traiter_conge, name='traiter_conge'),
+    path('mon-planning/', dashboard_views.mon_planning_view, name='mon_planning'),
+    path('dashboard/taches/', dashboard_views.taches_equipe_view, name='taches_equipe'),
+    path('dashboard/planning/', dashboard_views.planning_equipe_view, name='planning_equipe'),
     path('dashboard/reservations/', biens_views.dashboard_reservations, name='dashboard_reservations'),
     path('dashboard/notifications/', dashboard_views.notifications_view, name='dashboard_notifications'),
     path('dashboard/notifications/lire/<int:notif_id>/', dashboard_views.notification_marquer_lue, name='notification_marquer_lue'),
+    path('dashboard/notifications/construction/lire/<int:notif_id>/', dashboard_views.notification_construction_marquer_lue, name='notification_construction_marquer_lue'),
     path('dashboard/notifications/tout-lire/', dashboard_views.notifications_marquer_toutes_lues, name='notifications_marquer_toutes_lues'),
+    path('dashboard/notifications/supprimer/<int:notif_id>/', dashboard_views.notification_supprimer, name='notification_supprimer'),
     path('dashboard/clients/', dashboard_views.clients_crm_view, name='dashboard_clients'),
     path('dashboard/reclamations/', dashboard_views.reclamations_view, name='dashboard_reclamations'),
     path('dashboard/devis/', dashboard_views.devis_view, name='dashboard_devis'),
     path('dashboard/client/<int:client_id>/', dashboard_views.client_detail_view, name='dashboard_client_detail'),
     path('dashboard/facturation/', dashboard_views.facturation_dashboard_view, name='dashboard_facturation'),
     path('dashboard/facturation/signaler-paiement/', dashboard_views.signaler_paiement, name='signaler_paiement'),
+    path('dashboard/facturation/confirmer-reception/', dashboard_views.confirmer_reception_paiement, name='confirmer_reception_paiement'),
+    path('dashboard/paiements/validation/', dashboard_views.centre_validation_paiements, name='centre_validation_paiements'),
+    path('dashboard/facturation/demander-rdv-paiement/', dashboard_views.demander_rdv_paiement, name='demander_rdv_paiement'),
+    path('dashboard/facturation/repondre-rdv-paiement/', dashboard_views.repondre_rdv_paiement, name='repondre_rdv_paiement'),
+    path('dashboard/facturation/repondre-contre-proposition-rdv/', dashboard_views.repondre_contre_proposition_rdv, name='repondre_contre_proposition_rdv'),
+    path('dashboard/facturation/confirmer-paiement-espece/', dashboard_views.confirmer_paiement_espece, name='confirmer_paiement_espece'),
     path('dashboard/facturation/stripe/creer-session/', dashboard_views.stripe_creer_session, name='stripe_creer_session'),
     path('dashboard/facturation/stripe/succes/', dashboard_views.stripe_paiement_reussi, name='stripe_paiement_reussi'),
     path('dashboard/facturation/signaler-probleme/', dashboard_views.signaler_probleme_paiement, name='signaler_probleme_paiement'),
     path('dashboard/facturation/factures.zip', dashboard_views.factures_zip, name='factures_zip'),
     path('dashboard/facturation/<int:facture_id>/', dashboard_views.facture_detail, name='facture_detail'),
     path('dashboard/facturation/<int:facture_id>/pdf/', dashboard_views.facture_pdf, name='facture_pdf'),
+    path('dashboard/facturation/<int:facture_id>/archiver/', dashboard_views.facture_archiver, name='facture_archiver'),
     path('dashboard/contrats/', dashboard_views.contrats_dashboard_view, name='dashboard_contrats'),
     path('dashboard/contrats/export/', dashboard_views.export_contrats_csv, name='export_contrats_csv'),
     path('dashboard/paiements/export/', dashboard_views.export_paiements_csv, name='export_paiements_csv'),
@@ -860,6 +1014,7 @@ urlpatterns = [
     path('biens/', include(('biens.urls_ui', 'biens'), namespace='biens_ui')),
     path('chat/', include(('messagerie.urls', 'messagerie'), namespace='messagerie')),
     path('construction/', include(('construction.urls', 'construction'), namespace='construction')),
+    path('assistant/', include(('assistant.urls', 'assistant'), namespace='assistant')),
     path('utilisateurs/', include(('utilisateurs.urls_ui', 'utilisateurs'), namespace='utilisateurs_ui')),
     path('contrats/', include(('contrats.urls_ui', 'contrats'), namespace='contrats_ui')),
     path('onboarding/', utilisateurs_views.onboarding, name='onboarding'),

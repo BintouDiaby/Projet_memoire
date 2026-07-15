@@ -151,21 +151,22 @@
     {% block extra_head %}{% endblock %}
   </head>
   <style>
-    body.loc-with-sidebar .ig-content-shift { margin-left: 240px; }
-    @media(max-width:860px){
-      body.loc-with-sidebar .ig-content-shift { margin-left: 0; }
-    }
+    /* La sidebar locataire défile désormais avec la page (plus de
+       position:fixed) : elle est un simple enfant flex de .ig-body-row,
+       au même niveau que le contenu, plutôt qu'un panneau superposé. */
+    .ig-body-row { display: flex; align-items: flex-start; }
+    .ig-content-shift { flex: 1; min-width: 0; }
   </style>
   <body class="{% block body_class %}{% endblock %}{% if request.user.is_authenticated and request.user.role == 'locataire' and request.resolver_match.url_name != 'landing' %} loc-with-sidebar{% endif %}">
-
-    {% if request.user.is_authenticated and request.user.role == 'locataire' and request.resolver_match.url_name != 'landing' %}
-    {% include "dashboard/includes/sidebar_locataire.html" %}
-    {% endif %}
 
     {% block navbar %}
     {% include "includes/main_navbar.html" %}
     {% endblock %}
 
+    <div class="ig-body-row">
+    {% if request.user.is_authenticated and request.user.role == 'locataire' and request.resolver_match.url_name != 'landing' %}
+    {% include "dashboard/includes/sidebar_locataire.html" %}
+    {% endif %}
     <div class="ig-content-shift">
     {% block body %}
     <main class="page-wrapper">
@@ -195,8 +196,10 @@
     </main>
     {% endblock %}
     </div>
+    </div>
 
     <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     {% block extra_js %}{% endblock %}
+    {% include "includes/assistant_widget.html" %}
   </body>
 </html>

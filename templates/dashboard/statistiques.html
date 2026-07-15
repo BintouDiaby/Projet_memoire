@@ -1,0 +1,124 @@
+{% load static humanize %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Statistiques — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+.kpi-box{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;display:flex;flex-direction:column;gap:6px}
+.kpi-label{font-size:11.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.09em;font-weight:600}
+.kpi-val{font-family:var(--font-display);font-weight:800;font-size:24px;color:#111;line-height:1}
+.kpi-sub{font-size:12px;color:var(--muted)}
+.kpi-box.kpi-green .kpi-val{color:var(--green)}
+.kpi-box.kpi-amber .kpi-val{color:#B45309}
+.kpi-box.kpi-red .kpi-val{color:#B91C1C}
+.kpi-box.kpi-blue .kpi-val{color:var(--primary)}
+
+.chart-wrap{display:flex;align-items:flex-end;gap:18px;height:180px;padding:8px 4px 0}
+.chart-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px}
+.chart-bars{display:flex;align-items:flex-end;gap:4px;height:140px;width:100%;justify-content:center}
+.chart-bar{width:16px;border-radius:4px 4px 0 0;min-height:2px}
+.chart-bar.attendu{background:var(--border-2)}
+.chart-bar.recu{background:var(--green)}
+.chart-lab{font-size:11px;color:var(--muted);font-weight:600}
+.chart-legend{display:flex;gap:18px;margin-bottom:10px;font-size:12px;color:var(--muted)}
+.chart-legend span{display:inline-flex;align-items:center;gap:6px}
+.chart-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+.repart-row{display:flex;align-items:center;gap:12px;padding:8px 0}
+.repart-lab{width:130px;flex-shrink:0;font-size:13px;font-weight:600;color:var(--ink)}
+.repart-bar-bg{flex:1;background:var(--bg);border-radius:6px;height:10px;overflow:hidden}
+.repart-bar{height:100%;background:var(--primary);border-radius:6px}
+.repart-n{width:30px;text-align:right;font-weight:700;font-size:13px;color:var(--ink)}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='statistiques' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+  <button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tspacer"></div>
+  <a class="addbtn" href="{% url 'rapport_mensuel_pdf' %}" style="background:#fff;color:var(--text);border:1.5px solid var(--border)"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Rapport PDF</a>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+<div class="pg-head">
+  <h1>Statistiques</h1>
+  <p>Revenus, taux de collecte et impayés calculés en temps réel sur vos biens</p>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-box kpi-blue">
+    <div class="kpi-label">Biens</div>
+    <div class="kpi-val">{{ stats.nombre_proprietes }}</div>
+    <div class="kpi-sub">biens publiés</div>
+  </div>
+  <div class="kpi-box kpi-blue">
+    <div class="kpi-label">Contrats actifs</div>
+    <div class="kpi-val">{{ stats.nombre_contrats_actifs }}</div>
+    <div class="kpi-sub">{{ stats.nombre_locataires }} locataire{{ stats.nombre_locataires|pluralize }}</div>
+  </div>
+  <div class="kpi-box kpi-green">
+    <div class="kpi-label">Revenu mensuel</div>
+    <div class="kpi-val">{{ stats.revenu_mensuel_total|floatformat:0|intcomma }}</div>
+    <div class="kpi-sub">FCFA attendus / mois</div>
+  </div>
+  <div class="kpi-box kpi-green">
+    <div class="kpi-label">Reçu ce mois</div>
+    <div class="kpi-val">{{ stats.revenu_recu_ce_mois|floatformat:0|intcomma }}</div>
+    <div class="kpi-sub">FCFA encaissés</div>
+  </div>
+  <div class="kpi-box {% if stats.montant_impaye %}kpi-red{% else %}kpi-green{% endif %}">
+    <div class="kpi-label">Impayés</div>
+    <div class="kpi-val">{{ stats.montant_impaye|floatformat:0|intcomma }}</div>
+    <div class="kpi-sub">{{ stats.nombre_contrats_avec_impaye }} contrat{{ stats.nombre_contrats_avec_impaye|pluralize }} concerné{{ stats.nombre_contrats_avec_impaye|pluralize }}</div>
+  </div>
+  <div class="kpi-box {% if stats.taux_collecte_pourcentage >= 80 %}kpi-green{% elif stats.taux_collecte_pourcentage >= 50 %}kpi-amber{% else %}kpi-red{% endif %}">
+    <div class="kpi-label">Taux de collecte</div>
+    <div class="kpi-val">{{ stats.taux_collecte_pourcentage|floatformat:0 }}%</div>
+    <div class="kpi-sub">ce mois-ci</div>
+  </div>
+  <div class="kpi-box kpi-amber">
+    <div class="kpi-label">Revenu annuel estimé</div>
+    <div class="kpi-val">{{ stats.revenu_annuel_estime|floatformat:0|intcomma }}</div>
+    <div class="kpi-sub">FCFA sur 12 mois</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Encaissement sur 6 mois</h2>
+  </div>
+  <div class="chart-legend">
+    <span><i style="background:var(--border-2)"></i> Montant attendu</span>
+    <span><i style="background:var(--green)"></i> Montant reçu</span>
+  </div>
+  <div class="chart-wrap">
+    {% for h in historique %}
+    <div class="chart-col">
+      <div class="chart-bars">
+        <div class="chart-bar attendu" style="height:{{ h.pct_attendu }}%" title="Attendu : {{ h.attendu|floatformat:0|intcomma }} FCFA"></div>
+        <div class="chart-bar recu" style="height:{{ h.pct_recu }}%" title="Reçu : {{ h.recu|floatformat:0|intcomma }} FCFA"></div>
+      </div>
+      <div class="chart-lab">{{ h.label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if repartition_biens %}
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12M3 21h18"/></svg> Répartition des biens</h2>
+  </div>
+  {% for r in repartition_biens %}
+  <div class="repart-row">
+    <div class="repart-lab">{{ r.type_bien|capfirst }}</div>
+    <div class="repart-bar-bg"><div class="repart-bar" style="width:{% widthratio r.n stats.nombre_proprietes 100 %}%"></div></div>
+    <div class="repart-n">{{ r.n }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+</div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .app -->
+</body></html>

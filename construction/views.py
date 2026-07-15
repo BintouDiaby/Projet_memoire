@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden
 from django.utils import timezone
-from .models import ProfilConstruction, RealisationConstruction, ProjetConstruction, EtapeChantier, PhotoChantier, NotificationConstruction
+from .models import ProfilConstruction, RealisationConstruction, ProjetConstruction, EtapeChantier, PhotoChantier, NotificationConstruction, Devis
 from utilisateurs.models import Company, Utilisateur
 from messagerie.models import Conversation, Message
 
@@ -176,6 +176,11 @@ def projet_detail(request, projet_id):
     etapes = projet.etapes.all()
     photos = projet.photos_chantier.select_related('ajoute_par', 'etape').all()
 
+    devis_historique = list(projet.devis.all())
+    devis_actuel = devis_historique[0] if devis_historique else None
+    peut_preparer_devis = est_entreprise and (devis_actuel is None or devis_actuel.statut in (Devis.Statut.REFUSE, Devis.Statut.EXPIRE))
+    peut_repondre_devis = est_client and devis_actuel is not None and devis_actuel.statut == Devis.Statut.ENVOYE
+
     return render(request, 'construction/projet_detail.html', {
         'projet': projet,
         'etapes': etapes,
@@ -183,6 +188,10 @@ def projet_detail(request, projet_id):
         'conv': conv,
         'est_entreprise': est_entreprise,
         'est_client': est_client,
+        'devis_historique': devis_historique,
+        'devis_actuel': devis_actuel,
+        'peut_preparer_devis': peut_preparer_devis,
+        'peut_repondre_devis': peut_repondre_devis,
     })
 
 
@@ -348,6 +357,237 @@ def annuler_rdv(request, projet_id):
         _notifier(destinataire, projet, NotificationConstruction.Type.RDV_ANNULE, message)
 
     return redirect('construction:projet_detail', projet_id=projet.id)
+
+
+# ─── Profil construction (description, spécialités/services, réalisations) ──
+
+@login_required
+def gerer_profil(request):
+    """Page entreprise pour éditer le profil construction (description,
+    spécialités) et gérer les réalisations affichées publiquement."""
+    user = request.user
+    company = getattr(user, 'company', None)
+    if not company or 'construction' not in (company.types or []):
+        return HttpResponseForbidden('Votre entreprise ne propose pas de service de construction')
+
+    profil, _ = ProfilConstruction.objects.get_or_create(company=company)
+
+    if request.method == 'POST' and request.POST.get('action') == 'profil':
+        profil.description = request.POST.get('description', '').strip()
+        annee = request.POST.get('annee_creation', '').strip()
+        profil.annee_creation = int(annee) if annee.isdigit() else None
+        specialites_raw = request.POST.get('specialites', '')
+        profil.specialites = [s.strip() for s in specialites_raw.split(',') if s.strip()]
+        profil.adresse = request.POST.get('adresse', '').strip()
+        profil.telephone = request.POST.get('telephone', '').strip()
+        profil.site_web = request.POST.get('site_web', '').strip()
+        profil.save()
+        return redirect('construction:gerer_profil')
+
+    realisations = company.realisations.all()
+    return render(request, 'construction/gerer_profil.html', {
+        'company': company,
+        'profil': profil,
+        'realisations': realisations,
+        'types': ProjetConstruction.TypeProjet.choices,
+    })
+
+
+@login_required
+def realisation_ajouter(request):
+    user = request.user
+    company = getattr(user, 'company', None)
+    if not company or 'construction' not in (company.types or []):
+        return HttpResponseForbidden()
+
+    if request.method == 'POST':
+        titre = request.POST.get('titre', '').strip()
+        if titre:
+            annee = request.POST.get('annee', '').strip()
+            RealisationConstruction.objects.create(
+                company=company,
+                titre=titre,
+                description=request.POST.get('description', '').strip(),
+                photo=request.FILES.get('photo'),
+                annee=int(annee) if annee.isdigit() else None,
+                localisation=request.POST.get('localisation', '').strip(),
+                type_projet=request.POST.get('type_projet', '').strip(),
+                ordre=company.realisations.count(),
+            )
+
+    return redirect('construction:gerer_profil')
+
+
+@login_required
+def realisation_modifier(request, realisation_id):
+    user = request.user
+    company = getattr(user, 'company', None)
+    realisation = get_object_or_404(RealisationConstruction, id=realisation_id, company=company)
+
+    if request.method == 'POST':
+        titre = request.POST.get('titre', '').strip()
+        if titre:
+            realisation.titre = titre
+            realisation.description = request.POST.get('description', '').strip()
+            if request.FILES.get('photo'):
+                realisation.photo = request.FILES.get('photo')
+            annee = request.POST.get('annee', '').strip()
+            realisation.annee = int(annee) if annee.isdigit() else None
+            realisation.localisation = request.POST.get('localisation', '').strip()
+            realisation.type_projet = request.POST.get('type_projet', '').strip()
+            realisation.save()
+
+    return redirect('construction:gerer_profil')
+
+
+@login_required
+def realisation_supprimer(request, realisation_id):
+    user = request.user
+    company = getattr(user, 'company', None)
+    realisation = get_object_or_404(RealisationConstruction, id=realisation_id, company=company)
+    if request.method == 'POST':
+        realisation.delete()
+    return redirect('construction:gerer_profil')
+
+
+# ─── Devis ───────────────────────────────────────────────────────────────────
+
+@login_required
+def devis_preparer(request, projet_id):
+    """L'entreprise chiffre et envoie un devis au client."""
+    projet = get_object_or_404(ProjetConstruction, id=projet_id)
+    user = request.user
+    contact = _get_contact_user(projet.entreprise)
+    est_entreprise = (contact and user == contact) or user.is_staff
+    if not est_entreprise:
+        return HttpResponseForbidden()
+
+    devis_en_cours = projet.devis.filter(statut=Devis.Statut.ENVOYE).exists()
+    if devis_en_cours:
+        return redirect('construction:projet_detail', projet_id=projet.id)
+
+    if request.method == 'POST':
+        montant = request.POST.get('montant', '').strip()
+        detail = request.POST.get('detail', '').strip()
+        try:
+            validite_jours = int(request.POST.get('validite_jours', '30') or 30)
+        except ValueError:
+            validite_jours = 30
+
+        if not montant or not detail:
+            return redirect('construction:projet_detail', projet_id=projet.id)
+
+        devis = Devis.objects.create(
+            projet=projet, montant=montant, detail=detail,
+            validite_jours=validite_jours, cree_par=user,
+        )
+        projet.statut = ProjetConstruction.Statut.DEVIS_ENVOYE
+        projet.save(update_fields=['statut'])
+
+        from django.contrib.humanize.templatetags.humanize import intcomma
+        _notifier(
+            projet.client, projet, NotificationConstruction.Type.NOUVEAU_DEVIS,
+            f"Un devis de {intcomma(int(devis.montant))} FCFA vous a été envoyé pour votre projet "
+            f"{projet.get_type_projet_display()}. Valable {validite_jours} jours."
+        )
+
+    return redirect('construction:projet_detail', projet_id=projet.id)
+
+
+@login_required
+def devis_repondre(request, devis_id):
+    """Le client accepte ou refuse le devis reçu."""
+    devis = get_object_or_404(Devis, id=devis_id)
+    projet = devis.projet
+    user = request.user
+    if user != projet.client:
+        return HttpResponseForbidden()
+
+    if request.method == 'POST' and devis.statut == Devis.Statut.ENVOYE:
+        action = request.POST.get('action')
+        contact = _get_contact_user(projet.entreprise)
+
+        if action == 'accepter':
+            devis.statut = Devis.Statut.ACCEPTE
+            devis.date_reponse = timezone.now()
+            devis.save(update_fields=['statut', 'date_reponse'])
+            projet.devis.filter(statut=Devis.Statut.ENVOYE).exclude(id=devis.id).update(statut=Devis.Statut.EXPIRE)
+            projet.statut = ProjetConstruction.Statut.ACCEPTE
+            projet.save(update_fields=['statut'])
+            _notifier(
+                contact, projet, NotificationConstruction.Type.STATUT_CHANGE,
+                f"{user.get_full_name() or user.username} a accepté le devis."
+            )
+        elif action == 'refuser':
+            devis.statut = Devis.Statut.REFUSE
+            devis.motif_refus = request.POST.get('motif_refus', '').strip()
+            devis.date_reponse = timezone.now()
+            devis.save(update_fields=['statut', 'motif_refus', 'date_reponse'])
+            projet.statut = ProjetConstruction.Statut.EN_ATTENTE
+            projet.save(update_fields=['statut'])
+            msg = f"{user.get_full_name() or user.username} a refusé le devis."
+            if devis.motif_refus:
+                msg += f" Motif : {devis.motif_refus}"
+            _notifier(contact, projet, NotificationConstruction.Type.STATUT_CHANGE, msg)
+
+    return redirect('construction:projet_detail', projet_id=projet.id)
+
+
+@login_required
+def devis_pdf(request, devis_id):
+    """Télécharge le devis en PDF."""
+    from django.http import HttpResponse
+    import io
+
+    devis = Devis.objects.select_related('projet__client', 'projet__entreprise').filter(id=devis_id).first()
+    if not devis:
+        from django.http import Http404
+        raise Http404('Devis non trouvé')
+    projet = devis.projet
+    contact = _get_contact_user(projet.entreprise)
+    if request.user not in (projet.client, contact) and not request.user.is_staff:
+        return HttpResponseForbidden('Accès refusé')
+
+    buffer = io.BytesIO()
+    _build_devis_pdf(devis, buffer)
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="devis-projet-{projet.id}.pdf"'
+    return response
+
+
+def _build_devis_pdf(devis, buffer):
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=25*mm, bottomMargin=25*mm)
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('Titre', parent=styles['Title'], fontSize=16, textColor=colors.HexColor('#185FA5'))
+    meta_style = ParagraphStyle('Meta', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#6b7280'), spaceAfter=4)
+    body_style = ParagraphStyle('Corps', parent=styles['Normal'], fontSize=11, leading=16, spaceAfter=10)
+    montant_style = ParagraphStyle('Montant', parent=styles['Title'], fontSize=20, textColor=colors.HexColor('#3B6D11'))
+
+    projet = devis.projet
+    company = projet.entreprise
+
+    elements = [
+        Paragraph(f"Devis — {projet.get_type_projet_display()}", title_style),
+        Spacer(1, 4*mm),
+        Paragraph(f"Entreprise : {company.name}", meta_style),
+        Paragraph(f"Client : {projet.client.get_full_name() or projet.client.username}", meta_style),
+        Paragraph(f"Date d'émission : {devis.date_creation.strftime('%d/%m/%Y')}", meta_style),
+        Paragraph(f"Valable jusqu'au : {devis.date_limite_validite.strftime('%d/%m/%Y')}", meta_style),
+        Spacer(1, 8*mm),
+        Paragraph(f"{int(devis.montant):,}".replace(',', ' ') + " FCFA", montant_style),
+        Spacer(1, 8*mm),
+        Paragraph("Détail des prestations", styles['Heading3']),
+    ]
+    for paragraphe in devis.detail.split('\n\n'):
+        elements.append(Paragraph(paragraphe.replace('\n', '<br/>'), body_style))
+
+    doc.build(elements)
 
 
 # ─── Mettre à jour le statut d'une étape ────────────────────────────────────

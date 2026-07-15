@@ -1,4 +1,4 @@
-{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nouveau contrat — ImmoGérer</title>
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{% if completer %}Compléter le contrat{% else %}Nouveau contrat{% endif %} — ImmoGérer</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 .form-card{max-width:640px}
@@ -25,8 +25,13 @@
 </div>
 <div class="content">
 <div class="pg-head">
+  {% if completer %}
+  <h1>Compléter le contrat</h1>
+  <p>Complétez les termes du contrat pour {{ contrat.bien.titre }} avant de l'envoyer au locataire pour signature</p>
+  {% else %}
   <h1>Nouveau contrat</h1>
-  <p>Créer un contrat de location entre vous et un locataire</p>
+  <p>Préparez un contrat de location — le locataire devra le signer avant qu'il ne devienne actif</p>
+  {% endif %}
 </div>
 
 {% if messages %}
@@ -102,12 +107,35 @@
       {{ form.nombre_mois_minimum }}
     </div>
 
+    <h3 style="font-size:13.5px;font-weight:700;margin:20px 0 4px;color:var(--text)">Article 10 — Retards de paiement</h3>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 12px">Ce barème sera écrit noir sur blanc dans le contrat que le locataire signe.</p>
+    <div class="row2">
+      <div class="field">
+        <label for="{{ form.jours_avant_rappel.id_for_label }}">Rappel après (jours)</label>
+        {{ form.jours_avant_rappel }}
+      </div>
+      <div class="field">
+        <label for="{{ form.jours_avant_frais.id_for_label }}">Frais de retard après (jours)</label>
+        {{ form.jours_avant_frais }}
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="{{ form.montant_frais_retard.id_for_label }}">Montant des frais (F CFA)</label>
+        {{ form.montant_frais_retard }}
+      </div>
+      <div class="field">
+        <label for="{{ form.jours_avant_mise_en_demeure.id_for_label }}">Mise en demeure après (jours)</label>
+        {{ form.jours_avant_mise_en_demeure }}
+      </div>
+    </div>
+
     <div class="field">
       <label for="{{ form.conditions_speciales.id_for_label }}">Conditions particulières (optionnel)</label>
       {{ form.conditions_speciales }}
     </div>
 
-    <button type="submit" class="submit-btn">Créer le contrat</button>
+    <button type="submit" class="submit-btn">Envoyer au locataire pour signature</button>
   </form>
   {% endif %}
 </div>

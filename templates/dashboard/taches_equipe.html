@@ -1,0 +1,49 @@
+{% load static %}<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tâches — ImmoGérer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+.tache-row{display:flex;align-items:center;gap:14px;padding:13px 0;border-top:1px solid var(--border)}
+.tache-row:first-child{border-top:none}
+.tache-av{width:38px;height:38px;border-radius:10px;background:var(--blue-light);color:var(--blue);display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:13px;flex:0 0 38px}
+.tache-titre{font-weight:600;font-size:13.5px;color:var(--ink)}
+.tache-titre.done{text-decoration:line-through;color:var(--muted)}
+.tache-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+</style>
+</head><body>
+<div class="app">
+{% with active_page='taches_equipe' %}{% include "dashboard/includes/sidebar.html" %}{% endwith %}
+<div class="main">
+<div class="topbar">
+  <button class="backbtn" onclick="history.back()" title="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <div class="tspacer"></div>
+  <div class="me"><div class="av">{{ company_initial }}</div></div>
+</div>
+<div class="content">
+
+<div class="pg-head">
+  <h1>Tâches de l'équipe</h1>
+  <p>Suivez l'avancement des tâches assignées à vos employés</p>
+</div>
+
+<div class="card">
+  {% for t in taches %}
+  <div class="tache-row">
+    <div class="tache-av">{{ t.assignee_a.first_name|default:t.assignee_a.username|first|upper }}</div>
+    <div style="flex:1;min-width:0">
+      <div class="tache-titre {% if t.statut == 'fait' %}done{% endif %}">{{ t.titre }}</div>
+      <div class="tache-meta">
+        {{ t.assignee_a.get_full_name|default:t.assignee_a.username }}
+        {% if t.date_limite %} · Échéance : {{ t.date_limite|date:"d/m/Y" }}{% endif %}
+      </div>
+    </div>
+    <span class="badge {% if t.statut == 'fait' %}b-green{% else %}b-amber{% endif %}">{{ t.get_statut_display }}</span>
+    <a class="btn-mini" href="{% url 'voir_collaborateur' user_id=t.assignee_a.id %}" style="background:none;border:1px solid var(--border);border-radius:8px;padding:7px 13px;font-size:12px;font-weight:600;color:var(--text);text-decoration:none">Voir</a>
+  </div>
+  {% empty %}
+  <div class="empty"><b>Aucune tâche</b>Assignez des tâches à vos employés depuis leur fiche (page Personnel → Voir).</div>
+  {% endfor %}
+</div>
+
+</div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .app -->
+</body></html>

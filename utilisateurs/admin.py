@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import Utilisateur, ProprietaireProfile, LocataireProfile
+from .models import Utilisateur, ProprietaireProfile, LocataireProfile, AvisEntreprise
 
 
 @admin.register(Utilisateur)
@@ -32,3 +32,10 @@ class LocataireProfileAdmin(admin.ModelAdmin):
     list_display = ('utilisateur', 'budget_max_mensuel', 'localisation_preferee')
     list_filter = ('budget_max_mensuel',)
     search_fields = ('utilisateur__username',)
+
+
+@admin.register(AvisEntreprise)
+class AvisEntrepriseAdmin(admin.ModelAdmin):
+    list_display = ('company', 'auteur', 'note', 'date_creation')
+    list_filter = ('note', 'date_creation')
+    search_fields = ('company__name', 'auteur__username')

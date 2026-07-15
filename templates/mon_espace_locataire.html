@@ -196,7 +196,7 @@
                 <button type="submit" style="background:none;border:none;cursor:pointer;font-size:12px;color:#185FA5;font-weight:600;padding:0">Tout lire</button>
               </form>
               {% endif %}
-              <a href="/dashboard/notifications/">Tout voir</a>
+              <a href="{% url 'mes_notifications_locataire' %}">Tout voir</a>
             </span>
           </div>
           {% for n in notifications|slice:":5" %}
@@ -210,6 +210,19 @@
         </div>
       </div>
     </div>
+
+    <!-- ALERTE MISE EN DEMEURE (prioritaire sur la simple alerte de retard) -->
+    {% if mise_en_demeure_active %}
+    <div class="me-alerte" style="background:#FEF2F2;border-color:#F87171">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+      <p style="flex:1">
+        Vous avez reçu une <b>mise en demeure</b>{% if mise_en_demeure_active.statut != 'expiree' %} — régularisez votre situation avant le <b>{{ mise_en_demeure_active.date_limite_regularisation|date:"d F Y" }}</b>{% else %} — le délai accordé est <b>expiré</b>{% endif %}.
+      </p>
+      {% if facture_mise_en_demeure %}
+      <a href="/dashboard/facturation/{{ facture_mise_en_demeure.id }}/" style="flex-shrink:0;background:#B91C1C;color:#fff;font-weight:600;font-size:12.5px;padding:8px 16px;border-radius:9px;text-decoration:none">Voir la lettre</a>
+      {% endif %}
+    </div>
+    {% endif %}
 
     <!-- ALERTE RETARD -->
     {% if nb_retards > 0 %}

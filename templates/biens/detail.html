@@ -87,6 +87,13 @@
 
   /* status badge on photo */
   .prop-photo .status-tag{position:absolute;top:14px;left:14px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:5px 12px;border-radius:8px;background:rgba(255,255,255,.95);color:var(--primary);z-index:2}
+
+  /* galerie de miniatures */
+  .prop-gallery{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px}
+  .prop-gallery .thumb{flex:0 0 84px;width:84px;height:64px;border-radius:9px;overflow:hidden;cursor:pointer;border:2px solid transparent;opacity:.75;transition:.15s}
+  .prop-gallery .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .prop-gallery .thumb:hover{opacity:1}
+  .prop-gallery .thumb.active{border-color:var(--primary);opacity:1}
   .prop-photo .status-tag.vente{color:#7A5F1A}
   .prop-photo .status-tag.terrain{color:var(--green)}
 
@@ -106,6 +113,30 @@
 
   /* map */
   #prop-map{height:280px;border-radius:10px;overflow:hidden}
+
+  /* avis */
+  .avis-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+  .avis-moyenne{font-family:var(--font-display);font-weight:800;font-size:22px}
+  .avis-stars{color:var(--accent);letter-spacing:1px;font-size:15px;white-space:nowrap}
+  .avis-count{color:var(--muted);font-size:13px}
+  .avis-item{padding:14px 0;border-top:1px solid var(--border)}
+  .avis-item:first-child{border-top:none;padding-top:0}
+  .avis-item-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+  .avis-auteur{font-weight:600;font-size:13.5px}
+  .avis-date{font-size:11.5px;color:var(--muted-2)}
+  .avis-commentaire{font-size:13.5px;color:var(--text);line-height:1.55}
+  .avis-del{background:none;border:none;color:var(--muted-2);cursor:pointer;font-size:12px;padding:0;text-decoration:underline}
+  .avis-del:hover{color:var(--warn)}
+  .avis-form{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+  .avis-form>label{display:block;font-size:12.5px;font-weight:600;margin-bottom:6px}
+  .avis-star-picker{display:flex;flex-direction:row-reverse;justify-content:flex-end;gap:2px;margin-bottom:12px}
+  .avis-star-picker input{display:none}
+  .avis-star-picker label{cursor:pointer;line-height:1;margin:0}
+  .avis-star-picker label span{font-size:26px;color:var(--border);transition:.1s}
+  .avis-star-picker input:checked ~ label span{color:var(--accent)}
+  .avis-star-picker label:hover span,
+  .avis-star-picker label:hover ~ label span{color:var(--accent)}
+  .avis-form textarea{width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:var(--font-body);font-size:13.5px;resize:vertical;min-height:70px}
 
   /* right sidebar */
   .prop-sidebar{display:flex;flex-direction:column;gap:16px;position:sticky;top:80px}
@@ -135,6 +166,22 @@
   .alert-err svg{width:16px;height:16px;stroke:var(--warn);fill:none;stroke-width:2;flex:0 0 16px;margin-top:1px}
   .alert-info{background:var(--blue-light);border:1px solid #bdd7f5;border-radius:10px;padding:12px 14px;font-size:13px;color:var(--blue-text);display:flex;align-items:flex-start;gap:8px}
   .alert-info svg{width:16px;height:16px;stroke:var(--primary);fill:none;stroke-width:2;flex:0 0 16px;margin-top:1px}
+
+  /* modale avertissement reservation sans visite */
+  .rv-overlay{position:fixed;inset:0;background:rgba(16,24,38,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000}
+  .rv-overlay.open{display:flex}
+  .rv-sheet{background:#fff;border-radius:16px;max-width:420px;width:100%;padding:22px;box-shadow:0 24px 60px rgba(0,0,0,.25)}
+  .rv-sheet h3{font-family:var(--font-display,inherit);font-weight:800;font-size:17px;margin:0 0 8px;color:var(--text)}
+  .rv-sheet p{font-size:13.5px;color:#6B7280;margin:0 0 16px;line-height:1.5}
+  .rv-opt{border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;transition:.14s}
+  .rv-opt:hover{border-color:var(--primary)}
+  .rv-opt.sel{border-color:var(--primary);background:var(--blue-light)}
+  .rv-opt .t{font-weight:700;font-size:13.5px;color:var(--text)}
+  .rv-opt .d{font-size:12px;color:#6B7280;margin-top:2px}
+  .rv-ack{display:none;align-items:flex-start;gap:8px;font-size:12.5px;color:#6B7280;margin:12px 0;cursor:pointer}
+  .rv-ack input{margin-top:2px}
+  .rv-actions{display:flex;gap:8px;margin-top:16px}
+  .rv-actions button{flex:1}
 
   /* owner card */
   .owner-ava{width:44px;height:44px;border-radius:12px;background:var(--blue-light);display:grid;place-items:center;flex:0 0 44px}
@@ -281,7 +328,7 @@
         <!-- PHOTO -->
         <div class="prop-photo">
           {% if bien.photo_principale %}
-          <img src="{{ bien.photo_principale.url }}" alt="{{ bien.titre }}">
+          <img id="prop-main-photo" src="{{ bien.photo_principale.url }}" alt="{{ bien.titre }}">
           {% else %}
           <div class="grid-bg"></div>
           <div class="no-img">
@@ -304,6 +351,27 @@
           <span class="status-tag">Location</span>
           {% endif %}
         </div>
+
+        <!-- GALERIE DE PHOTOS -->
+        {% if bien.photos.all %}
+        <div class="prop-gallery">
+          {% if bien.photo_principale %}
+          <div class="thumb active" onclick="propSwapPhoto(this, '{{ bien.photo_principale.url }}')"><img src="{{ bien.photo_principale.url }}" alt=""></div>
+          {% endif %}
+          {% for p in bien.photos.all %}
+          {% if p.photo %}
+          <div class="thumb" onclick="propSwapPhoto(this, '{{ p.photo.url }}')" title="{{ p.description|default:'' }}"><img src="{{ p.photo.url }}" alt="{{ p.description }}"></div>
+          {% endif %}
+          {% endfor %}
+        </div>
+        <script>
+          function propSwapPhoto(el, url) {
+            document.getElementById('prop-main-photo').src = url;
+            document.querySelectorAll('.prop-gallery .thumb').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+          }
+        </script>
+        {% endif %}
 
         <!-- DESCRIPTION -->
         {% if bien.description %}
@@ -358,10 +426,75 @@
           {% endif %}
         </div>
 
+        <!-- AVIS -->
+        <div class="prop-section">
+          <h2><svg viewBox="0 0 24 24"><path d="M12 2l3.1 6.3L22 9.3l-5 4.9 1.2 6.8L12 18l-6.2 3 1.2-6.8L2 9.3l6.9-1L12 2z"/></svg>Avis des locataires</h2>
+
+          <div class="avis-head">
+            {% if note_moyenne_bien %}
+            <span class="avis-moyenne">{{ note_moyenne_bien }}/5</span>
+            <span class="avis-stars">{% for i in "12345" %}{% if forloop.counter <= note_moyenne_bien %}★{% else %}☆{% endif %}{% endfor %}</span>
+            <span class="avis-count">{{ nb_avis }} avis</span>
+            {% else %}
+            <span class="avis-count">Aucun avis pour l'instant.</span>
+            {% endif %}
+          </div>
+
+          {% for a in avis_liste %}
+          <div class="avis-item">
+            <div class="avis-item-head">
+              <div>
+                <span class="avis-auteur">{{ a.auteur.get_full_name|default:a.auteur.username }}</span>
+                <span class="avis-stars">{% for i in "12345" %}{% if forloop.counter <= a.note %}★{% else %}☆{% endif %}{% endfor %}</span>
+              </div>
+              <span class="avis-date">{{ a.date_creation|date:"d/m/Y" }}</span>
+            </div>
+            <div class="avis-commentaire">{{ a.commentaire }}</div>
+            {% if a.auteur_id == user.id %}
+            <form method="post" action="{% url 'biens_ui:avis_supprimer' avis_id=a.id %}" style="margin-top:6px" onsubmit="return confirm('Supprimer votre avis ?');">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="/biens/{{ bien.id }}/">
+              <button type="submit" class="avis-del">Supprimer mon avis</button>
+            </form>
+            {% endif %}
+          </div>
+          {% endfor %}
+
+          {% if peut_noter_bien %}
+          <form method="post" action="{% url 'biens_ui:avis_ajouter' bien_id=bien.id %}" class="avis-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="/biens/{{ bien.id }}/">
+            <label>Votre note</label>
+            <div class="avis-star-picker">
+              {% for i in "54321" %}
+              <input type="radio" name="note" id="avis-star{{ i }}" value="{{ i }}" required>
+              <label for="avis-star{{ i }}"><span>★</span></label>
+              {% endfor %}
+            </div>
+            <label for="avis-commentaire">Votre commentaire</label>
+            <textarea id="avis-commentaire" name="commentaire" placeholder="Partagez votre expérience dans ce logement…" required></textarea>
+            <button type="submit" class="btn btn-primary" style="margin-top:12px;width:auto;padding:9px 18px">Publier mon avis</button>
+          </form>
+          {% elif mon_avis_bien %}
+          <div class="alert-info" style="margin-top:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Vous avez déjà laissé un avis sur ce bien.</div>
+          {% elif user.is_authenticated and user.role == 'locataire' %}
+          <div class="alert-info" style="margin-top:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Vous pourrez laisser un avis une fois que vous aurez loué ce bien.</div>
+          {% endif %}
+        </div>
+
       </div><!-- end prop-main -->
 
       <!-- ═══════════════ SIDEBAR ═══════════════ -->
       <div class="prop-sidebar">
+
+        {% if messages %}
+        {% for message in messages %}
+        <div class="{% if message.tags == 'error' %}alert-err{% else %}alert-ok{% endif %}" style="margin-bottom:14px">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
 
         <!-- PRIX -->
         <div class="sidebar-card">
@@ -453,16 +586,18 @@
           {% if reservation_existante %}
           <div class="alert-info" style="margin-top:10px">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-            Réservation {{ reservation_existante.get_statut_display|lower }} — le {{ reservation_existante.date_creation|date:"d/m/Y" }}.
+            {% if reservation_existante.statut == 'confirmee' %}Réservation confirmée{% else %}Demande {{ reservation_existante.get_statut_display|lower }}{% endif %} — le {{ reservation_existante.date_creation|date:"d/m/Y" }}.
           </div>
           {% else %}
-          <form method="post" action="{% url 'biens_ui:reserver' bien.id %}" style="margin-top:10px">
+          <form method="post" action="{% url 'biens_ui:reserver' bien.id %}" style="margin-top:10px" id="reserveForm">
             {% csrf_token %}
-            <button type="submit" class="btn btn-ghost" style="width:100%">
+            <input type="hidden" name="sans_visite" id="sansVisiteInput" value="">
+            <button type="{% if a_visite_confirmee %}submit{% else %}button{% endif %}" class="btn btn-ghost" style="width:100%" {% if not a_visite_confirmee %}onclick="ouvrirModaleReservation()"{% endif %}>
               <svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M9 12l2 2 4-4"/><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/></svg>
               Réserver ce bien
             </button>
           </form>
+
           {% endif %}
           {% else %}
           <div class="alert-info">
@@ -617,6 +752,68 @@
     </div>
   </div>
 </footer>
+
+{% if not a_visite_confirmee %}
+<!-- Modale placée directement sous <body> (hors .prop-sidebar) : un ancêtre
+     avec position:sticky/relative crée sa propre pile d'empilement et
+     empêchait cette modale position:fixed de passer devant la carte Leaflet. -->
+<div class="rv-overlay" id="rvOverlay">
+  <div class="rv-sheet">
+    <h3>Vous n'avez pas encore visité ce logement</h3>
+    <p>Souhaitez-vous continuer votre demande de réservation malgré tout ?</p>
+
+    <div class="rv-opt" id="rvOptSans" onclick="choisirOptionRv('sans')">
+      <div class="t">Oui, je souhaite réserver sans visite</div>
+      <div class="d">Utile si vous êtes loin, à l'étranger, ou pressé(e) de bloquer ce logement.</div>
+    </div>
+    <div class="rv-opt" id="rvOptVisite" onclick="choisirOptionRv('visite')">
+      <div class="t">Programmer une visite d'abord</div>
+      <div class="d">Nous vous amenons vers le formulaire de demande de visite ci-dessus.</div>
+    </div>
+
+    <label class="rv-ack" id="rvAck">
+      <input type="checkbox" id="rvAckCheckbox" onchange="document.getElementById('rvConfirmBtn').disabled = !this.checked">
+      Je reconnais réserver ce logement sans l'avoir visité et j'assume ce choix.
+    </label>
+
+    <div class="rv-actions">
+      <button type="button" class="btn btn-ghost" onclick="fermerModaleReservation()">Annuler</button>
+      <button type="button" class="btn btn-primary" id="rvConfirmBtn" disabled onclick="confirmerReservationSansVisite()">Continuer</button>
+    </div>
+  </div>
+</div>
+<script>
+  function ouvrirModaleReservation(){
+    document.getElementById('rvOverlay').classList.add('open');
+  }
+  function fermerModaleReservation(){
+    document.getElementById('rvOverlay').classList.remove('open');
+    document.getElementById('rvOptSans').classList.remove('sel');
+    document.getElementById('rvOptVisite').classList.remove('sel');
+    document.getElementById('rvAck').style.display = 'none';
+    document.getElementById('rvAckCheckbox').checked = false;
+    document.getElementById('rvConfirmBtn').disabled = true;
+  }
+  function choisirOptionRv(opt){
+    if (opt === 'visite') {
+      fermerModaleReservation();
+      var f = document.querySelector('.visit-form');
+      if (f) { f.scrollIntoView({behavior:'smooth', block:'center'}); var d = f.querySelector('[name="date_visite"]'); if (d) d.focus(); }
+      return;
+    }
+    document.getElementById('rvOptSans').classList.add('sel');
+    document.getElementById('rvOptVisite').classList.remove('sel');
+    document.getElementById('rvAck').style.display = 'flex';
+  }
+  function confirmerReservationSansVisite(){
+    document.getElementById('sansVisiteInput').value = 'on';
+    document.getElementById('reserveForm').submit();
+  }
+  document.getElementById('rvOverlay').addEventListener('click', function(e){
+    if (e.target === this) fermerModaleReservation();
+  });
+</script>
+{% endif %}
 
 {% load l10n %}
 {% if bien.latitude and bien.longitude %}

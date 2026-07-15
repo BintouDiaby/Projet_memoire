@@ -1,0 +1,299 @@
+{% if request.user.is_authenticated %}
+<style>
+  #ia-bubble{position:fixed;bottom:22px;right:22px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#0f3d6e,#185FA5);color:#fff;border:none;box-shadow:0 6px 20px rgba(24,95,165,.35);cursor:pointer;z-index:9999;display:flex;align-items:center;justify-content:center;font-size:24px;transition:.15s}
+  #ia-bubble:hover{transform:scale(1.06)}
+  #ia-panel{position:fixed;bottom:90px;right:22px;width:360px;max-width:calc(100vw - 32px);height:500px;max-height:calc(100vh - 130px);background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.18);z-index:9999;display:none;flex-direction:column;overflow:hidden;font-family:"Inter",system-ui,sans-serif}
+  #ia-panel.open{display:flex}
+  #ia-head{background:linear-gradient(135deg,#0f3d6e,#185FA5);color:#fff;padding:14px 16px;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:space-between}
+  #ia-head span{display:flex;align-items:center;gap:8px}
+  #ia-head-actions{display:flex;align-items:center;gap:10px}
+  #ia-menu-btn{background:rgba(255,255,255,.18);border:none;color:#fff;cursor:pointer;font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px}
+  #ia-close{background:none;border:none;color:#fff;cursor:pointer;font-size:18px;line-height:1;opacity:.85}
+  #ia-close:hover{opacity:1}
+  #ia-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;font-size:13px}
+  .ia-row{display:flex}
+  .ia-row.user{justify-content:flex-end}
+  .ia-bubble-msg{max-width:85%;padding:9px 12px;border-radius:12px;line-height:1.5;white-space:pre-wrap}
+  .ia-row.user .ia-bubble-msg{background:#185FA5;color:#fff;border-bottom-right-radius:3px}
+  .ia-row.assistant .ia-bubble-msg{background:#f3f4f6;color:#111;border-bottom-left-radius:3px}
+  .ia-row.error .ia-bubble-msg{background:#FEF2F2;color:#B4441F}
+  #ia-empty{color:#9aa0a6;font-size:12.5px;text-align:center;padding:24px 12px}
+  .ia-menu{display:flex;flex-direction:column;gap:6px;max-width:90%}
+  .ia-menu-item{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:600;color:#185FA5;cursor:pointer;text-align:left;transition:.12s}
+  .ia-menu-item:hover{border-color:#185FA5;background:#E6F1FB}
+  .ia-cards{display:flex;flex-direction:column;gap:8px;max-width:95%}
+  .ia-card{display:flex;gap:10px;border:1px solid #e5e7eb;border-radius:10px;padding:8px;text-decoration:none;color:inherit}
+  .ia-card:hover{border-color:#185FA5}
+  .ia-card .ph{width:52px;height:52px;border-radius:8px;background:#e8ecf0 center/cover no-repeat;flex-shrink:0}
+  .ia-card .info{min-width:0}
+  .ia-card .t{font-weight:700;font-size:12.5px;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ia-card .d{font-size:11.5px;color:#6B7280;margin-top:2px}
+  .ia-card .p{font-weight:800;font-size:12.5px;color:#3B6D11;margin-top:2px}
+  #ia-form{display:flex;gap:8px;padding:10px;border-top:1px solid #e5e7eb}
+  #ia-input{flex:1;border:1.5px solid #e5e7eb;border-radius:20px;padding:9px 14px;font-size:13px;font-family:inherit;outline:none}
+  #ia-input:focus{border-color:#185FA5}
+  #ia-send{background:#185FA5;color:#fff;border:none;border-radius:50%;width:36px;height:36px;flex-shrink:0;cursor:pointer;display:grid;place-items:center}
+  #ia-send:disabled{opacity:.5;cursor:default}
+</style>
+
+<button id="ia-bubble" onclick="iaToggle()" title="Assistant ImmoGérer">💬</button>
+<div id="ia-panel">
+  <div id="ia-head">
+    <span>🤖 Assistant ImmoGérer</span>
+    <div id="ia-head-actions">
+      <button id="ia-menu-btn" onclick="iaShowMenu()">Menu</button>
+      <button id="ia-close" onclick="iaToggle()">✕</button>
+    </div>
+  </div>
+  <div id="ia-msgs"></div>
+  <form id="ia-form" onsubmit="return iaSubmit(event)">
+    {% csrf_token %}
+    <input id="ia-input" type="text" placeholder="Choisissez une option ci-dessus…" autocomplete="off" disabled>
+    <button id="ia-send" type="submit" disabled>➤</button>
+  </form>
+</div>
+
+<script>
+(function(){
+  var opened = false;
+  var state = 'menu';          // menu | awaiting_ville | awaiting_budget | awaiting_client_nom | free
+  var draft = {};
+  var estEntreprise = false;
+  {% if request.user.role == 'proprietaire' or request.user.role == 'gestionnaire' %}estEntreprise = true;{% endif %}
+
+  window.iaToggle = function(){
+    var panel = document.getElementById('ia-panel');
+    opened = !opened;
+    panel.classList.toggle('open', opened);
+    if (opened) {
+      if (!panel.dataset.loaded) {
+        panel.dataset.loaded = '1';
+        iaLoadHistorique();
+      }
+    } else {
+      // On repart de zéro à chaque fermeture : historique supprimé côté
+      // serveur, conversation effacée à l'écran.
+      fetch('/assistant/vider/', {method: 'POST', headers: {'X-CSRFToken': iaCsrf()}}).catch(function(){});
+      document.getElementById('ia-msgs').innerHTML = '';
+      delete panel.dataset.loaded;
+      draft = {};
+    }
+  };
+
+  function iaCsrf(){
+    return document.querySelector('#ia-form [name=csrfmiddlewaretoken]').value;
+  }
+
+  // Le champ texte n'est utilisable qu'en mode libre ou pendant une question
+  // guidée (ville/budget/nom) — jamais en mode « menu », pour ne jamais
+  // déclencher un appel au LLM sans que l'utilisateur l'ait explicitement
+  // demandé (bouton « Poser une autre question »).
+  function iaSetState(nouvelEtat){
+    state = nouvelEtat;
+    var input = document.getElementById('ia-input');
+    var btn = document.getElementById('ia-send');
+    var enCours = (state !== 'menu');
+    input.disabled = !enCours;
+    btn.disabled = !enCours;
+    input.placeholder = enCours ? 'Écrivez votre message…' : 'Choisissez une option ci-dessus…';
+    if (enCours) input.focus();
+  }
+
+  function iaScroll(){
+    var wrap = document.getElementById('ia-msgs');
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+
+  function iaAppend(role, contenu){
+    var wrap = document.getElementById('ia-msgs');
+    var row = document.createElement('div');
+    row.className = 'ia-row ' + role;
+    var bubble = document.createElement('div');
+    bubble.className = 'ia-bubble-msg';
+    bubble.textContent = contenu;
+    row.appendChild(bubble);
+    wrap.appendChild(row);
+    iaScroll();
+  }
+
+  var MENU_LOCATAIRE = [
+    ['logement', '🏠 Trouver un logement'],
+    ['aide_contrat', '📄 Comprendre mon contrat'],
+    ['paiement', '💳 Paiement'],
+    ['aide_construction', '🏗 Construction'],
+    ['contacter', '💬 Contacter une entreprise'],
+  ];
+  var MENU_ENTREPRISE = [
+    ['client', '👤 Rechercher un client'],
+    ['retard', '💳 Paiements en retard'],
+    ['rdv', '📅 Rendez-vous du jour'],
+    ['devis', '🧾 Devis en cours'],
+  ];
+
+  window.iaShowMenu = function(){
+    iaSetState('menu');
+    draft = {};
+    var wrap = document.getElementById('ia-msgs');
+    var row = document.createElement('div');
+    row.className = 'ia-row assistant';
+    var menu = document.createElement('div');
+    menu.className = 'ia-menu';
+    var titre = document.createElement('div');
+    titre.className = 'ia-bubble-msg';
+    titre.textContent = 'Comment puis-je vous aider ?';
+    menu.appendChild(titre);
+    var options = estEntreprise ? MENU_ENTREPRISE : MENU_LOCATAIRE;
+    options.forEach(function(opt){
+      var btn = document.createElement('div');
+      btn.className = 'ia-menu-item';
+      btn.textContent = opt[1];
+      btn.onclick = function(){ iaMenuClick(opt[0], opt[1]); };
+      menu.appendChild(btn);
+    });
+    var autre = document.createElement('div');
+    autre.className = 'ia-menu-item';
+    autre.textContent = '✏️ Poser une autre question';
+    autre.onclick = function(){ iaSetState('free'); iaAppend('assistant', "Posez votre question, je cherche dans le centre d'aide."); };
+    menu.appendChild(autre);
+    row.appendChild(menu);
+    wrap.appendChild(row);
+    iaScroll();
+  };
+
+  function iaCardsRender(biens){
+    var wrap = document.getElementById('ia-msgs');
+    var row = document.createElement('div');
+    row.className = 'ia-row assistant';
+    if (!biens.length) {
+      var empty = document.createElement('div');
+      empty.className = 'ia-bubble-msg';
+      empty.textContent = "Aucun bien disponible ne correspond à ces critères.";
+      row.appendChild(empty);
+    } else {
+      var cards = document.createElement('div');
+      cards.className = 'ia-cards';
+      var intro = document.createElement('div');
+      intro.className = 'ia-bubble-msg';
+      intro.textContent = biens.length + ' bien(s) trouvé(s) :';
+      cards.appendChild(intro);
+      biens.forEach(function(b){
+        var a = document.createElement('a');
+        a.className = 'ia-card';
+        a.href = b.url;
+        a.target = '_blank';
+        var ph = document.createElement('div');
+        ph.className = 'ph';
+        if (b.photo) ph.style.backgroundImage = "url('" + b.photo + "')";
+        var info = document.createElement('div');
+        info.className = 'info';
+        var t = document.createElement('div'); t.className = 't'; t.textContent = b.titre;
+        var d = document.createElement('div'); d.className = 'd'; d.textContent = b.type_bien + ' — ' + b.ville + (b.commune ? ', ' + b.commune : '') + ' — ' + b.chambres + ' ch.';
+        var p = document.createElement('div'); p.className = 'p'; p.textContent = Math.round(b.prix_mensuel).toLocaleString('fr-FR') + ' FCFA/mois';
+        info.appendChild(t); info.appendChild(d); info.appendChild(p);
+        a.appendChild(ph); a.appendChild(info);
+        cards.appendChild(a);
+      });
+      row.appendChild(cards);
+    }
+    wrap.appendChild(row);
+    iaScroll();
+  }
+
+  function iaPost(url, params){
+    var fd = new FormData();
+    Object.keys(params || {}).forEach(function(k){ fd.append(k, params[k]); });
+    return fetch(url, {method: 'POST', headers: {'X-CSRFToken': iaCsrf()}, body: fd})
+      .then(function(r){ return r.json().then(function(data){ return {status: r.status, data: data}; }); });
+  }
+
+  function iaMenuClick(cle, label){
+    iaAppend('user', label);
+    if (cle === 'logement') {
+      iaSetState('awaiting_ville');
+      iaAppend('assistant', 'Dans quelle ville cherchez-vous ?');
+      return;
+    }
+    if (cle === 'client') {
+      iaSetState('awaiting_client_nom');
+      iaAppend('assistant', 'Quel est le nom du client ?');
+      return;
+    }
+    if (cle === 'contacter') {
+      iaAppend('assistant', "Ouverture de l'annuaire des entreprises…");
+      window.open('/entreprises/', '_blank');
+      iaSetState('menu');
+      return;
+    }
+    // action directe côté serveur (paiement, aide_contrat, aide_construction, retard, rdv, devis)
+    iaPost('/assistant/action/', {action: cle}).then(function(res){
+      iaAppend('assistant', res.status === 200 ? res.data.texte : (res.data.error || 'Erreur.'));
+    }).catch(function(){ iaAppend('error', "Connexion impossible."); });
+    iaSetState('menu');
+  }
+
+  window.iaLoadHistorique = function(){
+    fetch('/assistant/historique/').then(r => r.json()).then(data => {
+      // L'historique ne contient que d'anciens échanges en texte libre
+      // (le menu guidé n'enregistre rien) — on le rejoue s'il existe, puis
+      // on affiche systématiquement le menu, pour que l'assistant guidé
+      // reste toujours le point d'entrée à l'ouverture du chat.
+      if (data.messages && data.messages.length) {
+        data.messages.forEach(m => iaAppend(m.role, m.contenu));
+      }
+      iaShowMenu();
+    }).catch(function(){ iaShowMenu(); });
+  };
+
+  window.iaSubmit = function(ev){
+    ev.preventDefault();
+    var input = document.getElementById('ia-input');
+    var texte = input.value.trim();
+    if (!texte) return false;
+    input.value = '';
+    var btn = document.getElementById('ia-send');
+
+    if (state === 'awaiting_ville') {
+      iaAppend('user', texte);
+      draft.ville = texte;
+      iaSetState('awaiting_budget');
+      iaAppend('assistant', 'Quel est votre budget (en FCFA par mois) ?');
+      return false;
+    }
+
+    if (state === 'awaiting_budget') {
+      iaAppend('user', texte);
+      draft.budget = texte.replace(/[^0-9]/g, '');
+      input.disabled = true; btn.disabled = true;
+      iaPost('/assistant/recherche-logement/', {ville: draft.ville, budget: draft.budget}).then(function(res){
+        if (res.status === 200) iaCardsRender(res.data.biens);
+        else iaAppend('error', res.data.error || 'Erreur.');
+      }).catch(function(){ iaAppend('error', "Connexion impossible."); }).finally(function(){
+        draft = {}; iaSetState('menu');
+      });
+      return false;
+    }
+
+    if (state === 'awaiting_client_nom') {
+      iaAppend('user', texte);
+      input.disabled = true; btn.disabled = true;
+      iaPost('/assistant/recherche-client/', {nom: texte}).then(function(res){
+        iaAppend(res.status === 200 ? 'assistant' : 'error', res.status === 200 ? res.data.texte : (res.data.error || 'Erreur.'));
+      }).catch(function(){ iaAppend('error', "Connexion impossible."); }).finally(function(){
+        iaSetState('menu');
+      });
+      return false;
+    }
+
+    // mode libre : question générale envoyée au LLM
+    iaAppend('user', texte);
+    btn.disabled = true;
+    iaPost('/assistant/chat/', {message: texte}).then(function(res){
+      iaAppend(res.status === 200 ? 'assistant' : 'error', res.status === 200 ? res.data.reponse : (res.data.error || 'Erreur.'));
+    }).catch(function(){ iaAppend('error', "Connexion impossible à l'assistant."); }).finally(function(){
+      btn.disabled = false;
+    });
+    return false;
+  };
+})();
+</script>
+{% endif %}
