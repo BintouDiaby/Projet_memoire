@@ -63,16 +63,29 @@ class Utilisateur(AbstractUser):
 
     def comptes_entreprise(self):
         """Tous les comptes (Directeur + employés) de la même entreprise que
-        cet utilisateur. Queryset vide si `company` n'est pas encore défini
-        (onboarding en cours) — évite qu'un filtre `company=None` ne fasse
-        fuiter les données entre comptes orphelins non liés entre eux."""
+        cet utilisateur, PLUS toujours soi-même. Si `company` n'est pas
+        encore défini (onboarding en cours), ne renvoie que soi-même plutôt
+        qu'un queryset vide — évite qu'un filtre `company=None` ne fasse
+        fuiter les données entre comptes orphelins non liés entre eux, TOUT
+        en garantissant qu'un propriétaire sans entreprise liée voit quand
+        même ses propres biens/contrats/paiements/clients (bug réel constaté :
+        `proprietaire__in=user.comptes_entreprise()` renvoyait un queryset
+        vide, donc rien, pour tout compte sans `company_id`, y compris ses
+        propres ressources)."""
         if not self.company_id:
-            return Utilisateur.objects.none()
+            return Utilisateur.objects.filter(id=self.id)
         return Utilisateur.objects.filter(company_id=self.company_id)
 
     def meme_entreprise(self, autre_user):
-        """Pour les vérifications objet-par-objet (remplace `user == obj.proprietaire`)."""
-        return bool(self.company_id and autre_user and self.company_id == autre_user.company_id)
+        """Pour les vérifications objet-par-objet (remplace `user == obj.proprietaire`).
+        Vrai si même entreprise OU si c'est littéralement le même compte —
+        sans ce second cas, un propriétaire sans `company_id` ne pouvait
+        jamais passer cette vérification, même sur ses propres biens."""
+        if not autre_user:
+            return False
+        if self.id == autre_user.id:
+            return True
+        return bool(self.company_id and self.company_id == autre_user.company_id)
 
     def a_acces(self, *flags):
         """Le Directeur (role=PROPRIETAIRE) et le staff plateforme ont toujours

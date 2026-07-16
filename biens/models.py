@@ -179,6 +179,14 @@ class Visite(models.Model):
     statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
     date_reservation = models.DateTimeField(auto_now_add=True)
 
+    # Annulation d'une visite déjà confirmée : le locataire ne peut plus
+    # l'annuler unilatéralement une fois confirmée (l'entreprise a bloqué le
+    # créneau) — il soumet une demande motivée que l'entreprise valide ou
+    # refuse. Une visite encore en_attente reste annulable directement.
+    demande_annulation = models.BooleanField(default=False)
+    motif_annulation = models.TextField(blank=True, default='')
+    date_demande_annulation = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         unique_together = ['bien', 'locataire', 'date_visite']
         verbose_name = 'Visite'

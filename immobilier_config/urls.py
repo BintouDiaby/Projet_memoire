@@ -970,6 +970,7 @@ urlpatterns = [
     path('dashboard/taches/', dashboard_views.taches_equipe_view, name='taches_equipe'),
     path('dashboard/planning/', dashboard_views.planning_equipe_view, name='planning_equipe'),
     path('dashboard/reservations/', biens_views.dashboard_reservations, name='dashboard_reservations'),
+    path('dashboard/rdv/visite/<int:visite_id>/annulation/', biens_views.traiter_annulation_visite, name='traiter_annulation_visite'),
     path('dashboard/notifications/', dashboard_views.notifications_view, name='dashboard_notifications'),
     path('dashboard/notifications/lire/<int:notif_id>/', dashboard_views.notification_marquer_lue, name='notification_marquer_lue'),
     path('dashboard/notifications/construction/lire/<int:notif_id>/', dashboard_views.notification_construction_marquer_lue, name='notification_construction_marquer_lue'),

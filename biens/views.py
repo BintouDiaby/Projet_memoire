@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from utilisateurs.decorators import acces_requis
 from rest_framework import viewsets, filters, status
@@ -584,8 +585,13 @@ def mes_reservations(request):
 
 @login_required
 def annuler_visite(request, visite_id):
-    """Le locataire annule sa propre demande de visite."""
+    """Le locataire annule sa demande de visite. Si elle n'est encore
+    qu'en_attente, l'annulation est immédiate. Si elle a déjà été confirmée
+    par l'entreprise (créneau bloqué), on exige un motif et on soumet une
+    demande d'annulation à valider par l'entreprise plutôt que d'annuler
+    unilatéralement."""
     from django.contrib import messages
+    from django.utils import timezone
     from dashboard.services import NotificationService
 
     visite = Visite.objects.select_related('bien', 'bien__proprietaire').filter(
@@ -595,19 +601,78 @@ def annuler_visite(request, visite_id):
         from django.http import Http404
         raise Http404('Visite non trouvée')
 
-    if request.method == 'POST' and visite.statut != Visite.Statut.ANNULEE:
-        visite.statut = Visite.Statut.ANNULEE
-        visite.save(update_fields=['statut'])
-        NotificationService.send(
-            destinataire=visite.bien.proprietaire, expediteur=request.user,
-            type_notification='visite',
-            titre=f"Visite annulée — {visite.bien.titre}",
-            message=f"{request.user.get_full_name() or request.user.username} a annulé sa demande de visite.",
-            lien='/dashboard/rdv/',
-        )
-        messages.success(request, "Votre demande de visite a été annulée.")
+    if request.method == 'POST' and visite.statut not in (Visite.Statut.ANNULEE, Visite.Statut.REFUSEE):
+        if visite.statut == Visite.Statut.CONFIRMEE:
+            motif = (request.POST.get('motif') or '').strip()
+            if not motif:
+                messages.error(request, "Merci d'indiquer le motif de votre annulation.")
+                return redirect('biens_ui:mes_visites')
+            visite.demande_annulation = True
+            visite.motif_annulation = motif
+            visite.date_demande_annulation = timezone.now()
+            visite.save(update_fields=['demande_annulation', 'motif_annulation', 'date_demande_annulation'])
+            NotificationService.send(
+                destinataire=visite.bien.proprietaire, expediteur=request.user,
+                type_notification='visite',
+                titre=f"Demande d'annulation — {visite.bien.titre}",
+                message=f"{request.user.get_full_name() or request.user.username} demande à annuler sa visite confirmée. Motif : {motif}",
+                lien='/dashboard/rdv/',
+            )
+            messages.success(request, "Votre demande d'annulation a été envoyée — l'entreprise doit la valider.")
+        else:
+            visite.statut = Visite.Statut.ANNULEE
+            visite.save(update_fields=['statut'])
+            NotificationService.send(
+                destinataire=visite.bien.proprietaire, expediteur=request.user,
+                type_notification='visite',
+                titre=f"Visite annulée — {visite.bien.titre}",
+                message=f"{request.user.get_full_name() or request.user.username} a annulé sa demande de visite.",
+                lien='/dashboard/rdv/',
+            )
+            messages.success(request, "Votre demande de visite a été annulée.")
 
     return redirect('biens_ui:mes_visites')
+
+
+@login_required
+def traiter_annulation_visite(request, visite_id):
+    """L'entreprise valide ou refuse une demande d'annulation d'une visite
+    déjà confirmée."""
+    from django.contrib import messages
+    from dashboard.services import NotificationService
+
+    if request.user.role not in ('proprietaire', 'gestionnaire'):
+        return redirect('dashboard')
+
+    visite = Visite.objects.select_related('bien', 'locataire').filter(
+        id=visite_id, bien__proprietaire__in=request.user.comptes_entreprise(), demande_annulation=True
+    ).first()
+    if not visite:
+        messages.error(request, "Demande d'annulation introuvable.")
+        return redirect('dashboard_rdv')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'accepter':
+            visite.statut = Visite.Statut.ANNULEE
+            visite.demande_annulation = False
+            visite.save(update_fields=['statut', 'demande_annulation'])
+            titre = f"Annulation acceptée — {visite.bien.titre}"
+            message = "Votre demande d'annulation a été acceptée."
+        else:
+            visite.demande_annulation = False
+            visite.save(update_fields=['demande_annulation'])
+            titre = f"Annulation refusée — {visite.bien.titre}"
+            message = "Votre demande d'annulation a été refusée — la visite reste programmée comme prévu."
+
+        NotificationService.send(
+            destinataire=visite.locataire, expediteur=request.user,
+            type_notification='visite', titre=titre, message=message,
+            lien='/biens/mes-visites/',
+        )
+        messages.success(request, "Demande d'annulation traitée.")
+
+    return redirect('dashboard_rdv')
 
 
 @login_required
@@ -796,10 +861,18 @@ class BienViewSet(viewsets.ModelViewSet):
         user = self.request.user
         
         if user.is_authenticated and user.role in ('proprietaire', 'gestionnaire'):
-            # Les propriétaires/gestionnaires peuvent voir les biens de leur entreprise
+            # Les propriétaires/gestionnaires peuvent voir leurs propres biens,
+            # plus ceux de leurs collègues de la même entreprise le cas échéant.
+            # `comptes_entreprise()` renvoie un queryset vide si `company_id`
+            # n'est pas encore défini (onboarding en cours) — sans le `Q(
+            # proprietaire=user)` explicite, un propriétaire sans entreprise
+            # liée ne voyait jamais ses propres biens via `?mes_biens=1`,
+            # même ceux qu'il a lui-même publiés.
             if self.request.query_params.get('mes_biens'):
-                queryset = queryset.filter(proprietaire__in=user.comptes_entreprise())
-        
+                queryset = queryset.filter(
+                    Q(proprietaire=user) | Q(proprietaire__in=user.comptes_entreprise())
+                )
+
         return queryset
     
     def get_serializer_class(self):

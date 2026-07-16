@@ -30,6 +30,8 @@ def _conversations_sidebar(user, exclude_conv_id=None, voir_archivees=False):
     )
     data = []
     for conv in convs:
+        if conv.est_supprime_pour(user):
+            continue
         est_archivee = conv.est_archive_pour(user)
         if est_archivee != voir_archivees:
             continue
@@ -71,6 +73,28 @@ def nouvelle_conversation(request, bien_id):
         bien=bien,
         demandeur=user,
         defaults={'proprietaire': bien.proprietaire},
+    )
+    return redirect('messagerie:conversation', conv_id=conv.id)
+
+
+@login_required
+def nouvelle_conversation_entreprise(request, company_id):
+    """Démarre (ou rouvre) une conversation directement avec une entreprise,
+    sans passer par un bien précis — utilisé notamment par l'assistant pour
+    « mettre en contact » le locataire avec l'entreprise de son choix."""
+    from utilisateurs.models import Company
+
+    company = get_object_or_404(Company, id=company_id)
+    user = request.user
+    if user.company_id == company.id:
+        return redirect('messagerie:mes_conversations')
+
+    contact = company.users.filter(role='proprietaire').first() or company.users.first()
+    if not contact:
+        return redirect('messagerie:mes_conversations')
+
+    conv, _ = Conversation.objects.get_or_create(
+        bien=None, projet=None, demandeur=user, proprietaire=contact,
     )
     return redirect('messagerie:conversation', conv_id=conv.id)
 
@@ -172,7 +196,8 @@ def mes_conversations(request):
     convs_data = _conversations_sidebar(request.user, voir_archivees=voir_archivees)
     nb_non_lus_total = sum(1 for item in convs_data if item['nb_non_lus'])
     nb_archivees = Conversation.objects.filter(
-        Q(demandeur=request.user, archive_demandeur=True) | Q(proprietaire__in=request.user.comptes_entreprise(), archive_proprietaire=True)
+        Q(demandeur=request.user, archive_demandeur=True, supprime_demandeur=False)
+        | Q(proprietaire__in=request.user.comptes_entreprise(), archive_proprietaire=True, supprime_proprietaire=False)
     ).count()
     return render(request, 'messagerie/mes_conversations.html', {
         'convs_data': convs_data,
@@ -254,7 +279,25 @@ def conversation_archiver(request, conv_id):
     conv.archiver_pour(user, nouvelle_valeur)
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({'ok': True, 'archive': nouvelle_valeur})
-    return redirect('messagerie:mes_conversations')
+    return redirect(request.POST.get('next') or 'messagerie:mes_conversations')
+
+
+@login_required
+def conversation_supprimer(request, conv_id):
+    """Chaque participant supprime la conversation de son côté uniquement —
+    contrairement à l'archivage, pas de retour possible depuis l'interface ;
+    l'historique reste intact chez l'autre interlocuteur."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+    conv = get_object_or_404(Conversation, id=conv_id)
+    user = request.user
+    if not _est_participant(conv, user):
+        return JsonResponse({'error': 'Accès refusé'}, status=403)
+
+    conv.supprimer_pour(user)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'ok': True})
+    return redirect(request.POST.get('next') or 'messagerie:mes_conversations')
 
 
 @login_required
@@ -363,6 +406,7 @@ def dashboard_messages(request):
     convs = (
         Conversation.objects
         .filter(proprietaire__in=user.comptes_entreprise(), archive_proprietaire=voir_archivees)
+        .exclude(supprime_proprietaire=True)
         .select_related('bien', 'demandeur', 'proprietaire')
         .order_by('-mis_a_jour_le')
     )
@@ -376,7 +420,7 @@ def dashboard_messages(request):
             'nb_non_lus': nb_non_lus,
             'interlocuteur': conv.demandeur,
         })
-    nb_archivees = Conversation.objects.filter(proprietaire__in=user.comptes_entreprise(), archive_proprietaire=True).count()
+    nb_archivees = Conversation.objects.filter(proprietaire__in=user.comptes_entreprise(), archive_proprietaire=True).exclude(supprime_proprietaire=True).count()
 
     # Visites en attente de confirmation
     visites_en_attente = (

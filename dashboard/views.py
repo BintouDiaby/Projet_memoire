@@ -873,8 +873,16 @@ def rdv_view(request):
         .order_by('date_demandee')
     )
 
+    demandes_annulation = (
+        Visite.objects
+        .filter(bien__proprietaire__in=user.comptes_entreprise(), demande_annulation=True)
+        .select_related('bien', 'locataire')
+        .order_by('date_demande_annulation')
+    )
+
     ctx.update({
         'visites': visites,
+        'demandes_annulation': demandes_annulation,
         'rdv_construction': rdv_construction,
         'rdv_paiements': rdv_paiements,
         'today': timezone.now(),
@@ -1971,6 +1979,7 @@ def facturation_dashboard_view(request):
                 p.date_paiement = today
                 p.montant_recu = p.montant_du
                 p.save()
+                p.regulariser_mises_en_demeure()
         return redirect('dashboard_facturation')
 
     factures = (
@@ -2049,6 +2058,7 @@ def _marquer_facture_payee(facture, payeur, moyen_label, mode_key=None, referenc
     p.date_paiement = today
     p.montant_recu = p.montant_du
     p.save()
+    p.regulariser_mises_en_demeure()
 
     from dashboard.services import NotificationService
     NotificationService.send(
@@ -2670,6 +2680,7 @@ def facture_detail(request, facture_id):
             p.date_paiement = today
             p.montant_recu = p.montant_du
             p.save()
+            p.regulariser_mises_en_demeure()
             messages.success(request, "Facture marquée comme payée.")
         return redirect('facture_detail', facture_id=facture.id)
 

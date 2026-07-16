@@ -56,7 +56,7 @@
 <script>
 (function(){
   var opened = false;
-  var state = 'menu';          // menu | awaiting_ville | awaiting_budget | awaiting_client_nom | free
+  var state = 'menu';          // menu | awaiting_ville | awaiting_budget | awaiting_client_nom | awaiting_entreprise_nom | free
   var draft = {};
   var estEntreprise = false;
   {% if request.user.role == 'proprietaire' or request.user.role == 'gestionnaire' %}estEntreprise = true;{% endif %}
@@ -199,11 +199,60 @@
     iaScroll();
   }
 
+  function iaEntreprisesRender(entreprises){
+    var wrap = document.getElementById('ia-msgs');
+    var row = document.createElement('div');
+    row.className = 'ia-row assistant';
+    if (!entreprises.length) {
+      var empty = document.createElement('div');
+      empty.className = 'ia-bubble-msg';
+      empty.textContent = "Aucune entreprise trouvée avec ce nom. Essayez un autre nom, ou consultez l'annuaire complet.";
+      row.appendChild(empty);
+    } else {
+      var cards = document.createElement('div');
+      cards.className = 'ia-cards';
+      var intro = document.createElement('div');
+      intro.className = 'ia-bubble-msg';
+      intro.textContent = 'Cliquez sur une entreprise pour démarrer la conversation :';
+      cards.appendChild(intro);
+      entreprises.forEach(function(e){
+        var a = document.createElement('a');
+        a.className = 'ia-card';
+        a.href = '/chat/nouveau/entreprise/' + e.id + '/';
+        a.target = '_blank';
+        var info = document.createElement('div');
+        info.className = 'info';
+        var t = document.createElement('div'); t.className = 't'; t.textContent = e.nom;
+        var d = document.createElement('div'); d.className = 'd'; d.textContent = (e.ville ? e.ville + ' — ' : '') + e.nb_biens + ' bien(s)' + (e.est_construction ? ' · Construction' : '');
+        info.appendChild(t); info.appendChild(d);
+        a.appendChild(info);
+        cards.appendChild(a);
+      });
+      row.appendChild(cards);
+    }
+    wrap.appendChild(row);
+    iaScroll();
+  }
+
   function iaPost(url, params){
     var fd = new FormData();
     Object.keys(params || {}).forEach(function(k){ fd.append(k, params[k]); });
     return fetch(url, {method: 'POST', headers: {'X-CSRFToken': iaCsrf()}, body: fd})
-      .then(function(r){ return r.json().then(function(data){ return {status: r.status, data: data}; }); });
+      .then(function(r){
+        // Une session expirée fait rediriger @login_required vers la page de
+        // connexion (200 HTML), pas une erreur JSON — sans ce contrôle,
+        // r.json() plantait sur du HTML et tombait dans le .catch() générique
+        // avec un message trompeur ("Connexion impossible" pour une session
+        // expirée, pas un vrai souci réseau).
+        var contentType = r.headers.get('content-type') || '';
+        if (contentType.indexOf('application/json') === -1) {
+          if (r.redirected && r.url.indexOf('/accounts/login') !== -1) {
+            return {status: 401, data: {error: 'Votre session a expiré — reconnectez-vous puis réessayez.'}};
+          }
+          return {status: r.status, data: {error: "Erreur inattendue (" + r.status + ")."}};
+        }
+        return r.json().then(function(data){ return {status: r.status, data: data}; });
+      });
   }
 
   function iaMenuClick(cle, label){
@@ -219,9 +268,8 @@
       return;
     }
     if (cle === 'contacter') {
-      iaAppend('assistant', "Ouverture de l'annuaire des entreprises…");
-      window.open('/entreprises/', '_blank');
-      iaSetState('menu');
+      iaSetState('awaiting_entreprise_nom');
+      iaAppend('assistant', 'Quelle entreprise souhaitez-vous contacter ? (nom, même partiel)');
       return;
     }
     // action directe côté serveur (paiement, aide_contrat, aide_construction, retard, rdv, devis)
@@ -278,6 +326,18 @@
       input.disabled = true; btn.disabled = true;
       iaPost('/assistant/recherche-client/', {nom: texte}).then(function(res){
         iaAppend(res.status === 200 ? 'assistant' : 'error', res.status === 200 ? res.data.texte : (res.data.error || 'Erreur.'));
+      }).catch(function(){ iaAppend('error', "Connexion impossible."); }).finally(function(){
+        iaSetState('menu');
+      });
+      return false;
+    }
+
+    if (state === 'awaiting_entreprise_nom') {
+      iaAppend('user', texte);
+      input.disabled = true; btn.disabled = true;
+      iaPost('/assistant/recherche-entreprise/', {nom: texte}).then(function(res){
+        if (res.status === 200) iaEntreprisesRender(res.data.entreprises);
+        else iaAppend('error', res.data.error || 'Erreur.');
       }).catch(function(){ iaAppend('error', "Connexion impossible."); }).finally(function(){
         iaSetState('menu');
       });

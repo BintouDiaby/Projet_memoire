@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.db.models import Q
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -27,7 +28,14 @@ class ContratViewSet(viewsets.ModelViewSet):
         """Filtrer les contrats selon l'utilisateur"""
         user = self.request.user
         if user.role in ('proprietaire', 'gestionnaire'):
-            return Contrat.objects.filter(proprietaire__in=user.comptes_entreprise())
+            # `comptes_entreprise()` est vide tant que `company_id` n'est pas
+            # défini (onboarding en cours) — le `Q(proprietaire=user)`
+            # garantit qu'un propriétaire voit toujours ses propres contrats,
+            # même sans entreprise liée (voir bug identique corrigé sur
+            # `BienViewSet.get_queryset`, biens/views.py).
+            return Contrat.objects.filter(
+                Q(proprietaire=user) | Q(proprietaire__in=user.comptes_entreprise())
+            )
         elif user.role == 'locataire':
             return Contrat.objects.filter(locataire=user)
         elif user.is_staff or user.role == 'admin':
@@ -112,7 +120,10 @@ class PaiementViewSet(viewsets.ModelViewSet):
         """Filtrer les paiements selon l'utilisateur"""
         user = self.request.user
         if user.role in ('proprietaire', 'gestionnaire'):
-            return Paiement.objects.filter(contrat__proprietaire__in=user.comptes_entreprise())
+            return Paiement.objects.filter(
+                Q(contrat__proprietaire=user)
+                | Q(contrat__proprietaire__in=user.comptes_entreprise())
+            )
         elif user.role == 'locataire':
             return Paiement.objects.filter(contrat__locataire=user)
         elif user.is_staff or user.role == 'admin':
@@ -129,7 +140,8 @@ class PaiementViewSet(viewsets.ModelViewSet):
         paiement.date_paiement = timezone.now().date()
         paiement.mettre_a_jour_statut()
         paiement.save()
-        
+        paiement.regulariser_mises_en_demeure()
+
         return Response({
             'status': 'Paiement enregistré',
             'montant_recu': paiement.montant_recu,

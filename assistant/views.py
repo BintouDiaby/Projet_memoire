@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from .models import MessageAssistant
-from .tools import executer_outil, chercher_biens_data, chercher_aide
+from .tools import executer_outil, chercher_biens_data, chercher_aide, chercher_entreprises_data
 
 # Actions du menu guidé — appellent directement les fonctions de tools.py,
 # sans passer par le LLM (rapide, fiable, « données réelles uniquement »).
@@ -107,3 +107,20 @@ def recherche_client(request):
 
     resultat = executer_outil('chercher_client', {'nom': nom}, request.user)
     return JsonResponse({'texte': resultat})
+
+
+@login_required
+def recherche_entreprise(request):
+    """Étape finale du parcours guidé « Contacter une entreprise » (locataire) :
+    renvoie une liste d'entreprises correspondant au nom saisi, chacune avec
+    un lien direct pour démarrer une vraie conversation (pas juste ouvrir
+    l'annuaire dans un nouvel onglet)."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Méthode invalide'}, status=405)
+
+    nom = (request.POST.get('nom') or '').strip()
+    if not nom:
+        return JsonResponse({'error': 'Nom manquant'}, status=400)
+
+    entreprises = chercher_entreprises_data(request.user, nom)
+    return JsonResponse({'entreprises': entreprises})

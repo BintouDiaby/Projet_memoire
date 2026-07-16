@@ -81,6 +81,12 @@
 
   .newchip{font-size:10.5px;font-weight:700;color:var(--blue);background:var(--blue-soft);padding:3px 9px;border-radius:20px}
 
+  .conv-actions{display:flex;gap:4px;flex-shrink:0}
+  .conv-action{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;cursor:pointer;color:var(--muted-2);transition:.14s}
+  .conv-action svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+  .conv-action:hover{border-color:var(--blue);color:var(--blue)}
+  .conv-action.danger:hover{border-color:#B4441F;color:#B4441F}
+
   .empty{text-align:center;padding:70px 20px}
   .empty .eic{width:60px;height:60px;border-radius:16px;background:var(--blue-soft);display:grid;place-items:center;margin:0 auto 16px}
   .empty .eic svg{width:26px;height:26px;stroke:var(--blue);fill:none;stroke-width:1.6}
@@ -122,8 +128,9 @@
 
   <div class="convlist" id="convlist">
     {% for item in convs_data %}
-    <a class="conv{% if item.nb_non_lus %} unread{% endif %}"
-       href="/chat/{{ item.conv.id }}/"
+    <div class="conv{% if item.nb_non_lus %} unread{% endif %}"
+       onclick="location.href='/chat/{{ item.conv.id }}/'"
+       style="cursor:pointer"
        data-search="{{ item.nom_affiche|lower }} {{ item.sujet_lieu|lower }}"
        data-nonlu="{% if item.nb_non_lus %}1{% else %}0{% endif %}"
        data-categorie="{{ item.categorie|default:'' }}">
@@ -154,7 +161,23 @@
         <span class="phase {{ item.conv.phase }}">{{ item.conv.get_phase_display }}</span>
         {% endif %}
       </div>
-    </a>
+      <div class="conv-actions" onclick="event.stopPropagation()">
+        <form method="post" action="/chat/{{ item.conv.id }}/archiver/" style="margin:0">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{% if voir_archivees %}/chat/?archives=1{% else %}/chat/{% endif %}">
+          <button type="submit" class="conv-action" title="{% if item.est_archivee %}Désarchiver{% else %}Archiver{% endif %}">
+            <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="5" rx="1"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9M10 13h4"/></svg>
+          </button>
+        </form>
+        <form method="post" action="/chat/{{ item.conv.id }}/supprimer/" onsubmit="return confirm('Supprimer cette conversation ? Elle disparaîtra de votre liste (l\'historique reste visible pour l\'autre interlocuteur).');" style="margin:0">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{% if voir_archivees %}/chat/?archives=1{% else %}/chat/{% endif %}">
+          <button type="submit" class="conv-action danger" title="Supprimer">
+            <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/></svg>
+          </button>
+        </form>
+      </div>
+    </div>
     {% endfor %}
   </div>
   <div class="noresult" id="noresult">Aucune conversation ne correspond à votre recherche.</div>

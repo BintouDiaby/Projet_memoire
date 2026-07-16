@@ -10,4 +10,5 @@ urlpatterns = [
     path('action/', views.action, name='action'),
     path('recherche-logement/', views.recherche_logement, name='recherche_logement'),
     path('recherche-client/', views.recherche_client, name='recherche_client'),
+    path('recherche-entreprise/', views.recherche_entreprise, name='recherche_entreprise'),
 ]

@@ -117,10 +117,18 @@
         </div>
         <div class="mc-side">
           <span class="badge-statut {% if v.statut == 'confirmee' %}s-ok{% elif v.statut == 'refusee' %}s-danger{% elif v.statut == 'annulee' %}s-muted{% else %}s-warn{% endif %}">{{ v.get_statut_display }}</span>
-          {% if v.statut == 'en_attente' or v.statut == 'confirmee' %}
+          {% if v.demande_annulation %}
+          <span class="badge-statut s-warn">Annulation demandée</span>
+          {% elif v.statut == 'en_attente' %}
           <form method="post" action="{% url 'biens_ui:annuler_visite' visite_id=v.id %}" onsubmit="return confirm('Annuler cette demande de visite ?');">
             {% csrf_token %}
             <button type="submit" class="btn-cancel">Annuler</button>
+          </form>
+          {% elif v.statut == 'confirmee' %}
+          <form method="post" action="{% url 'biens_ui:annuler_visite' visite_id=v.id %}" onsubmit="return demanderAnnulationVisite(this);">
+            {% csrf_token %}
+            <input type="hidden" name="motif">
+            <button type="submit" class="btn-cancel">Demander l'annulation</button>
           </form>
           {% endif %}
         </div>
@@ -137,4 +145,17 @@
 
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function demanderAnnulationVisite(form){
+    var motif = prompt("Pourquoi souhaitez-vous annuler cette visite ? (obligatoire — l'entreprise devra valider votre demande)");
+    if (motif === null) return false;
+    motif = motif.trim();
+    if (!motif) { alert("Le motif est obligatoire."); return false; }
+    form.querySelector('input[name="motif"]').value = motif;
+    return true;
+  }
+</script>
 {% endblock %}

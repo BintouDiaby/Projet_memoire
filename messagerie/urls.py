@@ -10,9 +10,11 @@ urlpatterns = [
     path('<int:conv_id>/messages/', views.api_nouveaux_messages, name='api_messages'),
     path('<int:conv_id>/phase/', views.changer_phase, name='changer_phase'),
     path('<int:conv_id>/archiver/', views.conversation_archiver, name='conversation_archiver'),
+    path('<int:conv_id>/supprimer/', views.conversation_supprimer, name='conversation_supprimer'),
     path('message/<int:message_id>/modifier/', views.message_modifier, name='message_modifier'),
     path('message/<int:message_id>/supprimer/', views.message_supprimer, name='message_supprimer'),
     path('<int:conv_id>/client/<int:user_id>/', views.fiche_client, name='fiche_client'),
     path('nouveau/<int:bien_id>/', views.nouvelle_conversation, name='nouvelle_conversation'),
+    path('nouveau/entreprise/<int:company_id>/', views.nouvelle_conversation_entreprise, name='nouvelle_conversation_entreprise'),
     path('visite/<int:visite_id>/gerer/', views.gerer_visite, name='gerer_visite'),
 ]

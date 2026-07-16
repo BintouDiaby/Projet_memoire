@@ -32,6 +32,12 @@ class Conversation(models.Model):
     archive_demandeur = models.BooleanField(default=False)
     archive_proprietaire = models.BooleanField(default=False)
 
+    # Suppression indépendante par côté (contrairement à l'archivage, pas de
+    # retour possible depuis l'interface) : masque définitivement la
+    # conversation pour ce côté sans effacer l'historique côté de l'autre.
+    supprime_demandeur = models.BooleanField(default=False)
+    supprime_proprietaire = models.BooleanField(default=False)
+
     class Meta:
         ordering = ['-mis_a_jour_le']
         constraints = [
@@ -81,6 +87,18 @@ class Conversation(models.Model):
         else:
             self.archive_proprietaire = valeur
         self.save(update_fields=['archive_demandeur', 'archive_proprietaire'])
+
+    def est_supprime_pour(self, user):
+        if user.id == self.demandeur_id:
+            return self.supprime_demandeur
+        return self.supprime_proprietaire
+
+    def supprimer_pour(self, user):
+        if user.id == self.demandeur_id:
+            self.supprime_demandeur = True
+        else:
+            self.supprime_proprietaire = True
+        self.save(update_fields=['supprime_demandeur', 'supprime_proprietaire'])
 
 
 class Message(models.Model):

@@ -334,8 +334,28 @@ class Paiement(models.Model):
             self.statut = self.Statut.RETARD_MAJEUR
         elif aujourd_hui > self.date_limite:
             self.statut = self.Statut.RETARD_MINEUR
-        
+
         self.save()
+
+    def regulariser_mises_en_demeure(self):
+        """À appeler dès que ce paiement est effectivement reçu : sans ça, une
+        mise en demeure déjà envoyée reste affichée « Envoyée » indéfiniment
+        côté locataire tant que sa date limite n'est pas dépassée (le seul
+        endroit qui la repassait à « Régularisée » était le cron
+        `verifier_expiration_mises_en_demeure`, qui n'agit qu'après coup).
+
+        Inclut aussi `EXPIREE` : si le paiement arrive après l'échéance du
+        délai (le cron a déjà fait passer la mise en demeure à « Expirée »
+        avant que le locataire ne paie), elle doit quand même se régulariser
+        — sinon la bannière « mise en demeure expirée » reste affichée
+        indéfiniment malgré le paiement reçu."""
+        self.mises_en_demeure.filter(
+            statut__in=[
+                MiseEnDemeure.Statut.ENVOYEE,
+                MiseEnDemeure.Statut.DELAI_SUPPLEMENTAIRE,
+                MiseEnDemeure.Statut.EXPIREE,
+            ]
+        ).update(statut=MiseEnDemeure.Statut.REGULARISEE, date_resolution=timezone.now())
 
 
 class MiseEnDemeure(models.Model):

@@ -17,7 +17,32 @@
   <p>Visites de biens, rendez-vous de paiement et rendez-vous construction à venir</p>
 </div>
 
-{% if visites or rdv_construction or rdv_paiements %}
+{% if visites or rdv_construction or rdv_paiements or demandes_annulation %}
+
+{% if demandes_annulation %}
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg> Demandes d'annulation</h2>
+    <span class="badge b-red">{{ demandes_annulation|length }} à traiter</span>
+  </div>
+  {% for v in demandes_annulation %}
+  <div class="row">
+    <div style="width:46px;height:46px;border-radius:11px;background:#FEE2E2;display:grid;place-items:center;flex:0 0 46px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" stroke-width="1.8"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:13.5px;color:#111">{{ v.locataire.get_full_name|default:v.locataire.username }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ v.bien.titre|truncatechars:40 }} — visite du {{ v.date_visite|date:"d/m/Y à H:i" }}</div>
+      <div style="font-size:12px;color:#B91C1C;margin-top:2px">Motif : {{ v.motif_annulation }}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <form method="post" action="{% url 'traiter_annulation_visite' visite_id=v.id %}" style="margin:0">{% csrf_token %}<input type="hidden" name="action" value="accepter"><button style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Accepter l'annulation</button></form>
+      <form method="post" action="{% url 'traiter_annulation_visite' visite_id=v.id %}" style="margin:0">{% csrf_token %}<input type="hidden" name="action" value="refuser"><button style="background:#FEE2E2;color:#B91C1C;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Refuser</button></form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 
 {% if rdv_paiements %}
 <div class="card">

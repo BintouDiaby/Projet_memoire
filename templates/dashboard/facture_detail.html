@@ -221,7 +221,13 @@
         Mise en demeure — {{ mise_en_demeure.get_statut_display }}
       </h3>
       {% if est_locataire %}
-      <div class="letter" style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;font-size:13px;color:#374151;white-space:pre-line;line-height:1.7;margin-bottom:14px">{{ mise_en_demeure.texte_lettre }}</div>
+        {% if mise_en_demeure.statut == 'regularisee' %}
+        <p class="desc" style="color:#15803D;font-weight:600;margin-bottom:14px">
+          ✓ Réglée — votre paiement a été reçu, ce dossier est clos. Aucune action n'est requise de votre part.
+        </p>
+        {% else %}
+        <div class="letter" style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;font-size:13px;color:#374151;white-space:pre-line;line-height:1.7;margin-bottom:14px">{{ mise_en_demeure.texte_lettre }}</div>
+        {% endif %}
       {% else %}
       <p class="desc">
         Envoyée le {{ mise_en_demeure.date_creation|date:"d F Y" }} — délai de régularisation jusqu'au {{ mise_en_demeure.date_limite_regularisation|date:"d F Y" }}.

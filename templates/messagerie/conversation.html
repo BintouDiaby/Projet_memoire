@@ -235,6 +235,14 @@
             <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>
             <span id="archiveBtnLabel">{% if conv_archivee %}Désarchiver{% else %}Archiver{% endif %}</span>
           </button>
+          <form method="post" action="/chat/{{ conv.id }}/supprimer/" onsubmit="return confirm('Supprimer cette conversation ? Elle disparaîtra de votre liste (l\'historique reste visible pour l\'autre interlocuteur).');" style="margin:0">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% if est_proprietaire %}/chat/dashboard/{% else %}/chat/{% endif %}">
+            <button class="tbtn" type="submit">
+              <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/></svg>
+              Supprimer
+            </button>
+          </form>
         </div>
       </div>
 

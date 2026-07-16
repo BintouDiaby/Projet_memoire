@@ -39,6 +39,8 @@ class FactureViewSet(viewsets.ModelViewSet):
         facture.statut = Facture.Statut.PAYEE
         facture.date_paiement = timezone.now().date()
         facture.save()
+        if hasattr(facture, 'paiement'):
+            facture.paiement.regulariser_mises_en_demeure()
         return Response({'status': 'Facture marquée comme payée'})
     
     @action(detail=True, methods=['post'])

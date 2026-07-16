@@ -103,6 +103,33 @@ def mon_prochain_paiement(user):
     return "\n".join(lignes)
 
 
+def chercher_entreprises_data(user, nom):
+    """Recherche des entreprises par nom pour le parcours guidé « Contacter
+    une entreprise » — ne renvoie que celles ayant une activité visible
+    (biens publiés ou service construction), pour que l'assistant ne
+    propose pas de mettre en contact avec une coquille vide."""
+    from utilisateurs.models import Company
+    from biens.models import Bien
+
+    companies = Company.objects.filter(name__icontains=nom).order_by('name')[:20]
+    resultats = []
+    for c in companies:
+        nb_biens = Bien.objects.filter(proprietaire__company=c, statut=Bien.Statut.DISPONIBLE).count()
+        est_construction = 'construction' in (c.types or [])
+        if nb_biens == 0 and not est_construction:
+            continue
+        resultats.append({
+            'id': c.id,
+            'nom': c.name,
+            'ville': c.ville or '',
+            'nb_biens': nb_biens,
+            'est_construction': est_construction,
+        })
+        if len(resultats) >= 5:
+            break
+    return resultats
+
+
 _MOTS_VIDES = {
     'le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'et', 'ou', 'est', 'sont',
     'je', 'tu', 'il', 'elle', 'on', 'nous', 'vous', 'ils', 'elles', 'ce', 'cette',
