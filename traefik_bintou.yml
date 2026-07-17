@@ -1,0 +1,15 @@
+http:
+  routers:
+    bintou-router:
+      rule: "Host(`bintou.enlignes.com`)"
+      entryPoints:
+        - websecure
+      service: bintou-service
+      tls:
+        certResolver: le
+  services:
+    bintou-service:
+      loadBalancer:
+        servers:
+          - url: "http://bintou_project-bintou-1:8000"
+        passHostHeader: true

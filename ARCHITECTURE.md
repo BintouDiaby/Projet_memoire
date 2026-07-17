@@ -26,7 +26,7 @@ Cette plateforme web de gestion locative est conçue selon une architecture **mo
 │        Django REST Framework            │
 │         (API Views/Viewsets)            │
 ├─────────────────────────────────────────┤
-│  Utilisateurs │ Biens │ Contrats │...  │
+│  Utilisateurs │ Biens │ Contrats │...   │
 │     (Apps)    │       │          │      │
 ├─────────────────────────────────────────┤
 │         Couche Métier (Models)          │

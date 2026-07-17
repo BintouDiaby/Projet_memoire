@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  bintou:
+    build: .
+    image: ghcr.io/${GITHUB_OWNER:-bintoudiaby}/projet_memoire:latest
+    restart: always
+    env_file: .env
+    volumes:
+      - static_volume:/app/static
+      - media_volume:/app/media
+    labels:
+      - "traefik.enable=true"
+      - "traefik.public=true"
+      - "traefik.http.routers.bintou.rule=Host(`bintou.enlignes.com`)"
+      - "traefik.http.routers.bintou.entrypoints=websecure"
+      - "traefik.http.services.bintou.loadbalancer.server.port=8000"
+      - "traefik.docker.network=traefik_public"
+    networks:
+      - traefik_public
+
+volumes:
+  static_volume:
+  media_volume:
+
+networks:
+  traefik_public:
+    external: true
