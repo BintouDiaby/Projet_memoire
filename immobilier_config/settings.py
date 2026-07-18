@@ -138,6 +138,8 @@ STATIC_URL = '/static/'
 # Ajouter le dossier `static/` à la racine du projet pour le dev
 from pathlib import Path as _Path
 STATICFILES_DIRS = [BASE_DIR / 'static']
+# Emplacement des fichiers statiques collectés en production
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # CORS configuration
 CORS_ALLOWED_ORIGINS = [
