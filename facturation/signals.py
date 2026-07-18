@@ -7,8 +7,16 @@ from datetime import timedelta
 
 
 @receiver(post_save, sender=Contrat)
-def creer_paiements_initiaux(sender, instance, created, **kwargs):
-    """Créer les paiements initiaux quand un contrat est créé"""
+def creer_paiements_initiaux(sender, instance, created, raw=False, **kwargs):
+    """Créer les paiements initiaux quand un contrat est créé.
+
+    `raw=True` pendant un chargement de fixture (`loaddata`) : il ne faut
+    surtout pas recréer des paiements ici, sinon ça entre en collision avec
+    les vrais `Paiement` déjà présents dans la fixture elle-même (même
+    contrat + même mois, contrainte `unique_together` violée) — bug réel
+    rencontré lors d'un export/import de la base vers PostgreSQL."""
+    if raw:
+        return
     if created and instance.statut == Contrat.Statut.EN_COURS:
         from contrats.models import Paiement
         
