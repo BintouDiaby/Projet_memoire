@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.static import serve as static_serve
+from django.urls import re_path
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Q
@@ -1048,4 +1050,6 @@ if settings.DEBUG:
 else:
     # Permettre la livraison des fichiers statiques pour tests rapides
     # REMARQUE: en production réelle, utilisez WhiteNoise ou un serveur dédié.
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += [
+        re_path(r'^static/(?P<path>.*)$', static_serve, {'document_root': settings.STATIC_ROOT}),
+    ]
