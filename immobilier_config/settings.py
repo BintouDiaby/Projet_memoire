@@ -27,7 +27,12 @@ SECRET_KEY = 'django-insecure-x^@#cgp95_+u&_ylm*uu-us#w9r9_9xmyh=f_e*db7-5o^m_m0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# 10.0.2.2 = alias que l'émulateur Android utilise pour joindre l'hôte (voir
+# ApiConfig.baseUrl côté Flutter, --dart-define=API_BASE_URL=http://10.0.2.2:8000).
+# Sans cette entrée, Django rejette la requête avec DisallowedHost avant même
+# de poser le cookie csrftoken (le fallback DEBUG=True n'autorise que
+# localhost/127.0.0.1/[::1], pas 10.0.2.2).
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.0.2.2']
 
 
 # Application definition
@@ -91,13 +96,33 @@ WSGI_APPLICATION = 'immobilier_config.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+#
+# Lu depuis .env (voir .env.example) — SQLite par défaut si DB_ENGINE n'est
+# pas défini, pour ne rien casser en dev local sans .env. En production,
+# définir DB_ENGINE=django.db.backends.postgresql + DB_NAME/DB_USER/
+# DB_PASSWORD/DB_HOST/DB_PORT pour bénéficier d'un stockage persistant
+# (SQLite est un simple fichier sur disque : sur la plupart des hébergeurs
+# cloud le disque n'est pas persistant et le fichier est réinitialisé à
+# chaque redéploiement/redémarrage — cause du "je perds mes données en ligne").
+db_engine = config('DB_ENGINE', default='django.db.backends.sqlite3')
+if db_engine == 'django.db.backends.sqlite3':
+    DATABASES = {
+        'default': {
+            'ENGINE': db_engine,
+            'NAME': BASE_DIR / config('DB_NAME', default='db.sqlite3'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': db_engine,
+            'NAME': config('DB_NAME'),
+            'USER': config('DB_USER'),
+            'PASSWORD': config('DB_PASSWORD'),
+            'HOST': config('DB_HOST'),
+            'PORT': config('DB_PORT', default='5432'),
+        }
+    }
 
 
 # Password validation
