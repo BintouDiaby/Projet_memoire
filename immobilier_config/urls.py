@@ -1043,5 +1043,9 @@ urlpatterns = [
 # Servir les fichiers médias en développement
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    # En environnement de test (DEBUG=True) servir aussi les fichiers statiques
+    # Environnement de test : servir aussi les fichiers statiques
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+else:
+    # Permettre la livraison des fichiers statiques pour tests rapides
+    # REMARQUE: en production réelle, utilisez WhiteNoise ou un serveur dédié.
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
