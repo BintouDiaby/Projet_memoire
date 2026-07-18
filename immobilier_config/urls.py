@@ -20,6 +20,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.static import serve as static_serve
 from django.urls import re_path
+from django.urls import path as url_path
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Q
@@ -1052,4 +1053,5 @@ else:
     # REMARQUE: en production réelle, utilisez WhiteNoise ou un serveur dédié.
     urlpatterns += [
         re_path(r'^static/(?P<path>.*)$', static_serve, {'document_root': settings.STATIC_ROOT}),
+        url_path('static/<path:path>', static_serve, {'document_root': settings.STATIC_ROOT}),
     ]
