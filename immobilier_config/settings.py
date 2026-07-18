@@ -203,3 +203,17 @@ STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 # terminé son inscription/validation auprès de la DGI (voir facturation/fne_service.py).
 FNE_API_URL = config('FNE_API_URL', default='http://54.247.95.108/ws')
 FNE_API_KEY = config('FNE_API_KEY', default='')
+
+# Reverse proxy / HTTPS headers (Traefik terminates TLS and forwards proto/host)
+# Allow Django to detect original scheme via X-Forwarded-Proto
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+
+# CSRF trusted origins (comma-separated), default to production domain
+_raw_csrf = config('CSRF_TRUSTED_ORIGINS', default='https://bintou.enlignes.com')
+CSRF_TRUSTED_ORIGINS = [u.strip() for u in _raw_csrf.split(',') if u.strip()]
+
+# Ensure session and CSRF cookies are marked secure by default in deploy
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=True, cast=bool)
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=True, cast=bool)
