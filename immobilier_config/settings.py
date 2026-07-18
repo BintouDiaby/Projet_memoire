@@ -157,7 +157,8 @@ REST_FRAMEWORK = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Media
-MEDIA_URL = 'media/'
+# Ensure MEDIA_URL starts with a leading slash so generated URLs are absolute.
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Custom user model

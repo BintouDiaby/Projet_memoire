@@ -8,6 +8,8 @@ services:
     volumes:
       - static_volume:/app/static
       - media_volume:/app/media
+    depends_on:
+      - bintou_db
     labels:
       - "traefik.enable=true"
       - "traefik.public=true"
@@ -18,9 +20,28 @@ services:
     networks:
       - traefik_public
 
+  bintou_db:
+    image: postgres:15
+    restart: always
+    environment:
+      - POSTGRES_DB=immobilier_prod
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=pgpass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - traefik_public
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d immobilier_prod"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   static_volume:
   media_volume:
+  postgres_data:
+    driver: local
 
 networks:
   traefik_public:

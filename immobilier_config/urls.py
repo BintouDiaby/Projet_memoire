@@ -1055,3 +1055,9 @@ else:
         re_path(r'^static/(?P<path>.*)$', static_serve, {'document_root': settings.STATIC_ROOT}),
         url_path('static/<path:path>', static_serve, {'document_root': settings.STATIC_ROOT}),
     ]
+    # Serve media files for quick testing (temporary). In production, use a
+    # dedicated static server or object storage (S3) and remove this block.
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', static_serve, {'document_root': settings.MEDIA_ROOT}),
+        url_path('media/<path:path>', static_serve, {'document_root': settings.MEDIA_ROOT}),
+    ]
