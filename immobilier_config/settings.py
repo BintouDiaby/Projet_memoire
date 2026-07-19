@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     
     # Third-party
     'rest_framework',
+    'drf_spectacular',
     'corsheaders',
     'django_filters',
     'django.contrib.humanize',
@@ -177,7 +178,10 @@ CORS_ALLOW_CREDENTIALS = True
 # Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        # Session : utilisée par le site web (Django templates) et l'API navigable
         'rest_framework.authentication.SessionAuthentication',
+        # JWT : utilisée par l'application mobile (header Authorization: Bearer <token>)
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -189,6 +193,24 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
+    # Génération du schéma OpenAPI (Swagger / Redoc) via drf-spectacular
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# Documentation de l'API — drf-spectacular (OpenAPI 3)
+SPECTACULAR_SETTINGS = {
+    'TITLE': "API ImmoGérer",
+    'DESCRIPTION': "API REST de la plateforme de gestion locative ImmoGérer.",
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
+
+# Authentification par token JWT (application mobile) — djangorestframework-simplejwt
+# Sans stockage en base : les tokens sont signés, rien n'est enregistré côté DB.
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=12),   # token d'accès valable 12 h
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),   # token de rafraîchissement valable 30 j
 }
 
 # Default primary key field type
