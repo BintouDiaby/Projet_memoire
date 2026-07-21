@@ -290,7 +290,28 @@ class ProprietaireProfile(models.Model):
     nombre_proprietes = models.IntegerField(default=0)
     experience_annees = models.IntegerField(default=0)
     certification = models.BooleanField(default=False)
-    
+
+    # Vérification d'identité d'un propriétaire particulier (pas de RCCM chez
+    # lui — c'est une pièce d'identité personnelle qui joue ce rôle). Miroir
+    # de Company.document_rccm/statut_verification côté entreprise.
+    class TypePiece(models.TextChoices):
+        CNI = 'cni', "Carte Nationale d'Identité"
+        PASSEPORT = 'passeport', 'Passeport'
+        ATTESTATION = 'attestation', "Attestation d'identité"
+
+    class StatutVerification(models.TextChoices):
+        EN_ATTENTE = 'en_attente', 'En attente de vérification'
+        VALIDEE = 'validee', 'Vérifiée'
+        REJETEE = 'rejetee', 'Rejetée'
+
+    type_piece_identite = models.CharField(max_length=15, choices=TypePiece.choices, blank=True, default='')
+    piece_identite = models.FileField(upload_to='documents/proprietaires/pieces_identite/', blank=True, null=True)
+    statut_verification_identite = models.CharField(
+        max_length=10, choices=StatutVerification.choices, default=StatutVerification.EN_ATTENTE,
+    )
+    motif_rejet_identite = models.TextField(blank=True, default='')
+    date_verification_identite = models.DateTimeField(blank=True, null=True)
+
     class Meta:
         verbose_name = 'Profil Propriétaire'
         verbose_name_plural = 'Profils Propriétaires'

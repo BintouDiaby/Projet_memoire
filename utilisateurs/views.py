@@ -432,12 +432,16 @@ def company_signup(request):
 def particulier_signup(request):
     """Inscription simplifiée pour un propriétaire particulier (une ou quelques
     maisons/appartements loués ou vendus en direct, pas une agence) : pas de
-    RCCM, pas de document à téléverser, pas de Personnel/CRM/Statistiques —
-    juste un espace pour gérer ses biens, contrats et paiements.
+    RCCM, pas de Personnel/CRM/Statistiques — juste un espace pour gérer ses
+    biens, contrats et paiements.
+
+    À la place du RCCM (qui n'a pas de sens pour un particulier), on lui
+    demande une pièce d'identité (CNI/passeport/attestation) — même rôle de
+    confiance côté plateforme, vérifiée par un administrateur au même endroit
+    que le RCCM des entreprises (`/verification-entreprises/`).
 
     `Company.type_compte=PARTICULIER` est le seul levier qui distingue ce
-    compte d'un compte entreprise dans le reste de l'app (sidebar, écran de
-    vérification RCCM jamais déclenché faute de document)."""
+    compte d'un compte entreprise dans le reste de l'app (sidebar)."""
     from .forms import UtilisateurCreationForm
     from .models import Company, ProprietaireProfile
 
@@ -460,7 +464,25 @@ def particulier_signup(request):
             user.company = company
             user.save()
 
-            ProprietaireProfile.objects.get_or_create(utilisateur=user)
+            prof, _ = ProprietaireProfile.objects.get_or_create(utilisateur=user)
+            type_piece = request.POST.get('type_piece_identite', '').strip()
+            if type_piece in dict(ProprietaireProfile.TypePiece.choices):
+                prof.type_piece_identite = type_piece
+            if request.FILES.get('piece_identite'):
+                prof.piece_identite = request.FILES['piece_identite']
+            prof.save()
+
+            # notifier les administrateurs de la plateforme si une pièce
+            # d'identité a été fournie — sinon rien à vérifier pour l'instant
+            if prof.piece_identite:
+                from dashboard.services import NotificationService
+                for admin in Utilisateur.objects.filter(is_staff=True):
+                    NotificationService.send(
+                        destinataire=admin, type_notification='systeme',
+                        titre="Nouveau particulier à vérifier",
+                        message=f"{user.get_full_name() or user.username} a soumis une pièce d'identité.",
+                        lien='/verification-entreprises/',
+                    )
 
             login(request, user)
             _envoyer_email_confirmation(request, user)
@@ -714,12 +736,30 @@ def admin_verification_entreprises(request):
         .exclude(document_rccm='').exclude(document_rccm__isnull=True)
         .order_by('-date_verification')[:20]
     )
+    particuliers = (
+        ProprietaireProfile.objects.filter(
+            statut_verification_identite=ProprietaireProfile.StatutVerification.EN_ATTENTE,
+        )
+        .exclude(piece_identite='').exclude(piece_identite__isnull=True)
+        .select_related('utilisateur')
+        .order_by('utilisateur__date_creation')
+    )
+    particuliers_traites = (
+        ProprietaireProfile.objects.exclude(
+            statut_verification_identite=ProprietaireProfile.StatutVerification.EN_ATTENTE,
+        )
+        .exclude(piece_identite='').exclude(piece_identite__isnull=True)
+        .select_related('utilisateur')
+        .order_by('-date_verification_identite')[:20]
+    )
     from dashboard.views import _sidebar_context
     ctx = _sidebar_context(request.user)
     ctx.update({
         'active_page': 'verification',
         'entreprises': entreprises,
         'entreprises_traitees': entreprises_traitees,
+        'particuliers': particuliers,
+        'particuliers_traites': particuliers_traites,
     })
     return render(request, 'utilisateurs/admin_verification.html', ctx)
 
@@ -778,5 +818,57 @@ def admin_verifier_entreprise(request, company_id):
                 lien='/dashboard/entreprise/modifier/',
             )
         messages.success(request, "Vérification refusée, l'entreprise a été notifiée.")
+
+    return redirect('admin_verification_entreprises')
+
+
+@login_required
+def admin_verifier_particulier(request, profile_id):
+    """Approuve ou rejette la pièce d'identité d'un propriétaire particulier."""
+    if not (request.user.is_staff or request.user.role == Utilisateur.Role.ADMIN):
+        return HttpResponseForbidden("Réservé aux administrateurs.")
+    if request.method != 'POST':
+        return redirect('admin_verification_entreprises')
+
+    from dashboard.services import NotificationService
+
+    prof = ProprietaireProfile.objects.filter(id=profile_id).select_related('utilisateur').first()
+    if not prof:
+        messages.error(request, "Propriétaire introuvable.")
+        return redirect('admin_verification_entreprises')
+
+    u = prof.utilisateur
+    action = request.POST.get('action')
+
+    if action == 'approuver':
+        prof.statut_verification_identite = ProprietaireProfile.StatutVerification.VALIDEE
+        prof.motif_rejet_identite = ''
+        prof.date_verification_identite = timezone.now()
+        prof.certification = True
+        prof.save(update_fields=['statut_verification_identite', 'motif_rejet_identite', 'date_verification_identite', 'certification'])
+        u.documents_verifies = True
+        u.save(update_fields=['documents_verifies'])
+        NotificationService.send(
+            destinataire=u, type_notification='systeme',
+            titre="Votre identité est vérifiée",
+            message="Votre pièce d'identité a été validée. Le badge « Compte vérifié » est maintenant actif.",
+            lien='/dashboard/company/',
+        )
+        messages.success(request, f"{u.get_full_name() or u.username} vérifié avec succès.")
+    elif action == 'rejeter':
+        motif = request.POST.get('motif', '').strip()
+        prof.statut_verification_identite = ProprietaireProfile.StatutVerification.REJETEE
+        prof.motif_rejet_identite = motif
+        prof.date_verification_identite = timezone.now()
+        prof.save(update_fields=['statut_verification_identite', 'motif_rejet_identite', 'date_verification_identite'])
+        u.documents_verifies = False
+        u.save(update_fields=['documents_verifies'])
+        NotificationService.send(
+            destinataire=u, type_notification='systeme',
+            titre="Vérification d'identité refusée",
+            message=motif or "Votre pièce d'identité n'a pas pu être validée. Contactez le support pour plus d'informations.",
+            lien='/dashboard/entreprise/modifier/',
+        )
+        messages.success(request, "Vérification refusée, le propriétaire a été notifié.")
 
     return redirect('admin_verification_entreprises')

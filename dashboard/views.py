@@ -464,10 +464,13 @@ def dashboard_company(request):
         ).exclude(demandeur=user).count()
     nb_entreprises_a_valider = 0
     if user.is_staff:
-        from utilisateurs.models import Company
+        from utilisateurs.models import Company, ProprietaireProfile
         nb_entreprises_a_valider = Company.objects.filter(
             statut_verification=Company.StatutVerification.EN_ATTENTE
         ).exclude(document_rccm='').exclude(document_rccm__isnull=True).count()
+        nb_entreprises_a_valider += ProprietaireProfile.objects.filter(
+            statut_verification_identite=ProprietaireProfile.StatutVerification.EN_ATTENTE
+        ).exclude(piece_identite='').exclude(piece_identite__isnull=True).count()
 
     # ── Cartes statistiques ──
     nb_clients = (
@@ -802,10 +805,13 @@ def _sidebar_context(user):
 
     nb_entreprises_a_valider = 0
     if user.is_staff:
-        from utilisateurs.models import Company
+        from utilisateurs.models import Company, ProprietaireProfile
         nb_entreprises_a_valider = Company.objects.filter(
             statut_verification=Company.StatutVerification.EN_ATTENTE
         ).exclude(document_rccm='').exclude(document_rccm__isnull=True).count()
+        nb_entreprises_a_valider += ProprietaireProfile.objects.filter(
+            statut_verification_identite=ProprietaireProfile.StatutVerification.EN_ATTENTE
+        ).exclude(piece_identite='').exclude(piece_identite__isnull=True).count()
 
     return {
         'company': company,

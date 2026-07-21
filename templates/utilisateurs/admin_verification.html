@@ -89,6 +89,60 @@
   {% endfor %}
 </div>
 
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Particuliers en attente</h2>
+  </div>
+  {% for p in particuliers %}
+  <div class="pitem {% if not forloop.first %}row{% endif %}" style="{% if not forloop.first %}padding-top:14px{% endif %}">
+    <div class="pi-top">
+      <div class="pi-info">
+        <div class="pi-bien">{{ p.utilisateur.get_full_name|default:p.utilisateur.username }}</div>
+        <div class="pi-sub">Pièce : {{ p.get_type_piece_identite_display|default:"non précisé" }}</div>
+        <div class="pi-sub">Inscrit le {{ p.utilisateur.date_creation|date:"d F Y" }}</div>
+      </div>
+      <a href="{{ p.piece_identite.url }}" target="_blank" class="pi-btn" style="background:#F4F5F2;color:var(--text);text-decoration:none">📎 Voir le document</a>
+    </div>
+    <div class="pi-actions">
+      <form method="post" action="{% url 'admin_verifier_particulier' p.id %}" style="margin:0">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="approuver">
+        <button type="submit" class="pi-btn green">✅ Approuver</button>
+      </form>
+      <button type="button" class="pi-btn warn" onclick="document.getElementById('rejet-p-{{ p.id }}').style.display='block'">❌ Rejeter</button>
+    </div>
+    <form id="rejet-p-{{ p.id }}" class="pi-motif" method="post" action="{% url 'admin_verifier_particulier' p.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="rejeter">
+      <textarea name="motif" placeholder="Ex : Document illisible, merci d'en soumettre un nouveau."></textarea>
+      <button type="submit" class="pi-btn warn">Envoyer le refus</button>
+    </form>
+  </div>
+  {% empty %}
+  <div class="empty"><b>Aucun particulier en attente</b>Les nouvelles inscriptions avec pièce d'identité apparaîtront ici.</div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Particuliers traités récemment</h2>
+  </div>
+  {% for p in particuliers_traites %}
+  <div class="row" style="display:block">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13.5px;color:var(--ink)">{{ p.utilisateur.get_full_name|default:p.utilisateur.username }}</div>
+        <div style="font-size:12px;color:var(--muted)">Pièce : {{ p.get_type_piece_identite_display|default:"non précisé" }} · le {{ p.date_verification_identite|date:"d/m/Y" }}</div>
+      </div>
+      {% if p.statut_verification_identite == 'validee' %}<span class="badge b-green">Vérifié</span>{% else %}<span class="badge b-red">Rejeté</span>{% endif %}
+    </div>
+    {% if p.motif_rejet_identite %}<div class="pi-rejet-motif">{{ p.motif_rejet_identite }}</div>{% endif %}
+  </div>
+  {% empty %}
+  <div class="empty"><b>Aucun particulier traité récemment</b></div>
+  {% endfor %}
+</div>
+
 </div>
 </div>
 </div>
