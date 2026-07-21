@@ -262,7 +262,7 @@
               {% endif %}
             </h1>
             <p>
-              Entreprise immobilière{% if company.ville %} · 📍 {{ company.ville }}{% endif %}{% if company.date_creation %} · Depuis {{ company.date_creation|date:"Y" }}{% endif %}
+              {% if company.type_compte == 'entreprise' %}Entreprise immobilière{% else %}Propriétaire particulier{% endif %}{% if company.ville %} · 📍 {{ company.ville }}{% endif %}{% if company.date_creation %} · Depuis {{ company.date_creation|date:"Y" }}{% endif %}
             </p>
           </div>
         </div>
@@ -274,22 +274,22 @@
           <div class="stat-ico i-blue"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12M3 21h18"/></svg></div>
           <b>{{ biens_count }}</b><span>Biens publiés</span>
         </a>
-        <div class="stat-card">
+        <a class="stat-card" href="/dashboard/clients/">
           <div class="stat-ico i-green"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0M16 5a3.5 3.5 0 0 1 0 7"/></svg></div>
           <b>{{ nb_clients }}</b><span>Clients</span>
-        </div>
-        <div class="stat-card">
+        </a>
+        <a class="stat-card" href="/chat/dashboard/">
           <div class="stat-ico i-amber"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
           <b>{{ nb_conversations }}</b><span>Messages</span>
-        </div>
-        <div class="stat-card">
+        </a>
+        <a class="stat-card" href="/dashboard/rdv/">
           <div class="stat-ico i-orange"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
           <b>{{ nb_rdv_total }}</b><span>Rendez-vous</span>
-        </div>
-        <div class="stat-card">
+        </a>
+        <a class="stat-card" href="/dashboard/facturation/">
           <div class="stat-ico i-blue"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
           <b>{{ nb_paiements }}</b><span>Paiements</span>
-        </div>
+        </a>
       </div>
 
       <div class="greet">
@@ -297,7 +297,7 @@
         {% else %}<p>Votre espace est actif — {{ biens_count }} bien{{ biens_count|pluralize }} publié{{ biens_count|pluralize }}.</p>{% endif %}
       </div>
 
-      {% if not documents_verifies %}
+      {% if not documents_verifies and company.type_compte == 'entreprise' %}
       <!-- bandeau vérification -->
       <div class="verif-banner">
         <span class="vi"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/></svg></span>
