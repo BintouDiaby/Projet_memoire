@@ -210,6 +210,23 @@ class Company(models.Model):
                    "(traitement standard de la location nue à usage d'habitation) — à confirmer avec votre comptable.",
     )
 
+    # Vérification du document RCCM par un administrateur de la plateforme
+    class StatutVerification(models.TextChoices):
+        EN_ATTENTE = 'en_attente', 'En attente de vérification'
+        VALIDEE = 'validee', 'Vérifiée'
+        REJETEE = 'rejetee', 'Rejetée'
+
+    document_rccm = models.FileField(
+        upload_to='companies/rccm/', blank=True, null=True,
+        verbose_name="Document RCCM",
+        help_text="Justificatif du Registre du Commerce et du Crédit Mobilier (PDF ou photo).",
+    )
+    statut_verification = models.CharField(
+        max_length=10, choices=StatutVerification.choices, default=StatutVerification.EN_ATTENTE,
+    )
+    motif_rejet = models.TextField(blank=True, default='')
+    date_verification = models.DateTimeField(blank=True, null=True)
+
     class Meta:
         verbose_name = 'Company'
         verbose_name_plural = 'Companies'

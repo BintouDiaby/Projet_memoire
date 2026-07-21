@@ -187,7 +187,7 @@
             </div>
             <div class="ef-grid">
               <div class="ef-field full" data-required><label for="id_company_name">Nom de l'entreprise<span class="req">*</span></label><input type="text" name="company_name" id="id_company_name"><div class="err">Ce champ est requis.</div></div>
-              <div class="ef-field"><label for="id_rccm">RCCM</label><input type="text" name="rccm" id="id_rccm" placeholder="CI-ABJ-2026-B-…"><div class="hint">Sert à obtenir le badge « vérifiée ».</div></div>
+              <div class="ef-field"><label for="id_rccm">Numéro RCCM</label><input type="text" name="rccm" id="id_rccm" placeholder="CI-ABJ-2026-B-…"><div class="hint">Registre du Commerce et du Crédit Mobilier.</div></div>
               <div class="ef-field"><label for="id_company_phone">Téléphone entreprise</label><input type="text" name="company_phone" id="id_company_phone" placeholder="+225 …"></div>
               <div class="ef-field full"><label for="id_company_adresse">Adresse</label><input type="text" name="company_adresse" id="id_company_adresse" placeholder="Commune, quartier, rue…"></div>
               <div class="ef-field full">
@@ -195,8 +195,8 @@
                 <label class="ef-drop" for="id_logo"><span class="dz"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v13"/></svg></span><span class="dt"><b id="efLogoName">Choisir un fichier</b><span>PNG ou JPG, 2 Mo max.</span></span><input type="file" name="logo" id="id_logo" accept="image/*"></label>
               </div>
               <div class="ef-field full">
-                <label>Documents légaux <span class="hint" style="font-weight:400">(optionnel)</span></label>
-                <label class="ef-drop" for="id_documents"><span class="dz"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><span class="dt"><b id="efDocsName">Ajouter des documents</b><span>PDF, plusieurs fichiers possibles.</span></span><input type="file" name="documents" id="id_documents" accept=".pdf,image/*" multiple></label>
+                <label>Document RCCM <span class="hint" style="font-weight:400">(optionnel — accélère la vérification de votre entreprise)</span></label>
+                <label class="ef-drop" for="id_document_rccm"><span class="dz"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><span class="dt"><b id="efDocsName">Téléverser le document RCCM</b><span>PDF ou photo.</span></span><input type="file" name="document_rccm" id="id_document_rccm" accept=".pdf,image/*"></label>
               </div>
             </div>
           </div>
@@ -329,8 +329,8 @@
   // noms de fichiers
   var logo = document.getElementById('id_logo');
   logo.addEventListener('change', function(){ document.getElementById('efLogoName').textContent = logo.files.length ? logo.files[0].name : 'Choisir un fichier'; });
-  var docs = document.getElementById('id_documents');
-  docs.addEventListener('change', function(){ document.getElementById('efDocsName').textContent = docs.files.length ? (docs.files.length + ' fichier(s) sélectionné(s)') : 'Ajouter des documents'; });
+  var docs = document.getElementById('id_document_rccm');
+  docs.addEventListener('change', function(){ document.getElementById('efDocsName').textContent = docs.files.length ? docs.files[0].name : 'Téléverser le document RCCM'; });
 
   // récap
   function fillRecap(){

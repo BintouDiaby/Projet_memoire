@@ -1024,7 +1024,7 @@ urlpatterns = [
     path('dashboard/entreprise/profil/', dashboard_views.entreprise_profil, name='entreprise_profil'),
     path('dashboard/entreprise/parametres/', dashboard_views.entreprise_parametres, name='entreprise_parametres'),
     path('verification-entreprises/', utilisateurs_views.admin_verification_entreprises, name='admin_verification_entreprises'),
-    path('verification-entreprises/<int:user_id>/', utilisateurs_views.admin_verifier_entreprise, name='admin_verifier_entreprise'),
+    path('verification-entreprises/<int:company_id>/', utilisateurs_views.admin_verifier_entreprise, name='admin_verifier_entreprise'),
 
     # APIs
     path('api/utilisateurs/', include('utilisateurs.urls')),

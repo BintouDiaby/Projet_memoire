@@ -4,6 +4,7 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.http import HttpResponseForbidden
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -380,14 +381,32 @@ def company_signup(request):
             types_qs = request.POST.get('types', '')
             types_list = [t for t in types_qs.split(',') if t]
             company = Company.objects.create(name=company_name, types=types_list)
+            rccm = request.POST.get('rccm', '').strip()
+            if rccm:
+                company.numero_rccm = rccm
+            if request.FILES.get('document_rccm'):
+                company.document_rccm = request.FILES['document_rccm']
+            company.save()
             user.company = company
             user.save()
 
             # profil propriétaire
             prof, _ = ProprietaireProfile.objects.get_or_create(utilisateur=user)
             prof.nom_entreprise = company_name
-            prof.numero_siret_siren = request.POST.get('rccm') or prof.numero_siret_siren
+            prof.numero_siret_siren = rccm or prof.numero_siret_siren
             prof.save()
+
+            # notifier les administrateurs de la plateforme si un document RCCM
+            # a été fourni — sinon rien à vérifier pour l'instant
+            if company.document_rccm:
+                from dashboard.services import NotificationService
+                for admin in Utilisateur.objects.filter(is_staff=True):
+                    NotificationService.send(
+                        destinataire=admin, type_notification='systeme',
+                        titre="Nouvelle entreprise à vérifier",
+                        message=f"{company.name} a soumis son document RCCM ({rccm or 'numéro non renseigné'}).",
+                        lien='/verification-entreprises/',
+                    )
 
             # connecter l'utilisateur
             login(request, user)
@@ -623,41 +642,42 @@ def choose_profile(request):
 
 @login_required
 def admin_verification_entreprises(request):
-    """Écran admin : entreprises en attente de vérification (RCCM/documents).
+    """Écran admin : entreprises en attente de vérification du document RCCM.
 
-    `documents_verifies` (Utilisateur, filtre la vitrine publique) et
-    `certification` (ProprietaireProfile, pilote le badge « Vérifiée » du
-    dashboard) sont deux champs distincts qui doivent rester synchronisés —
-    jusqu'ici rien ne les modifiait en dehors de l'admin Django brut.
+    Le statut vit sur `Company.statut_verification`. À l'approbation/rejet,
+    `Utilisateur.documents_verifies` (filtre de la vitrine publique) et
+    `ProprietaireProfile.certification` (badge « Vérifiée » du dashboard)
+    sont synchronisés pour tous les comptes de l'entreprise, car ces deux
+    champs pré-existants pilotent l'affichage ailleurs dans le site.
     """
+    from .models import Company
     if not (request.user.is_staff or request.user.role == Utilisateur.Role.ADMIN):
         return HttpResponseForbidden("Réservé aux administrateurs.")
 
     entreprises = (
-        Utilisateur.objects.filter(
-            role__in=[Utilisateur.Role.PROPRIETAIRE, Utilisateur.Role.GESTIONNAIRE],
-            documents_verifies=False,
-        )
-        .select_related('company', 'proprietaire_profile')
+        Company.objects.filter(statut_verification=Company.StatutVerification.EN_ATTENTE)
+        .exclude(document_rccm='').exclude(document_rccm__isnull=True)
         .order_by('date_creation')
     )
-    entreprises_verifiees = (
-        Utilisateur.objects.filter(
-            role__in=[Utilisateur.Role.PROPRIETAIRE, Utilisateur.Role.GESTIONNAIRE],
-            documents_verifies=True,
-        )
-        .select_related('company', 'proprietaire_profile')
-        .order_by('-date_creation')[:20]
+    entreprises_traitees = (
+        Company.objects.exclude(statut_verification=Company.StatutVerification.EN_ATTENTE)
+        .exclude(document_rccm='').exclude(document_rccm__isnull=True)
+        .order_by('-date_verification')[:20]
     )
-    return render(request, 'utilisateurs/admin_verification.html', {
+    from dashboard.views import _sidebar_context
+    ctx = _sidebar_context(request.user)
+    ctx.update({
+        'active_page': 'verification',
         'entreprises': entreprises,
-        'entreprises_verifiees': entreprises_verifiees,
+        'entreprises_traitees': entreprises_traitees,
     })
+    return render(request, 'utilisateurs/admin_verification.html', ctx)
 
 
 @login_required
-def admin_verifier_entreprise(request, user_id):
-    """Approuve ou rejette la vérification d'une entreprise (RCCM/documents)."""
+def admin_verifier_entreprise(request, company_id):
+    """Approuve ou rejette le document RCCM d'une entreprise."""
+    from .models import Company
     if not (request.user.is_staff or request.user.role == Utilisateur.Role.ADMIN):
         return HttpResponseForbidden("Réservé aux administrateurs.")
     if request.method != 'POST':
@@ -665,34 +685,48 @@ def admin_verifier_entreprise(request, user_id):
 
     from dashboard.services import NotificationService
 
-    cible = Utilisateur.objects.filter(id=user_id).first()
-    if not cible:
+    company = Company.objects.filter(id=company_id).first()
+    if not company:
         messages.error(request, "Entreprise introuvable.")
         return redirect('admin_verification_entreprises')
 
+    destinataires = list(company.users.all())
     action = request.POST.get('action')
+
     if action == 'approuver':
-        cible.documents_verifies = True
-        cible.save(update_fields=['documents_verifies'])
-        prof, _ = ProprietaireProfile.objects.get_or_create(utilisateur=cible)
-        prof.certification = True
-        prof.save(update_fields=['certification'])
-        NotificationService.send(
-            destinataire=cible, type_notification='systeme',
-            titre="Votre entreprise est vérifiée",
-            message="Vos documents ont été validés. Le badge « Entreprise vérifiée » est maintenant actif.",
-            lien='/dashboard/company/',
-        )
-        messages.success(request, f"{cible.get_full_name() or cible.username} vérifiée avec succès.")
+        company.statut_verification = Company.StatutVerification.VALIDEE
+        company.motif_rejet = ''
+        company.date_verification = timezone.now()
+        company.save(update_fields=['statut_verification', 'motif_rejet', 'date_verification'])
+        for u in destinataires:
+            u.documents_verifies = True
+            u.save(update_fields=['documents_verifies'])
+            if u.role == Utilisateur.Role.PROPRIETAIRE:
+                prof, _ = ProprietaireProfile.objects.get_or_create(utilisateur=u)
+                prof.certification = True
+                prof.save(update_fields=['certification'])
+            NotificationService.send(
+                destinataire=u, type_notification='systeme',
+                titre="Votre entreprise est vérifiée",
+                message="Votre document RCCM a été validé. Le badge « Entreprise vérifiée » est maintenant actif.",
+                lien='/dashboard/company/',
+            )
+        messages.success(request, f"{company.name} vérifiée avec succès.")
     elif action == 'rejeter':
-        cible.documents_verifies = False
-        cible.save(update_fields=['documents_verifies'])
-        NotificationService.send(
-            destinataire=cible, type_notification='systeme',
-            titre="Vérification refusée",
-            message="Vos documents n'ont pas pu être validés. Contactez le support pour plus d'informations.",
-            lien='/dashboard/entreprise/modifier/',
-        )
+        motif = request.POST.get('motif', '').strip()
+        company.statut_verification = Company.StatutVerification.REJETEE
+        company.motif_rejet = motif
+        company.date_verification = timezone.now()
+        company.save(update_fields=['statut_verification', 'motif_rejet', 'date_verification'])
+        for u in destinataires:
+            u.documents_verifies = False
+            u.save(update_fields=['documents_verifies'])
+            NotificationService.send(
+                destinataire=u, type_notification='systeme',
+                titre="Vérification RCCM refusée",
+                message=motif or "Votre document RCCM n'a pas pu être validé. Contactez le support pour plus d'informations.",
+                lien='/dashboard/entreprise/modifier/',
+            )
         messages.success(request, "Vérification refusée, l'entreprise a été notifiée.")
 
     return redirect('admin_verification_entreprises')

@@ -124,7 +124,7 @@
   {% if request.user.is_staff %}
   <div class="side-lab">Administration</div>
   <nav class="snav">
-    <a href="/verification-entreprises/" class="{% if active_page == 'verification' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/></svg> Vérification entreprises</a>
+    <a href="/verification-entreprises/" class="{% if active_page == 'verification' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/></svg> Vérification entreprises {% if nb_entreprises_a_valider %}<span class="z badge-r">{{ nb_entreprises_a_valider }}</span>{% endif %}</a>
   </nav>
   {% endif %}
   <div class="side-foot"><a href="/accounts/logout/" class="logout"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg> Déconnexion</a></div>

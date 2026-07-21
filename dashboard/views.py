@@ -462,6 +462,12 @@ def dashboard_company(request):
         nb_conges_en_attente = DemandeConge.objects.filter(
             demandeur__in=user.comptes_entreprise(), statut=DemandeConge.Statut.EN_ATTENTE
         ).exclude(demandeur=user).count()
+    nb_entreprises_a_valider = 0
+    if user.is_staff:
+        from utilisateurs.models import Company
+        nb_entreprises_a_valider = Company.objects.filter(
+            statut_verification=Company.StatutVerification.EN_ATTENTE
+        ).exclude(document_rccm='').exclude(document_rccm__isnull=True).count()
 
     # ── Cartes statistiques ──
     nb_clients = (
@@ -580,6 +586,7 @@ def dashboard_company(request):
         'nb_a_valider': nb_a_valider,
         'nb_taches_a_faire': nb_taches_a_faire,
         'nb_conges_en_attente': nb_conges_en_attente,
+        'nb_entreprises_a_valider': nb_entreprises_a_valider,
     }
     return render(request, 'dashboard/dashboard_company.html', context)
 
@@ -793,6 +800,13 @@ def _sidebar_context(user):
             demandeur__in=user.comptes_entreprise(), statut=DemandeConge.Statut.EN_ATTENTE
         ).exclude(demandeur=user).count()
 
+    nb_entreprises_a_valider = 0
+    if user.is_staff:
+        from utilisateurs.models import Company
+        nb_entreprises_a_valider = Company.objects.filter(
+            statut_verification=Company.StatutVerification.EN_ATTENTE
+        ).exclude(document_rccm='').exclude(document_rccm__isnull=True).count()
+
     return {
         'company': company,
         'company_name': company_name,
@@ -809,6 +823,7 @@ def _sidebar_context(user):
         'nb_a_valider': nb_a_valider,
         'nb_taches_a_faire': nb_taches_a_faire,
         'nb_conges_en_attente': nb_conges_en_attente,
+        'nb_entreprises_a_valider': nb_entreprises_a_valider,
     }
 
 
