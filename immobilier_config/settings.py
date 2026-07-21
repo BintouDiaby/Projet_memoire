@@ -22,17 +22,28 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-x^@#cgp95_+u&_ylm*uu-us#w9r9_9xmyh=f_e*db7-5o^m_m0'
+# En prod : définir SECRET_KEY dans le .env (valeur unique et secrète).
+SECRET_KEY = config(
+    'SECRET_KEY',
+    default='django-insecure-x^@#cgp95_+u&_ylm*uu-us#w9r9_9xmyh=f_e*db7-5o^m_m0',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# En prod : DEBUG=False dans le .env.
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 # 10.0.2.2 = alias que l'émulateur Android utilise pour joindre l'hôte (voir
 # ApiConfig.baseUrl côté Flutter, --dart-define=API_BASE_URL=http://10.0.2.2:8000).
 # Sans cette entrée, Django rejette la requête avec DisallowedHost avant même
 # de poser le cookie csrftoken (le fallback DEBUG=True n'autorise que
 # localhost/127.0.0.1/[::1], pas 10.0.2.2).
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.0.2.2']
+# Liste séparée par des virgules dans le .env, ex :
+# ALLOWED_HOSTS=34.77.243.188,mon-domaine.com,127.0.0.1,localhost
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='127.0.0.1,localhost,10.0.2.2',
+    cast=lambda v: [h.strip() for h in v.split(',') if h.strip()],
+)
 
 
 # Application definition
@@ -164,6 +175,8 @@ STATIC_URL = '/static/'
 # Ajouter le dossier `static/` à la racine du projet pour le dev
 from pathlib import Path as _Path
 STATICFILES_DIRS = [BASE_DIR / 'static']
+# Destination de `collectstatic` en production (servi par Nginx / conteneur).
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # CORS configuration
 CORS_ALLOWED_ORIGINS = [
@@ -172,8 +185,22 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://127.0.0.1:8000",
 ]
+# Origines supplémentaires depuis le .env (ex. site web de prod). Séparées par des virgules.
+CORS_ALLOWED_ORIGINS += config(
+    'CORS_ALLOWED_ORIGINS',
+    default='',
+    cast=lambda v: [o.strip() for o in v.split(',') if o.strip()],
+)
 
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF : origines de confiance en HTTPS (obligatoire pour les POST du site web en prod).
+# Ex. dans le .env : CSRF_TRUSTED_ORIGINS=https://mon-domaine.com
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='',
+    cast=lambda v: [o.strip() for o in v.split(',') if o.strip()],
+)
 
 # Django REST Framework
 REST_FRAMEWORK = {
@@ -246,3 +273,13 @@ STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 # terminé son inscription/validation auprès de la DGI (voir facturation/fne_service.py).
 FNE_API_URL = config('FNE_API_URL', default='http://54.247.95.108/ws')
 FNE_API_KEY = config('FNE_API_KEY', default='')
+
+# Celery — courtier de messages Redis (tâches planifiées : factures, rappels…).
+# En Docker, le service redis est joignable à redis://redis:6379/0 (voir docker-compose).
+# En local sans Docker : redis://localhost:6379/0.
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
