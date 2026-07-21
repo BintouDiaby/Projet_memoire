@@ -93,7 +93,7 @@
     {% if request.user.peut_commercial or request.user.peut_gestion_locative or request.user.peut_comptable %}<a href="/dashboard/rdv/" class="{% if active_page == 'rdv' %}active{% endif %}"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Rendez-vous {% if nb_rdv_en_attente %}<span class="z badge-a">{{ nb_rdv_en_attente }}</span>{% endif %}</a>{% endif %}
     {% if request.user.peut_commercial %}<a href="/dashboard/reservations/" class="{% if active_page == 'reservations' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/></svg> Réservations {% if nb_reservations_en_attente %}<span class="z badge-a">{{ nb_reservations_en_attente }}</span>{% endif %}</a>{% endif %}
     {% if 'construction' in types and request.user.peut_commercial %}<a href="/dashboard/devis/" class="{% if active_page == 'devis' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg> Demandes de devis {% if nb_devis_en_attente %}<span class="z badge-o">{{ nb_devis_en_attente }}</span>{% endif %}</a>{% endif %}
-    {% if request.user.peut_commercial or request.user.peut_gestion_locative %}<a href="/dashboard/clients/" class="{% if active_page == 'clients' %}active{% endif %}"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0M16 5a3.5 3.5 0 0 1 0 7"/></svg> Clients CRM</a>{% endif %}
+    {% if company.type_compte == 'entreprise' %}{% if request.user.peut_commercial or request.user.peut_gestion_locative %}<a href="/dashboard/clients/" class="{% if active_page == 'clients' %}active{% endif %}"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0M16 5a3.5 3.5 0 0 1 0 7"/></svg> Clients CRM</a>{% endif %}{% endif %}
     {% if request.user.peut_gestion_locative %}<a href="/dashboard/reclamations/" class="{% if active_page == 'reclamations' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg> Réclamations {% if nb_reclamations_ouvertes %}<span class="z badge-r">{{ nb_reclamations_ouvertes }}</span>{% endif %}</a>{% endif %}
   </nav>
   {% if request.user.peut_gestion_locative or request.user.peut_comptable %}
@@ -102,10 +102,10 @@
     {% if request.user.peut_gestion_locative %}<a href="/dashboard/contrats/" class="{% if active_page == 'contrats' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg> Contrats</a>{% endif %}
     {% if request.user.peut_comptable %}<a href="/dashboard/facturation/" class="{% if active_page == 'facturation' %}active{% endif %}"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Facturation</a>
     <a href="/dashboard/paiements/validation/" class="{% if active_page == 'validation_paiements' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg> Validation paiements {% if nb_a_valider %}<span class="z badge-a">{{ nb_a_valider }}</span>{% endif %}</a>
-    <a href="/dashboard/statistiques/" class="{% if active_page == 'statistiques' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Statistiques</a>{% endif %}
+    {% if company.type_compte == 'entreprise' %}<a href="/dashboard/statistiques/" class="{% if active_page == 'statistiques' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Statistiques</a>{% endif %}{% endif %}
   </nav>
   {% endif %}
-  {% if request.user.role == 'proprietaire' %}
+  {% if request.user.role == 'proprietaire' and company.type_compte == 'entreprise' %}
   <div class="side-lab">Organisation</div>
   <nav class="snav">
     <a href="/dashboard/personnel/" class="{% if active_page == 'personnel' %}active{% endif %}"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8"/><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 11-3.5 13 0"/></svg> Personnel</a>

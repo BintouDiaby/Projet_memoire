@@ -210,6 +210,18 @@ class Company(models.Model):
                    "(traitement standard de la location nue à usage d'habitation) — à confirmer avec votre comptable.",
     )
 
+    # Particulier (propriétaire individuel, sans personnel ni RCCM) vs
+    # Entreprise immobilière (agence — Personnel, CRM, Statistiques, RCCM).
+    # Défaut ENTREPRISE : les comptes existants avant cette distinction
+    # gardent tous les menus auxquels ils avaient déjà accès.
+    class TypeCompte(models.TextChoices):
+        PARTICULIER = 'particulier', 'Particulier'
+        ENTREPRISE = 'entreprise', 'Entreprise immobilière'
+
+    type_compte = models.CharField(
+        max_length=12, choices=TypeCompte.choices, default=TypeCompte.ENTREPRISE,
+    )
+
     # Vérification du document RCCM par un administrateur de la plateforme
     class StatutVerification(models.TextChoices):
         EN_ATTENTE = 'en_attente', 'En attente de vérification'

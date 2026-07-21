@@ -95,16 +95,18 @@
       </div>
 
       <div class="row">
+        {% if company.type_compte == 'entreprise' %}
         <div class="field">
           <label for="id_rccm">Numéro RCCM</label>
           <input type="text" id="id_rccm" name="numero_siret_siren" value="{{ company.numero_rccm|default:prof.numero_siret_siren|default:'' }}" placeholder="Ex : CI-ABJ-2024-B-12345">
         </div>
+        {% endif %}
         <div class="field">
           <label for="id_ncc">Numéro de Compte Contribuable (NCC)</label>
           <input type="text" id="id_ncc" name="numero_ncc" value="{{ company.numero_ncc|default:'' }}" placeholder="Ex : 9606123E">
         </div>
       </div>
-      <p style="font-size:12px;color:#6B7280;margin:-8px 0 16px">RCCM et NCC sont des mentions obligatoires OHADA/SYSCOHADA et sont requis pour la certification des factures auprès de la DGI (Facture Normalisée Électronique).</p>
+      {% if company.type_compte == 'entreprise' %}<p style="font-size:12px;color:#6B7280;margin:-8px 0 16px">RCCM et NCC sont des mentions obligatoires OHADA/SYSCOHADA et sont requis pour la certification des factures auprès de la DGI (Facture Normalisée Électronique).</p>{% endif %}
 
       <div class="field">
         <label for="id_tva">Régime TVA appliqué aux loyers</label>

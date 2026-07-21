@@ -380,7 +380,9 @@ def company_signup(request):
             company_name = request.POST.get('company_name') or f"{user.username} Company"
             types_qs = request.POST.get('types', '')
             types_list = [t for t in types_qs.split(',') if t]
-            company = Company.objects.create(name=company_name, types=types_list)
+            company = Company.objects.create(
+                name=company_name, types=types_list, type_compte=Company.TypeCompte.ENTREPRISE,
+            )
             rccm = request.POST.get('rccm', '').strip()
             if rccm:
                 company.numero_rccm = rccm
@@ -425,6 +427,54 @@ def company_signup(request):
 
     context = {'form': form, 'stats': _public_landing_stats()}
     return render(request, 'registration/company_signup.html', context)
+
+
+def particulier_signup(request):
+    """Inscription simplifiée pour un propriétaire particulier (une ou quelques
+    maisons/appartements loués ou vendus en direct, pas une agence) : pas de
+    RCCM, pas de document à téléverser, pas de Personnel/CRM/Statistiques —
+    juste un espace pour gérer ses biens, contrats et paiements.
+
+    `Company.type_compte=PARTICULIER` est le seul levier qui distingue ce
+    compte d'un compte entreprise dans le reste de l'app (sidebar, écran de
+    vérification RCCM jamais déclenché faute de document)."""
+    from .forms import UtilisateurCreationForm
+    from .models import Company, ProprietaireProfile
+
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        post = request.POST.copy()
+        post.setdefault('role', Utilisateur.Role.PROPRIETAIRE)
+        form = UtilisateurCreationForm(post)
+        if form.is_valid():
+            user = form.save()
+
+            company_name = request.POST.get('company_name', '').strip() or (user.get_full_name() or user.username)
+            company = Company.objects.create(
+                name=company_name,
+                types=['location_maison', 'vente_maison', 'vente_terrain'],
+                type_compte=Company.TypeCompte.PARTICULIER,
+            )
+            user.company = company
+            user.save()
+
+            ProprietaireProfile.objects.get_or_create(utilisateur=user)
+
+            login(request, user)
+            _envoyer_email_confirmation(request, user)
+            messages.success(request, "Compte créé — ajoutez votre premier bien pour commencer.")
+            return redirect('/dashboard/company/')
+        else:
+            for field, errs in form.errors.items():
+                for e in errs:
+                    messages.error(request, f"{field}: {e}")
+    else:
+        form = UtilisateurCreationForm(initial={'role': Utilisateur.Role.PROPRIETAIRE})
+
+    context = {'form': form, 'stats': _public_landing_stats()}
+    return render(request, 'registration/particulier_signup.html', context)
 
 
 def onboarding_apply(request):

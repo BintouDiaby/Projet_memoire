@@ -957,6 +957,7 @@ urlpatterns = [
     path('parametres/', parametres, name='parametres'),
     path('parametres/documents/contrats.zip', contrats_views.mes_contrats_zip, name='mes_contrats_zip'),
     path('accounts/signup/company/', utilisateurs_views.company_signup, name='company_signup'),
+    path('accounts/signup/particulier/', utilisateurs_views.particulier_signup, name='particulier_signup'),
     path('guest-debug/', guest_debug, name='guest_debug'),
     path('dashboard/company/', dashboard_views.dashboard_company, name='dashboard_company'),
     path('dashboard/biens/', dashboard_views.mes_biens, name='dashboard_biens'),
