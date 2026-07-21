@@ -29,6 +29,8 @@
 
   .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
   .stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 17px;box-shadow:var(--sh)}
+  a.stat{display:block;text-decoration:none;color:inherit;cursor:pointer;transition:.14s}
+  a.stat:hover{border-color:var(--blue);box-shadow:0 4px 14px rgba(24,95,165,.12)}
   .stat .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;margin-bottom:11px;font-size:16px}
   .stat .ic.g{background:var(--green-soft)}.stat .ic.b{background:var(--blue-soft)}.stat .ic.a{background:var(--amber-soft)}.stat .ic.n{background:#eef1f4}
   .stat .v{font-family:var(--ig-font-display);font-weight:800;font-size:19px;letter-spacing:-.02em;color:var(--ink);line-height:1.1}
@@ -167,16 +169,18 @@
 
     <!-- STATS -->
     <div class="stats">
-      <div class="stat"><div class="ic g">💰</div><div class="v num">{{ total_paye|floatformat:0|intcomma }} <small>F</small></div><div class="k">Total payé</div></div>
-      <div class="stat"><div class="ic b">📄</div><div class="v num">{{ factures|length }}</div><div class="k">Factures{% if nb_factures_retard %} · <b>{{ nb_factures_retard }} en retard</b>{% endif %}</div></div>
-      <div class="stat"><div class="ic a">⏰</div>
-        {% if prochaine_echeance %}
+      <a class="stat" href="#factures-section" onclick="irFactures(event,'payee')"><div class="ic g">💰</div><div class="v num">{{ total_paye|floatformat:0|intcomma }} <small>F</small></div><div class="k">Total payé</div></a>
+      <a class="stat" href="#factures-section" onclick="irFactures(event,'tous')"><div class="ic b">📄</div><div class="v num">{{ factures|length }}</div><div class="k">Factures{% if nb_factures_retard %} · <b>{{ nb_factures_retard }} en retard</b>{% endif %}</div></a>
+      {% if prochaine_echeance %}
+      <a class="stat" href="/dashboard/facturation/{{ prochaine_echeance.id }}/"><div class="ic a">⏰</div>
         <div class="v num">{{ prochaine_echeance.date_echéance|date:"d M" }}</div><div class="k">Prochaine échéance · {{ prochaine_echeance.montant_total|floatformat:0|intcomma }} F</div>
-        {% else %}
+      </a>
+      {% else %}
+      <div class="stat"><div class="ic a">⏰</div>
         <div class="v num">—</div><div class="k">Aucune échéance à venir</div>
-        {% endif %}
       </div>
-      <div class="stat"><div class="ic n">🏠</div><div class="v num">{{ nb_contrats_actifs }}</div><div class="k">Contrat{{ nb_contrats_actifs|pluralize }} actif{{ nb_contrats_actifs|pluralize }}</div></div>
+      {% endif %}
+      <a class="stat" href="/dashboard/contrats/"><div class="ic n">🏠</div><div class="v num">{{ nb_contrats_actifs }}</div><div class="k">Contrat{{ nb_contrats_actifs|pluralize }} actif{{ nb_contrats_actifs|pluralize }}</div></a>
     </div>
 
     <!-- PROCHAINE ÉCHÉANCE -->
@@ -211,12 +215,12 @@
     {% endif %}
 
     {% if factures %}
-    <div class="sec-h"><h2>Mes factures</h2><a href="/dashboard/facturation/factures.zip">Tout télécharger</a></div>
+    <div class="sec-h" id="factures-section"><h2>Mes factures</h2><a href="/dashboard/facturation/factures.zip">Tout télécharger</a></div>
     <div class="tab-bar">
-      <button class="tab-btn on" onclick="filtrer(this,'tous')">Toutes ({{ factures|length }})</button>
-      <button class="tab-btn" onclick="filtrer(this,'en_attente')">En attente</button>
-      <button class="tab-btn" onclick="filtrer(this,'retard')">En retard</button>
-      <button class="tab-btn" onclick="filtrer(this,'payee')">Payées</button>
+      <button class="tab-btn on" id="tab-tous" onclick="filtrer(this,'tous')">Toutes ({{ factures|length }})</button>
+      <button class="tab-btn" id="tab-en_attente" onclick="filtrer(this,'en_attente')">En attente</button>
+      <button class="tab-btn" id="tab-retard" onclick="filtrer(this,'retard')">En retard</button>
+      <button class="tab-btn" id="tab-payee" onclick="filtrer(this,'payee')">Payées</button>
     </div>
 
     <div class="invoices">
@@ -587,6 +591,11 @@
 
   document.querySelectorAll('.overlay').forEach(function(o){ o.addEventListener('click',function(e){ if(e.target===o) o.classList.remove('open'); }); });
   document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ closePay(); closeIssue(); } });
+
+  function irFactures(e, filtre) {
+    var tab = document.getElementById('tab-' + filtre);
+    if (tab) { e.preventDefault(); filtrer(tab, filtre); document.getElementById('factures-section').scrollIntoView({behavior:'smooth', block:'start'}); }
+  }
 
   function filtrer(btn, filtre) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
