@@ -140,13 +140,10 @@
       /* Séparateur vertical */
       .ig-sep { width: 1px; height: 22px; background: var(--ig-border); flex-shrink: 0; }
 
-      /* Mobile : cacher les liens de nav, garder brand + actions */
-      @media (max-width: 900px) {
-        .ig-navlinks { display: none; }
-      }
-      @media (max-width: 600px) {
-        .ig-btn-amber { display: none; }
-      }
+      /* Le responsive de la navbar (burger + panneau déroulant sous 900px)
+         est défini dans includes/main_navbar.html, qui est la source de
+         vérité. Ne pas redéclarer de media query .ig-nav* ici : les deux
+         copies se contrediraient selon l'ordre d'inclusion. */
     </style>
     {% block extra_head %}{% endblock %}
   </head>
