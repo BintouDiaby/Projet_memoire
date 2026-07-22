@@ -44,16 +44,6 @@
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.07);
   }
 
-  .profile-card.selected-part {
-    border-color: #185FA5;
-    border-width: 2px;
-  }
-
-  .profile-card.selected-pro {
-    border-color: #3B6D11;
-    border-width: 2px;
-  }
-
   .icon-wrap {
     width: 48px;
     height: 48px;
@@ -139,108 +129,6 @@
   .cta-blue  { color: #185FA5; }
   .cta-green { color: #3B6D11; }
 
-  /* Step dots */
-  .step-indicator {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 1.75rem;
-  }
-
-  .dot {
-    height: 7px;
-    border-radius: 4px;
-    background: #ddd;
-    transition: background 0.2s ease, width 0.2s ease;
-    width: 7px;
-  }
-
-  .dot.active {
-    background: #185FA5;
-    width: 20px;
-  }
-
-  .dot.active-green {
-    background: #3B6D11;
-    width: 20px;
-  }
-
-  /* Confirmation panel */
-  .confirm-panel {
-    margin-top: 1.5rem;
-    background: #f8f8f8;
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
-    padding: 1.25rem 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-    max-width: 580px;
-    width: 100%;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: opacity 0.25s ease, transform 0.25s ease;
-    pointer-events: none;
-  }
-
-  .confirm-panel.show {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-
-  .confirm-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 9px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .confirm-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .confirm-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #111;
-    margin: 0;
-  }
-
-  .confirm-sub {
-    font-size: 12px;
-    color: #666;
-    margin: 2px 0 0;
-  }
-
-  .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 20px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    color: #fff;
-    transition: opacity 0.15s ease, transform 0.12s ease;
-    white-space: nowrap;
-    text-decoration: none;
-  }
-
-  .btn-primary:hover  { opacity: 0.88; }
-  .btn-primary:active { transform: scale(0.97); }
-  .btn-blue  { background: #185FA5; }
-  .btn-green { background: #3B6D11; }
-
   .login-hint {
     color: #999;
     margin-top: 1.75rem;
@@ -252,7 +140,6 @@
   /* Responsive */
   @media (max-width: 640px) {
     .profile-card { width: 100%; max-width: 360px; }
-    .confirm-panel { flex-direction: column; align-items: flex-start; }
   }
 </style>
 {% endblock %}
@@ -268,7 +155,7 @@
   <div class="cards">
 
     <!-- Carte Particulier -->
-    <div class="profile-card" id="card-part" onclick="selectProfile('part')" tabindex="0" role="button" aria-pressed="false">
+    <a class="profile-card" id="card-part" href="{% url 'signup' %}">
       <div class="icon-wrap icon-wrap-blue">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
              stroke="#185FA5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -309,10 +196,10 @@
           <path d="M5 12h14m-7-7 7 7-7 7"/>
         </svg>
       </div>
-    </div>
+    </a>
 
     <!-- Carte Propriétaire particulier -->
-    <div class="profile-card" id="card-owner" onclick="selectProfile('owner')" tabindex="0" role="button" aria-pressed="false">
+    <a class="profile-card" id="card-owner" href="{% url 'particulier_signup' %}">
       <div class="icon-wrap" style="background:#FFF3E0">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
              stroke="#B45309" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -352,10 +239,10 @@
           <path d="M5 12h14m-7-7 7 7-7 7"/>
         </svg>
       </div>
-    </div>
+    </a>
 
     <!-- Carte Entreprise immobilière -->
-    <div class="profile-card" id="card-pro" onclick="selectProfile('pro')" tabindex="0" role="button" aria-pressed="false">
+    <a class="profile-card" id="card-pro" href="{% url 'onboarding' %}">
       <div class="icon-wrap icon-wrap-green">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
              stroke="#3B6D11" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -396,10 +283,10 @@
           <path d="M5 12h14m-7-7 7 7-7 7"/>
         </svg>
       </div>
-    </div>
+    </a>
 
     <!-- Carte Invité -->
-    <div class="profile-card" id="card-guest" onclick="selectProfile('guest')" tabindex="0" role="button" aria-pressed="false" style="width:220px">
+    <a class="profile-card" id="card-guest" href="/guest/" style="width:220px">
       <div class="icon-wrap" style="background:#F4F6F9">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
           <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
@@ -431,27 +318,8 @@
           <path d="M5 12h14m-7-7 7 7-7 7"/>
         </svg>
       </div>
-    </div>
+    </a>
 
-  </div>
-
-  <!-- Indicateur d'étapes -->
-  <div class="step-indicator">
-    <div class="dot active" id="dot1"></div>
-    <div class="dot" id="dot2"></div>
-    <div class="dot" id="dot3"></div>
-  </div>
-
-  <!-- Panneau de confirmation -->
-  <div class="confirm-panel" id="confirm-panel">
-    <div class="confirm-left">
-      <div class="confirm-icon" id="confirm-icon"></div>
-      <div>
-        <p class="confirm-title" id="confirm-title"></p>
-        <p class="confirm-sub"   id="confirm-sub"></p>
-      </div>
-    </div>
-    <a class="btn-primary" id="confirm-btn" href="#">Créer mon compte →</a>
   </div>
 
   <p class="login-hint">
@@ -461,112 +329,10 @@
 </div>
 
 <script>
-  var signupUrl = "{% url 'signup' %}";
-  var loginUrl = "{% url 'login' %}";
-  var onboardingUrl = "{% url 'onboarding' %}";
-  var particulierUrl = "{% url 'particulier_signup' %}";
-
-  function selectProfile(type) {
-    var cPart = document.getElementById('card-part');
-    var cOwner = document.getElementById('card-owner');
-    var cPro  = document.getElementById('card-pro');
-    var cGuest = document.getElementById('card-guest');
-    var panel = document.getElementById('confirm-panel');
-    var icon  = document.getElementById('confirm-icon');
-    var title = document.getElementById('confirm-title');
-    var sub   = document.getElementById('confirm-sub');
-    var btn   = document.getElementById('confirm-btn');
-    var dot2  = document.getElementById('dot2');
-
-    [cPart, cOwner, cPro, cGuest].forEach(function(c){
-      c.classList.remove('selected-part', 'selected-pro');
-      c.setAttribute('aria-pressed', 'false');
-    });
-
-    dot2.className = 'dot';
-
-    if (type === 'part') {
-      cPart.classList.add('selected-part');
-      cPart.setAttribute('aria-pressed', 'true');
-
-      icon.style.background = '#E6F1FB';
-      icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
-      title.textContent = 'Profil sélectionné : Je cherche un bien';
-      sub.textContent   = 'Créez votre compte pour contacter des propriétaires et suivre vos démarches.';
-      btn.className     = 'btn-primary btn-blue';
-      btn.href          = signupUrl;
-      btn.textContent   = 'Créer mon compte →';
-      dot2.className    = 'dot active';
-
-    } else if (type === 'owner') {
-      cOwner.classList.add('selected-part');
-      cOwner.setAttribute('aria-pressed', 'true');
-
-      icon.style.background = '#FFF3E0';
-      icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12M3 21h18"/><rect x="9" y="13" width="6" height="8"/></svg>';
-      title.textContent = 'Profil sélectionné : Je possède un bien';
-      sub.textContent   = 'Espace simple, sans RCCM — ajoutez vos biens en quelques minutes.';
-      btn.className     = 'btn-primary btn-blue';
-      btn.href          = particulierUrl;
-      btn.textContent   = 'Créer mon compte →';
-      dot2.className    = 'dot active';
-
-    } else if (type === 'pro') {
-      cPro.classList.add('selected-pro');
-      cPro.setAttribute('aria-pressed', 'true');
-
-      icon.style.background = '#EAF3DE';
-      icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 7v14M21 7v14M6 7V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v2M6 7h12"/></svg>';
-      title.textContent = 'Profil sélectionné : Entreprise immobilière';
-      sub.textContent   = 'Accédez à la configuration de votre espace entreprise.';
-      btn.className     = 'btn-primary btn-green';
-      btn.href          = onboardingUrl;
-      btn.textContent   = 'Configurer mon espace →';
-      dot2.className    = 'dot active-green';
-    } else if (type === 'guest') {
-      cGuest.classList.add('selected-part');
-      cGuest.setAttribute('aria-pressed', 'true');
-
-      icon.style.background = '#F4F6F9';
-      icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-      title.textContent = 'Continuer en tant qu\'invité';
-      sub.textContent   = 'Vous restez en navigation publique — certaines actions nécessitent une connexion.';
-      btn.className     = 'btn-primary btn-blue';
-      btn.href          = '/guest/';
-      btn.textContent   = 'Continuer en tant qu\'invité →';
-      dot2.className    = 'dot';
-    }
-
-    panel.classList.add('show');
-  }
-
-  /* Navigation clavier */
-  document.getElementById('card-part').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectProfile('part'); }
-  });
-  document.getElementById('card-owner').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectProfile('owner'); }
-  });
-  document.getElementById('card-pro').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectProfile('pro'); }
-  });
-  document.getElementById('card-guest').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectProfile('guest'); }
-  });
-
-  /* Marquer dot3 actif au clic sur le bouton final */
-  document.getElementById('confirm-btn').addEventListener('click', function() {
-    document.getElementById('dot3').className = 'dot ' +
-      (document.getElementById('card-part').classList.contains('selected-part') ? 'active' : 'active-green');
-  });
-  
-</script>
-
-<script>
   // Debug helper: s'assurer que les éléments critiques sont visibles
   document.addEventListener('DOMContentLoaded', function() {
     try {
-      var wrappers = document.querySelectorAll('.profile-wrap, .cards, .profile-card, .confirm-panel');
+      var wrappers = document.querySelectorAll('.profile-wrap, .cards, .profile-card');
       wrappers.forEach(function(el){
         el.style.opacity = '1';
         el.style.visibility = 'visible';
