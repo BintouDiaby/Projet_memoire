@@ -19,12 +19,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # SECURITY
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-x^@#cgp95_+u&_ylm*uu-us#w9r9_9xmyh=f_e*db7-5o^m_m0')
+# Keep SECRET_KEY and DEBUG configurable via .env
+SECRET_KEY = config(
+    'SECRET_KEY',
+    default='django-insecure-x^@#cgp95_+u&_ylm*uu-us#w9r9_9xmyh=f_e*db7-5o^m_m0',
+)
+
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 # Hosts
-_raw_allowed = config('ALLOWED_HOSTS', default='127.0.0.1,localhost,10.0.2.2,bintou.enlignes.com')
-ALLOWED_HOSTS = [h.strip() for h in _raw_allowed.split(',') if h.strip()]
+# Default includes localhost, 10.0.2.2 (Android emulator) and the production
+# host used by the deployment. Allow overriding via `ALLOWED_HOSTS` in .env.
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='127.0.0.1,localhost,10.0.2.2,bintou.enlignes.com',
+    cast=lambda v: [h.strip() for h in v.split(',') if h.strip()],
+)
 
 
 # Application definition
@@ -37,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third-party
     'rest_framework',
+    'drf_spectacular',
     'corsheaders',
     'django_filters',
     'django.contrib.humanize',
@@ -128,9 +139,11 @@ USE_TZ = True
 # Static files
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+# Destination de `collectstatic` en production (servi par Nginx / conteneur).
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
+# CORS
 # CORS
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -138,13 +151,64 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://127.0.0.1:8000",
 ]
+
+# Origines supplémentaires depuis le .env (ex. site web de prod). Séparées par des virgules.
+CORS_ALLOWED_ORIGINS += config(
+    'CORS_ALLOWED_ORIGINS',
+    default='',
+    cast=lambda v: [o.strip() for o in v.split(',') if o.strip()],
+)
+
 CORS_ALLOW_CREDENTIALS = True
 
+# CSRF : origines de confiance en HTTPS (obligatoire pour les POST du site web en prod).
+# Ex. dans le .env : CSRF_TRUSTED_ORIGINS=https://mon-domaine.com
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='https://bintou.enlignes.com',
+    cast=lambda v: [o.strip() for o in v.split(',') if o.strip()],
+)
 
-# Django REST Framework defaults
+# Django REST Framework
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework.authentication.SessionAuthentication'],
-    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        # Session : utilisée par le site web (Django templates) et l'API navigable
+        'rest_framework.authentication.SessionAuthentication',
+        # JWT : utilisée par l'application mobile (header Authorization: Bearer <token>)
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+# Origines supplémentaires depuis le .env (ex. site web de prod). Séparées par des virgules.
+CORS_ALLOWED_ORIGINS += config(
+    'CORS_ALLOWED_ORIGINS',
+    default='',
+    cast=lambda v: [o.strip() for o in v.split(',') if o.strip()],
+)
+
+CORS_ALLOW_CREDENTIALS = True
+
+# CSRF : origines de confiance en HTTPS (obligatoire pour les POST du site web en prod).
+# Ex. dans le .env : CSRF_TRUSTED_ORIGINS=https://mon-domaine.com
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='',
+    cast=lambda v: [o.strip() for o in v.split(',') if o.strip()],
+)
+
+# Django REST Framework
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        # Session : utilisée par le site web (Django templates) et l'API navigable
+        'rest_framework.authentication.SessionAuthentication',
+        # JWT : utilisée par l'application mobile (header Authorization: Bearer <token>)
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+>>>>>>> origin/main
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
     'DEFAULT_FILTER_BACKENDS': [
@@ -152,6 +216,24 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
+    # Génération du schéma OpenAPI (Swagger / Redoc) via drf-spectacular
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# Documentation de l'API — drf-spectacular (OpenAPI 3)
+SPECTACULAR_SETTINGS = {
+    'TITLE': "API ImmoGérer",
+    'DESCRIPTION': "API REST de la plateforme de gestion locative ImmoGérer.",
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
+
+# Authentification par token JWT (application mobile) — djangorestframework-simplejwt
+# Sans stockage en base : les tokens sont signés, rien n'est enregistré côté DB.
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=12),   # token d'accès valable 12 h
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),   # token de rafraîchissement valable 30 j
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -183,14 +265,31 @@ STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 FNE_API_URL = config('FNE_API_URL', default='http://54.247.95.108/ws')
 FNE_API_KEY = config('FNE_API_KEY', default='')
 
+<<<<<<< HEAD
 # Reverse proxy / HTTPS headers
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
 
-# CSRF trusted origins
-_raw_csrf = config('CSRF_TRUSTED_ORIGINS', default='https://bintou.enlignes.com')
-CSRF_TRUSTED_ORIGINS = [u.strip() for u in _raw_csrf.split(',') if u.strip()]
-
 SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=True, cast=bool)
 CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=True, cast=bool)
+
+# Celery — courtier de messages Redis (tâches planifiées : factures, rappels…).
+# En Docker, le service redis est joignable à redis://redis:6379/0 (voir docker-compose).
+# En local sans Docker : redis://localhost:6379/0.
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+# Celery — courtier de messages Redis (tâches planifiées : factures, rappels…).
+# En Docker, le service redis est joignable à redis://redis:6379/0 (voir docker-compose).
+# En local sans Docker : redis://localhost:6379/0.
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+>>>>>>> origin/main

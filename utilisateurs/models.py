@@ -210,6 +210,35 @@ class Company(models.Model):
                    "(traitement standard de la location nue à usage d'habitation) — à confirmer avec votre comptable.",
     )
 
+    # Particulier (propriétaire individuel, sans personnel ni RCCM) vs
+    # Entreprise immobilière (agence — Personnel, CRM, Statistiques, RCCM).
+    # Défaut ENTREPRISE : les comptes existants avant cette distinction
+    # gardent tous les menus auxquels ils avaient déjà accès.
+    class TypeCompte(models.TextChoices):
+        PARTICULIER = 'particulier', 'Particulier'
+        ENTREPRISE = 'entreprise', 'Entreprise immobilière'
+
+    type_compte = models.CharField(
+        max_length=12, choices=TypeCompte.choices, default=TypeCompte.ENTREPRISE,
+    )
+
+    # Vérification du document RCCM par un administrateur de la plateforme
+    class StatutVerification(models.TextChoices):
+        EN_ATTENTE = 'en_attente', 'En attente de vérification'
+        VALIDEE = 'validee', 'Vérifiée'
+        REJETEE = 'rejetee', 'Rejetée'
+
+    document_rccm = models.FileField(
+        upload_to='companies/rccm/', blank=True, null=True,
+        verbose_name="Document RCCM",
+        help_text="Justificatif du Registre du Commerce et du Crédit Mobilier (PDF ou photo).",
+    )
+    statut_verification = models.CharField(
+        max_length=10, choices=StatutVerification.choices, default=StatutVerification.EN_ATTENTE,
+    )
+    motif_rejet = models.TextField(blank=True, default='')
+    date_verification = models.DateTimeField(blank=True, null=True)
+
     class Meta:
         verbose_name = 'Company'
         verbose_name_plural = 'Companies'
@@ -261,7 +290,28 @@ class ProprietaireProfile(models.Model):
     nombre_proprietes = models.IntegerField(default=0)
     experience_annees = models.IntegerField(default=0)
     certification = models.BooleanField(default=False)
-    
+
+    # Vérification d'identité d'un propriétaire particulier (pas de RCCM chez
+    # lui — c'est une pièce d'identité personnelle qui joue ce rôle). Miroir
+    # de Company.document_rccm/statut_verification côté entreprise.
+    class TypePiece(models.TextChoices):
+        CNI = 'cni', "Carte Nationale d'Identité"
+        PASSEPORT = 'passeport', 'Passeport'
+        ATTESTATION = 'attestation', "Attestation d'identité"
+
+    class StatutVerification(models.TextChoices):
+        EN_ATTENTE = 'en_attente', 'En attente de vérification'
+        VALIDEE = 'validee', 'Vérifiée'
+        REJETEE = 'rejetee', 'Rejetée'
+
+    type_piece_identite = models.CharField(max_length=15, choices=TypePiece.choices, blank=True, default='')
+    piece_identite = models.FileField(upload_to='documents/proprietaires/pieces_identite/', blank=True, null=True)
+    statut_verification_identite = models.CharField(
+        max_length=10, choices=StatutVerification.choices, default=StatutVerification.EN_ATTENTE,
+    )
+    motif_rejet_identite = models.TextField(blank=True, default='')
+    date_verification_identite = models.DateTimeField(blank=True, null=True)
+
     class Meta:
         verbose_name = 'Profil Propriétaire'
         verbose_name_plural = 'Profils Propriétaires'

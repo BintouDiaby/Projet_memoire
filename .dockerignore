@@ -1,16 +1,30 @@
-__pycache__
+# Environnements Python
+venv/
+.venv/
+__pycache__/
 *.pyc
 *.pyo
-*.pyd
-env/
-venv/
-.venv
-build/
-dist/
-.git
-.github
-media
-node_modules
-*.sqlite3
-*.log
-Dockerfile
+
+# Ne JAMAIS mettre la base ni les données dans l'image
+db.sqlite3
+media/
+staticfiles/
+
+# Secrets — injectés au runtime via le .env de la VM
+.env
+
+# Git / IDE / OS
+.git/
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Docs (inutiles dans l'image)
+*.md
+landing_check.html
+landing_response.html
+onboarding_check.html
+response*.html
+
+# NB : data_export.json est conservé volontairement (sert au chargement initial des données de démo).

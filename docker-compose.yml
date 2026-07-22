@@ -1,48 +1,93 @@
-version: '3.8'
+# Déploiement ImmoGérer — tout tourne en conteneurs, les DONNÉES vivent dans des VOLUMES.
+# Sur la VM : `docker compose pull && docker compose up -d`
+#
+# IMAGE_NAME / IMAGE_TAG viennent du .env (ex. IMAGE_NAME=toncompte/immogerer).
 services:
-  bintou:
-    build: .
-    image: ghcr.io/${GITHUB_OWNER:-bintoudiaby}/projet_memoire:latest
-    restart: always
-    env_file: .env
-    volumes:
-      - static_volume:/app/static
-      - media_volume:/app/media
-    depends_on:
-      - bintou_db
-    labels:
-      - "traefik.enable=true"
-      - "traefik.public=true"
-      - "traefik.http.routers.bintou.rule=Host(`bintou.enlignes.com`)"
-      - "traefik.http.routers.bintou.entrypoints=websecure"
-      - "traefik.http.services.bintou.loadbalancer.server.port=8000"
-      - "traefik.docker.network=traefik_public"
-    networks:
-      - traefik_public
 
-  bintou_db:
+  # --- Base de données PostgreSQL (données persistantes dans le volume pgdata) ---
+  db:
     image: postgres:15
-    restart: always
+    restart: unless-stopped
     environment:
-      - POSTGRES_DB=immobilier_prod
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=pgpass
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - traefik_public
+      - pgdata:/var/lib/postgresql/data          # ← LES DONNÉES SURVIVENT ICI
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d immobilier_prod"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 12
+
+  # --- Redis (courtier pour Celery) ---
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  # --- Application Django (gunicorn) ---
+  web:
+    image: ${IMAGE_NAME:-immogerer}:${IMAGE_TAG:-latest}
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn immobilier_config.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+    volumes:
+      - media:/app/media                          # ← PHOTOS PERSISTANTES
+      - static:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    expose:
+      - "8000"
+
+  # --- Celery worker (exécute les tâches : envoi rappels, etc.) ---
+  celery_worker:
+    image: ${IMAGE_NAME:-immogerer}:${IMAGE_TAG:-latest}
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    command: celery -A immobilier_config worker -l info
+    volumes:
+      - media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # --- Celery beat (planificateur : factures le 1er du mois, rappels 8h…) ---
+  celery_beat:
+    image: ${IMAGE_NAME:-immogerer}:${IMAGE_TAG:-latest}
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    command: celery -A immobilier_config beat -l info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # --- Nginx (reverse proxy + fichiers statiques/médias) ---
+  nginx:
+    image: nginx:1.25-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - static:/app/staticfiles:ro
+      - media:/app/media:ro
+    depends_on:
+      - web
 
 volumes:
-  static_volume:
-  media_volume:
-  postgres_data:
-    driver: local
-
-networks:
-  traefik_public:
-    external: true
+  pgdata:      # base PostgreSQL — ne pas supprimer, ce sont tes données
+  media:       # photos des biens
+  static:      # fichiers statiques collectés (admin, Swagger…)

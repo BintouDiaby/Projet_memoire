@@ -194,7 +194,7 @@
       </div>
       <div class="notif-list">
         {% for n in notifs %}
-        <a class="notif-item {% if not n.lue %}new{% endif %}" href="/construction/projet/{{ n.projet.id }}/">
+        <a class="notif-item {% if not n.lue %}new{% endif %}" href="{{ n.mark_url }}">
           <div class="notif-icon {% if n.type == 'nouveau_devis' %}devis{% elif 'rdv' in n.type %}rdv{% else %}statut{% endif %}">
             {% if n.type == 'nouveau_devis' %}📋
             {% elif 'rdv' in n.type %}📅

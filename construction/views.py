@@ -223,6 +223,8 @@ def dashboard_construction(request):
         .order_by('-cree_le')[:15]
     )
     nb_notifs = NotificationConstruction.objects.filter(destinataire=user, lue=False).count()
+    for n in notifs:
+        n.mark_url = f"/dashboard/notifications/construction/lire/{n.id}/?next=/construction/projet/{n.projet_id}/"
 
     # RDV à venir (projets avec date_rdv dans le futur)
     from django.utils.timezone import now

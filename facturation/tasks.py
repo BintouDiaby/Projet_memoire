@@ -11,6 +11,56 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def generer_facture_pour_paiement(paiement, contrat):
+    """Crée la Facture (+ certification FNE + notification + rappels) pour un
+    `Paiement` existant qui n'en a pas encore — factorisé pour être appelé
+    aussi bien par la tâche mensuelle que par la signature d'un nouveau
+    contrat (voir `facturation/signals.py`), afin qu'un paiement du mois en
+    cours soit TOUJOURS immédiatement payable, pas seulement ceux passés par
+    le cron du 1er du mois. Retourne la Facture créée, ou None si elle
+    existait déjà."""
+    if hasattr(paiement, 'facture'):
+        return None
+
+    mois = paiement.mois
+    facture = Facture.objects.create(
+        paiement=paiement,
+        contrat=contrat,
+        numero_facture=f"FAC-{contrat.id}-{mois.strftime('%Y%m')}",
+        date_echéance=paiement.date_limite,
+        montant_loyer=contrat.prix_mensuel,
+        montant_charges=contrat.charges_mensuelles,
+        montant_total=paiement.montant_du,
+        statut=Facture.Statut.GENEREE,
+        date_emission=timezone.now()
+    )
+
+    # Certification FNE (Facture Normalisée Électronique - DGI).
+    # N'interrompt jamais la génération : si la FNE n'est pas encore
+    # configurée ou injoignable, la facture reste valable en interne,
+    # simplement non certifiée (facture.fne_certifiee reste False).
+    try:
+        from .fne_service import certifier_facture
+        ok, msg = certifier_facture(facture)
+        if not ok:
+            logger.warning(f"Certification FNE non aboutie pour {facture.numero_facture} : {msg}")
+    except Exception as e:
+        logger.error(f"Erreur certification FNE pour {facture.numero_facture}: {str(e)}")
+
+    if contrat.locataire:
+        Notification.objects.create(
+            facture=facture,
+            utilisateur=contrat.locataire,
+            type_notification='email',
+            titre=f'Facture de loyer pour {contrat.bien.titre}',
+            message=f'Une nouvelle facture a été générée pour le mois de {mois.strftime("%B %Y")}',
+            statut=Notification.Statut.EN_ATTENTE
+        )
+        creer_rappels_paiement(paiement)
+
+    return facture
+
+
 @shared_task(bind=True, max_retries=3)
 def generer_factures_mensuelles(self):
     """
@@ -20,17 +70,17 @@ def generer_factures_mensuelles(self):
     try:
         aujourd_hui = timezone.now().date()
         premier_jour_mois = aujourd_hui.replace(day=1)
-        
+
         # Récupérer tous les contrats actifs
         contrats_actifs = Contrat.objects.filter(
             statut='en_cours',
             date_debut__lte=aujourd_hui,
             date_fin__gte=aujourd_hui
         )
-        
+
         factures_creees = 0
         paiements_crees = 0
-        
+
         for contrat in contrats_actifs:
             try:
                 # Créer un paiement pour ce mois
@@ -42,59 +92,21 @@ def generer_factures_mensuelles(self):
                         'date_limite': premier_jour_mois.replace(day=min(contrat.jour_paiement, 28))
                     }
                 )
-                
+
                 if created:
                     paiements_crees += 1
-                
-                # Créer une facture pour ce paiement
-                if not hasattr(paiement, 'facture'):
-                    facture = Facture.objects.create(
-                        paiement=paiement,
-                        contrat=contrat,
-                        numero_facture=f"FAC-{contrat.id}-{premier_jour_mois.strftime('%Y%m')}",
-                        date_echéance=paiement.date_limite,
-                        montant_loyer=contrat.prix_mensuel,
-                        montant_charges=contrat.charges_mensuelles,
-                        montant_total=paiement.montant_du,
-                        statut=Facture.Statut.GENEREE,
-                        date_emission=timezone.now()
-                    )
+
+                if generer_facture_pour_paiement(paiement, contrat) is not None:
                     factures_creees += 1
 
-                    # Certification FNE (Facture Normalisée Électronique - DGI).
-                    # N'interrompt jamais la génération : si la FNE n'est pas encore
-                    # configurée ou injoignable, la facture reste valable en interne,
-                    # simplement non certifiée (facture.fne_certifiee reste False).
-                    try:
-                        from .fne_service import certifier_facture
-                        ok, msg = certifier_facture(facture)
-                        if not ok:
-                            logger.warning(f"Certification FNE non aboutie pour {facture.numero_facture} : {msg}")
-                    except Exception as e:
-                        logger.error(f"Erreur certification FNE pour {facture.numero_facture}: {str(e)}")
-
-                    # Créer une notification pour le locataire
-                    if contrat.locataire:
-                        Notification.objects.create(
-                            facture=facture,
-                            utilisateur=contrat.locataire,
-                            type_notification='email',
-                            titre=f'Facture de loyer pour {contrat.bien.titre}',
-                            message=f'Une nouvelle facture a été générée pour le mois de {premier_jour_mois.strftime("%B %Y")}',
-                            statut=Notification.Statut.EN_ATTENTE
-                        )
-                        
-                        # Créer les rappels de paiement
-                        creer_rappels_paiement(paiement)
-                        
             except Exception as e:
                 logger.error(f"Erreur lors de la création de la facture pour le contrat {contrat.id}: {str(e)}")
                 continue
-        
+
         message = f"Génération des factures mensuelles: {factures_creees} factures, {paiements_crees} paiements"
         logger.info(message)
         return {'status': 'success', 'factures': factures_creees, 'paiements': paiements_crees}
-        
+
     except Exception as exc:
         logger.error(f"Erreur: {str(exc)}")
         return self.retry(exc=exc, countdown=60)

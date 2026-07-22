@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inscription particulier — ImmoGérer</title>
+  <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="/static/css/site.css" rel="stylesheet">
+  <style>
+    html,body{height:auto!important;min-height:100%;overflow-y:auto!important}
+    .auth-page{height:auto!important;min-height:100vh;overflow:visible!important}
+    .auth-main,.auth-wrapper,.auth-card{height:auto!important;max-height:none!important;overflow:visible!important}
+    .auth-main{padding-top:28px;padding-bottom:28px}
+
+    .ef{--g:#185FA5;--g-dark:#123F70;--g-soft:#E6F1FB;--bd:#e5e7eb;--mut:#6b7280;--ink:#1f2937;--err:#b4441f;font-family:"Inter",system-ui,sans-serif}
+    .ef-sh{display:flex;align-items:center;gap:10px;margin:0 0 18px}
+    .ef-sh .ic{width:32px;height:32px;border-radius:9px;background:var(--g-soft);display:grid;place-items:center;flex:0 0 32px}
+    .ef-sh .ic svg{width:17px;height:17px;stroke:var(--g);fill:none;stroke-width:1.8}
+    .ef-sh h3{font-size:16px;font-weight:700;margin:0;color:var(--ink)}
+    .ef-sh .sub{font-size:12px;color:var(--mut);margin:1px 0 0}
+
+    .ef-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .ef-field{display:flex;flex-direction:column}
+    .ef-field.full{grid-column:1 / -1}
+    .ef-field label{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink)}
+    .ef-field .req{color:var(--g);margin-left:2px}
+    .ef-field input[type=text],.ef-field input[type=email],.ef-field input[type=tel],.ef-field input[type=password]{
+      width:100%;padding:11px 13px;border:1.5px solid var(--bd);border-radius:10px;font:inherit;font-size:14.5px;background:#fff;outline:none;transition:border-color .15s,box-shadow .15s}
+    .ef-field input:focus{border-color:var(--g);box-shadow:0 0 0 3px rgba(24,95,165,.13)}
+    .ef-field.invalid input{border-color:var(--err);box-shadow:0 0 0 3px rgba(180,68,31,.12)}
+    .ef-field .hint{font-size:11.5px;color:var(--mut);margin-top:5px}
+    .ef-field .err{font-size:11.5px;color:var(--err);margin-top:5px;display:none}
+    .ef-field.invalid .err{display:block}
+    .ef-field.shake{animation:shake .3s}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+    .ef-pwd{position:relative}
+    .ef-pwd .toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:6px;display:grid;place-items:center;color:var(--mut)}
+    .ef-pwd .toggle svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7}
+    .ef-match{font-size:11.5px;margin-top:5px;display:none}
+    .ef-match.ok{display:block;color:var(--g)}
+    .ef-match.no{display:block;color:var(--err)}
+
+    .ef-field select{width:100%;padding:11px 13px;border:1.5px solid var(--bd);border-radius:10px;font:inherit;font-size:14.5px;background:#fff;outline:none}
+    .ef-field select:focus{border-color:var(--g);box-shadow:0 0 0 3px rgba(24,95,165,.13)}
+    .ef-drop{display:flex;align-items:center;gap:14px;border:1.6px dashed #cbd2d9;border-radius:12px;padding:13px 15px;cursor:pointer;transition:.15s;background:#fff}
+    .ef-drop:hover{border-color:var(--g);background:#f7fafd}
+    .ef-drop .dz{width:44px;height:44px;border-radius:11px;background:var(--g-soft);display:grid;place-items:center;flex:0 0 44px}
+    .ef-drop .dz svg{width:21px;height:21px;stroke:var(--g);fill:none;stroke-width:1.7}
+    .ef-drop .dt b{display:block;font-size:13.5px;color:var(--ink)}
+    .ef-drop .dt span{font-size:12px;color:var(--mut)}
+    .ef-drop input[type=file]{display:none}
+
+    .ef-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:11px;font:inherit;font-weight:600;font-size:14.5px;padding:12px 20px;cursor:pointer;border:1.5px solid transparent;transition:.16s;width:100%;margin-top:24px}
+    .ef-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2}
+    .ef-btn.blue{background:var(--g);color:#fff}
+    .ef-btn.blue:hover{background:var(--g-dark);transform:translateY(-1px)}
+    .ef-foot{text-align:center;margin-top:16px;font-size:13.5px;color:var(--mut)}
+    .ef-foot a{color:var(--g);font-weight:600;text-decoration:none}
+    .ef-foot a:hover{text-decoration:underline}
+    @media (max-width:520px){.ef-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body class="">
+
+<div class="auth-page">
+  <aside class="auth-aside">
+    <div class="auth-aside-content">
+      <a href="/" class="d-inline-flex align-items-center text-white text-decoration-none mb-4">
+        <strong class="ms-2">ImmoGérer</strong>
+      </a>
+      <h2>Inscription particulier</h2>
+      <p>Louez ou vendez vos biens en direct, sans créer d'entreprise — juste vous et vos biens.</p>
+    </div>
+    <div class="auth-aside-footer">© 2026 ImmoGérer</div>
+  </aside>
+
+  <section class="auth-main">
+    <div class="auth-wrapper">
+      <div class="auth-header">
+        <div class="auth-logo"></div>
+        <h1>Créer mon espace propriétaire</h1>
+        <p>Une minute suffit — pas de RCCM, pas de document à fournir.</p>
+      </div>
+
+      <div class="auth-card">
+        {% if messages %}
+          <div style="max-width:520px;margin:0 auto 12px;">
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <form class="ef" id="pfForm" method="post" action="" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="role" value="proprietaire">
+
+          <div class="ef-sh">
+            <span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+            <div><h3>Vos informations</h3><p class="sub">Le compte du propriétaire.</p></div>
+          </div>
+          <div class="ef-grid">
+            <div class="ef-field full" data-required><label for="id_username">Nom d'utilisateur<span class="req">*</span></label><input type="text" name="username" id="id_username"><div class="err">Ce champ est requis.</div></div>
+            <div class="ef-field" data-required><label for="id_first_name">Prénom<span class="req">*</span></label><input type="text" name="first_name" id="id_first_name"><div class="err">Ce champ est requis.</div></div>
+            <div class="ef-field" data-required><label for="id_last_name">Nom<span class="req">*</span></label><input type="text" name="last_name" id="id_last_name"><div class="err">Ce champ est requis.</div></div>
+            <div class="ef-field" data-required data-type="email"><label for="id_email">E-mail<span class="req">*</span></label><input type="email" name="email" id="id_email"><div class="err">E-mail invalide.</div></div>
+            <div class="ef-field" data-required><label for="id_telephone">Téléphone<span class="req">*</span></label><input type="tel" name="telephone" id="id_telephone" placeholder="+225 …"><div class="err">Ce champ est requis.</div></div>
+            <div class="ef-field full"><label for="id_company_name">Nom affiché à vos locataires/acheteurs <span class="hint" style="font-weight:400">(optionnel)</span></label><input type="text" name="company_name" id="id_company_name" placeholder="Ex : M. Koné, ou laissez vide pour votre nom complet"></div>
+            <div class="ef-field">
+              <label for="id_type_piece">Pièce d'identité <span class="hint" style="font-weight:400">(optionnel — accélère la vérification de votre compte)</span></label>
+              <select name="type_piece_identite" id="id_type_piece">
+                <option value="">— Type de pièce —</option>
+                <option value="cni">Carte Nationale d'Identité</option>
+                <option value="passeport">Passeport</option>
+                <option value="attestation">Attestation d'identité</option>
+              </select>
+            </div>
+            <div class="ef-field">
+              <label>&nbsp;</label>
+              <label class="ef-drop" for="id_piece_identite"><span class="dz"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><span class="dt"><b id="pfPieceName">Téléverser ma pièce d'identité</b><span>PDF ou photo.</span></span><input type="file" name="piece_identite" id="id_piece_identite" accept=".pdf,image/*"></label>
+            </div>
+            <div class="ef-field" data-required>
+              <label for="id_password1">Mot de passe<span class="req">*</span></label>
+              <div class="ef-pwd"><input type="password" name="password1" id="id_password1"><button type="button" class="toggle" data-target="id_password1"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+              <div class="hint">8 caractères minimum.</div><div class="err">Ce champ est requis.</div>
+            </div>
+            <div class="ef-field" data-required>
+              <label for="id_password2">Confirmation<span class="req">*</span></label>
+              <div class="ef-pwd"><input type="password" name="password2" id="id_password2"><button type="button" class="toggle" data-target="id_password2"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+              <div class="ef-match" id="pfMatch"></div><div class="err">Ce champ est requis.</div>
+            </div>
+          </div>
+
+          <button type="submit" class="ef-btn blue">Créer mon compte <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>
+          <div class="ef-foot">Vous représentez une entreprise immobilière ? <a href="{% url 'company_signup' %}">Inscription entreprise (avec RCCM) →</a></div>
+          <div class="ef-foot">Vous avez déjà un compte ? <a href="{% url 'login' %}">Se connecter</a></div>
+        </form>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script>
+(function(){
+  var form = document.getElementById('pfForm');
+
+  function markInvalid(field, on){
+    field.classList.toggle('invalid', on);
+    if(on){ field.classList.add('shake'); setTimeout(function(){ field.classList.remove('shake'); }, 300); }
+  }
+
+  function validate(){
+    var ok = true;
+    form.querySelectorAll('.ef-field[data-required]').forEach(function(f){
+      var inp = f.querySelector('input'), val = inp.value.trim(), bad = !val;
+      if(!bad && f.dataset.type === 'email'){ bad = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val); }
+      markInvalid(f, bad); if(bad) ok = false;
+    });
+    var p1 = document.getElementById('id_password1'), p2 = document.getElementById('id_password2');
+    if(p1.value && p2.value && p1.value !== p2.value){ markInvalid(p2.closest('.ef-field'), true); ok = false; }
+    return ok;
+  }
+
+  form.addEventListener('submit', function(e){ if(!validate()){ e.preventDefault(); } });
+  form.querySelectorAll('.ef-field input').forEach(function(inp){
+    inp.addEventListener('input', function(){ inp.closest('.ef-field').classList.remove('invalid'); });
+  });
+
+  document.querySelectorAll('.ef-pwd .toggle').forEach(function(b){
+    b.addEventListener('click', function(){ var i = document.getElementById(b.dataset.target); i.type = i.type === 'password' ? 'text' : 'password'; });
+  });
+
+  var piece = document.getElementById('id_piece_identite');
+  piece.addEventListener('change', function(){ document.getElementById('pfPieceName').textContent = piece.files.length ? piece.files[0].name : "Téléverser ma pièce d'identité"; });
+
+  var p1 = document.getElementById('id_password1'), p2 = document.getElementById('id_password2'), mb = document.getElementById('pfMatch');
+  function checkMatch(){
+    if(!p2.value){ mb.className = 'ef-match'; mb.textContent = ''; return; }
+    if(p1.value === p2.value){ mb.className = 'ef-match ok'; mb.textContent = '✓ Les mots de passe correspondent'; }
+    else { mb.className = 'ef-match no'; mb.textContent = '✗ Les mots de passe ne correspondent pas'; }
+  }
+  p1.addEventListener('input', checkMatch); p2.addEventListener('input', checkMatch);
+})();
+</script>
+</body>
+</html>

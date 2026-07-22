@@ -19,16 +19,22 @@ def creer_paiements_initiaux(sender, instance, created, raw=False, **kwargs):
         return
     if created and instance.statut == Contrat.Statut.EN_COURS:
         from contrats.models import Paiement
-        
-        mois_courant = instance.date_debut.replace(day=1)
+        from .tasks import generer_facture_pour_paiement
+
+        premier_jour_du_bail = instance.date_debut.replace(day=1)
+        premier_jour_mois_courant = timezone.now().date().replace(day=1)
+
+        mois_courant = premier_jour_du_bail
         while mois_courant <= instance.date_fin:
-            # Déterminer la date limite de paiement
-            if instance.jour_paiement <= mois_courant.replace(day=1).day:
-                date_limite = mois_courant.replace(day=instance.jour_paiement)
-            else:
-                date_limite = mois_courant.replace(day=instance.jour_paiement)
-            
-            Paiement.objects.get_or_create(
+            date_limite = mois_courant.replace(day=instance.jour_paiement)
+            if mois_courant == premier_jour_du_bail and date_limite < instance.date_debut:
+                # Le premier mois ne peut pas être déjà "en retard" avant même
+                # que le contrat ne commence — le locataire n'a pas encore pu
+                # payer (bug réel : jour_paiement déjà passé dans le mois de
+                # signature donnait une échéance antérieure à date_debut).
+                date_limite = instance.date_debut
+
+            paiement, _ = Paiement.objects.get_or_create(
                 contrat=instance,
                 mois=mois_courant,
                 defaults={
@@ -37,7 +43,16 @@ def creer_paiements_initiaux(sender, instance, created, raw=False, **kwargs):
                     'statut': Paiement.Statut.EN_ATTENTE
                 }
             )
-            
+
+            # Si ce mois est déjà le mois calendaire en cours, la tâche
+            # mensuelle (1er du mois) est déjà passée et ne repassera plus —
+            # sans ça la facture ne serait JAMAIS générée pour ce paiement :
+            # "en retard" partout, mais introuvable en Facturation et sans
+            # bouton Payer nulle part (bug réel constaté sur un contrat signé
+            # en cours de mois).
+            if mois_courant == premier_jour_mois_courant:
+                generer_facture_pour_paiement(paiement, instance)
+
             # Passer au mois suivant
             if mois_courant.month == 12:
                 mois_courant = mois_courant.replace(year=mois_courant.year + 1, month=1)

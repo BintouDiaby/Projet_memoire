@@ -366,6 +366,7 @@
   </div>
 </section>
 
+{% if not user.is_authenticated %}
 <!-- CTA -> choisir profil -->
 <section class="section" style="padding-top:0">
   <div class="wrap">
@@ -379,6 +380,7 @@
     </div>
   </div>
 </section>
+{% endif %}
 
 <footer>
   <div class="wrap">

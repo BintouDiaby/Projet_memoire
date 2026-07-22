@@ -31,6 +31,15 @@ from dashboard import views as dashboard_views
 from biens import views as biens_views
 from contrats import views as contrats_views
 from django.http import JsonResponse, HttpResponse
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+    SpectacularRedocView,
+)
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 # Importer modèles pour métriques de la page d'accueil
 from utilisateurs.models import Utilisateur
@@ -57,12 +66,19 @@ def home(request):
         utilisateurs_count = Utilisateur.objects.count()
         biens_count = Bien.objects.count()
         contrats_count = Contrat.objects.filter(statut=Contrat.Statut.EN_COURS).count()
+        biens_vedette = (
+            Bien.objects.filter(statut=Bien.Statut.DISPONIBLE)
+            .exclude(photo_principale='').exclude(photo_principale__isnull=True)
+            .select_related('proprietaire__company')
+            .order_by('-date_creation')[:4]
+        )
         landing_context = {
             'stats': {
                 'utilisateurs_actifs': utilisateurs_count,
                 'biens_total': biens_count,
                 'contrats_actifs': contrats_count,
-            }
+            },
+            'biens_vedette': biens_vedette,
         }
         return render(request, 'landing.html', landing_context)
 
@@ -169,12 +185,19 @@ def landing_page(request):
     utilisateurs_count = Utilisateur.objects.count()
     biens_count = Bien.objects.count()
     contrats_count = Contrat.objects.filter(statut=Contrat.Statut.EN_COURS).count()
+    biens_vedette = (
+        Bien.objects.filter(statut=Bien.Statut.DISPONIBLE)
+        .exclude(photo_principale='').exclude(photo_principale__isnull=True)
+        .select_related('proprietaire__company')
+        .order_by('-date_creation')[:4]
+    )
     context = {
         'stats': {
             'utilisateurs_actifs': utilisateurs_count,
             'biens_total': biens_count,
             'contrats_actifs': contrats_count,
-        }
+        },
+        'biens_vedette': biens_vedette,
     }
     return render(request, 'landing.html', context)
 
@@ -951,6 +974,7 @@ urlpatterns = [
     path('parametres/', parametres, name='parametres'),
     path('parametres/documents/contrats.zip', contrats_views.mes_contrats_zip, name='mes_contrats_zip'),
     path('accounts/signup/company/', utilisateurs_views.company_signup, name='company_signup'),
+    path('accounts/signup/particulier/', utilisateurs_views.particulier_signup, name='particulier_signup'),
     path('guest-debug/', guest_debug, name='guest_debug'),
     path('dashboard/company/', dashboard_views.dashboard_company, name='dashboard_company'),
     path('dashboard/biens/', dashboard_views.mes_biens, name='dashboard_biens'),
@@ -1027,7 +1051,17 @@ urlpatterns = [
     path('dashboard/entreprise/profil/', dashboard_views.entreprise_profil, name='entreprise_profil'),
     path('dashboard/entreprise/parametres/', dashboard_views.entreprise_parametres, name='entreprise_parametres'),
     path('verification-entreprises/', utilisateurs_views.admin_verification_entreprises, name='admin_verification_entreprises'),
-    path('verification-entreprises/<int:user_id>/', utilisateurs_views.admin_verifier_entreprise, name='admin_verifier_entreprise'),
+    path('verification-entreprises/<int:company_id>/', utilisateurs_views.admin_verifier_entreprise, name='admin_verifier_entreprise'),
+    path('verification-particuliers/<int:profile_id>/', utilisateurs_views.admin_verifier_particulier, name='admin_verifier_particulier'),
+
+    # Authentification par token JWT (application mobile)
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    # Documentation de l'API (OpenAPI 3) — Swagger UI & Redoc
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 
     # APIs
     path('api/utilisateurs/', include('utilisateurs.urls')),
