@@ -38,6 +38,21 @@ services:
     volumes:
       - media:/app/media                          # ← PHOTOS PERSISTANTES
       - static:/app/staticfiles
+    labels:
+      - "traefik.enable=true"
+      - "traefik.public=true"
+      - "traefik.http.routers.immogerer.rule=Host(`bintou.enlignes.com`)"
+      - "traefik.http.routers.immogerer.entrypoints=web"
+      - "traefik.http.routers.immogerer.priority=1000"
+      - "traefik.http.routers.immogerer-secure.rule=Host(`bintou.enlignes.com`)"
+      - "traefik.http.routers.immogerer-secure.entrypoints=websecure"
+      - "traefik.http.routers.immogerer-secure.priority=2000"
+      - "traefik.http.routers.immogerer-secure.tls=true"
+      - "traefik.http.services.immogerer.loadbalancer.server.port=8000"
+      - "traefik.docker.network=traefik_public"
+    networks:
+      - default
+      - traefik_public
     depends_on:
       db:
         condition: service_healthy
@@ -91,3 +106,7 @@ volumes:
   pgdata:      # base PostgreSQL — ne pas supprimer, ce sont tes données
   media:       # photos des biens
   static:      # fichiers statiques collectés (admin, Swagger…)
+
+networks:
+  traefik_public:
+    external: true
