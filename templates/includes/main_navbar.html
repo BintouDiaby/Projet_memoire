@@ -22,7 +22,14 @@
 .ig-backbtn{background:#f3f4f6;border:1.5px solid #d1d5db;border-radius:9px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;color:#374151;transition:.14s;flex-shrink:0;padding:0}
 .ig-backbtn:hover{background:#e5e7eb;border-color:#9ca3af;color:#111}
 .ig-backbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-@media(max-width:900px){.ig-navlinks{display:none}}
+.ig-hamburger{display:none;background:none;border:1px solid #e5e7eb;border-radius:9px;width:38px;height:38px;cursor:pointer;color:#374151;align-items:center;justify-content:center;flex-shrink:0}
+.ig-hamburger svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+@media(max-width:900px){
+  .ig-hamburger{display:flex}
+  .ig-navlinks{display:none;position:absolute;top:60px;left:0;right:0;background:#fff;flex-direction:column;gap:2px;padding:10px;border-bottom:1px solid #e5e7eb;box-shadow:0 12px 24px rgba(16,32,48,.08)}
+  .ig-navlinks.ig-open{display:flex}
+  .ig-navlinks li a{padding:11px 14px;font-size:14px}
+}
 @media(max-width:600px){.ig-btn-amber{display:none}}
 </style>
 
@@ -41,16 +48,20 @@
       ImmoGérer
     </a>
 
+    <button type="button" class="ig-hamburger" id="igHamburgerBtn" aria-label="Ouvrir le menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+
     {% if request.user.is_authenticated %}
 
     {% if request.user.role == 'locataire' %}
-    <ul class="ig-navlinks">
+    <ul class="ig-navlinks" id="igNavLinks">
       <li><a href="/guest/" {% if request.resolver_match.url_name == 'guest_landing' %}class="ig-active"{% endif %}>Accueil</a></li>
       <li><a href="/mon-espace/" {% if request.resolver_match.url_name == 'mon_espace_locataire' %}class="ig-active"{% endif %}>Mon espace</a></li>
       <li><a href="/explorer/" {% if request.resolver_match.url_name == 'explorer' %}class="ig-active"{% endif %}>Explorer</a></li>
     </ul>
     {% else %}
-    <ul class="ig-navlinks">
+    <ul class="ig-navlinks" id="igNavLinks">
       <li><a href="/dashboard/" {% if request.resolver_match.url_name in 'dashboard dashboard_company' %}class="ig-active"{% endif %}>Dashboard</a></li>
       <li><a href="/biens/">Biens</a></li>
       <li><a href="/dashboard/contrats/">Contrats</a></li>
@@ -74,7 +85,7 @@
 
     {% else %}
 
-    <ul class="ig-navlinks">
+    <ul class="ig-navlinks" id="igNavLinks">
       <li><a href="/explorer/" {% if request.resolver_match.url_name == 'explorer' %}class="ig-active"{% endif %}>Explorer</a></li>
       <li><a href="/explorer/?tab=construction">Construire</a></li>
     </ul>
@@ -87,6 +98,21 @@
 
   </div>
 </nav>
+
+<script>
+(function(){
+  var btn = document.getElementById('igHamburgerBtn');
+  var links = document.getElementById('igNavLinks');
+  if (!btn || !links) return;
+  btn.addEventListener('click', function(){
+    var open = links.classList.toggle('ig-open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  links.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){ links.classList.remove('ig-open'); btn.setAttribute('aria-expanded', 'false'); });
+  });
+})();
+</script>
 
 {% if request.user.is_authenticated and request.user.email and not request.user.email_verifie %}
 <div style="background:#FFFBEB;border-bottom:1px solid #FCD34D;padding:9px 20px;font-size:13px;color:#92400E;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
