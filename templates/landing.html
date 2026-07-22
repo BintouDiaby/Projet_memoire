@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 
 {% block title %}ImmoGérer — Gérez vos biens simplement{% endblock %}
 
@@ -536,10 +537,91 @@
     position: relative;
   }
 
+  /* ── BIENS À LA UNE ── */
+  .section-listings {
+    padding: 6rem 2rem 1rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .listings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .listing-card {
+    display: block;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 4px 18px rgba(15,43,76,0.05);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .listing-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 34px rgba(15,43,76,0.13);
+    color: inherit;
+  }
+
+  .lc-img {
+    height: 160px;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--navy);
+    position: relative;
+  }
+
+  .lc-tag {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(15,43,76,0.85);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.65rem;
+    border-radius: 99px;
+  }
+
+  .lc-body { padding: 1rem 1.1rem 1.2rem; }
+
+  .lc-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .lc-loc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .lc-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: var(--navy);
+  }
+
+  .lc-price small { font-size: 0.7rem; font-weight: 400; color: var(--muted); }
+
   @media (max-width: 768px) {
     .hero-stats { gap: 1.5rem; flex-wrap: wrap; }
     .section-dashboard { padding: 4rem 1.25rem; }
     .section-features { padding: 4rem 1.25rem; }
+    .section-listings { padding: 4rem 1.25rem 0.5rem; }
   }
 </style>
 {% endblock %}
@@ -631,6 +713,34 @@
     </div>
   </div>
 </header>
+
+{% if biens_vedette %}
+<!-- ══ BIENS À LA UNE ══ -->
+<section class="section-listings">
+  <span class="section-tag">Biens disponibles</span>
+  <h2 class="section-title">Découvrez ce qui vous attend<br>sur la <em>plateforme</em></h2>
+  <div class="listings-grid" style="margin-top:2rem">
+    {% for bien in biens_vedette %}
+    <a href="/biens/{{ bien.id }}/" class="listing-card">
+      <div class="lc-img" style="background-image:url('{{ bien.photo_principale.url }}')">
+        <span class="lc-tag">{% if bien.transaction_type == 'vente' %}Vente{% elif bien.type_bien == 'terrain' %}Terrain{% else %}Location{% endif %}</span>
+      </div>
+      <div class="lc-body">
+        <div class="lc-title">{{ bien.titre }}</div>
+        <div class="lc-loc">📍 {% if bien.commune %}{{ bien.commune }}{% else %}{{ bien.ville }}{% endif %}</div>
+        <div class="lc-price">
+          {% if bien.transaction_type == 'vente' and bien.prix_vente %}{{ bien.prix_vente|floatformat:0|intcomma }} <small>F</small>
+          {% else %}{{ bien.prix_mensuel|floatformat:0|intcomma }} <small>F/mois</small>{% endif %}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  <div style="text-align:center;margin-top:2.5rem">
+    <a href="/explorer/" class="btn-cta">Voir tous les biens →</a>
+  </div>
+</section>
+{% endif %}
 
 <!-- ══ DASHBOARD PREVIEW ══ -->
 <section class="section-dashboard">

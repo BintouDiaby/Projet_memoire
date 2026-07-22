@@ -63,12 +63,19 @@ def home(request):
         utilisateurs_count = Utilisateur.objects.count()
         biens_count = Bien.objects.count()
         contrats_count = Contrat.objects.filter(statut=Contrat.Statut.EN_COURS).count()
+        biens_vedette = (
+            Bien.objects.filter(statut=Bien.Statut.DISPONIBLE)
+            .exclude(photo_principale='').exclude(photo_principale__isnull=True)
+            .select_related('proprietaire__company')
+            .order_by('-date_creation')[:4]
+        )
         landing_context = {
             'stats': {
                 'utilisateurs_actifs': utilisateurs_count,
                 'biens_total': biens_count,
                 'contrats_actifs': contrats_count,
-            }
+            },
+            'biens_vedette': biens_vedette,
         }
         return render(request, 'landing.html', landing_context)
 
@@ -175,12 +182,19 @@ def landing_page(request):
     utilisateurs_count = Utilisateur.objects.count()
     biens_count = Bien.objects.count()
     contrats_count = Contrat.objects.filter(statut=Contrat.Statut.EN_COURS).count()
+    biens_vedette = (
+        Bien.objects.filter(statut=Bien.Statut.DISPONIBLE)
+        .exclude(photo_principale='').exclude(photo_principale__isnull=True)
+        .select_related('proprietaire__company')
+        .order_by('-date_creation')[:4]
+    )
     context = {
         'stats': {
             'utilisateurs_actifs': utilisateurs_count,
             'biens_total': biens_count,
             'contrats_actifs': contrats_count,
-        }
+        },
+        'biens_vedette': biens_vedette,
     }
     return render(request, 'landing.html', context)
 
