@@ -121,6 +121,24 @@ docker compose run --rm web python manage.py createsuperuser
 
 ---
 
+## D bis. Une seule fois — copier les photos dans le volume média
+
+⚠️ **Sans cette étape, les images des biens ne s'affichent pas** (base de données OK,
+mais fichiers absents). Les photos sont dans le dossier `media/` (ramené par le
+`git clone`), mais l'image Docker ne les contient pas et le volume démarre vide.
+On verse donc les fichiers dans le volume (ils y persistent ensuite) :
+
+```bash
+docker compose cp ./media/. web:/app/media/
+```
+
+Vérifier que les fichiers sont bien dans le volume :
+```bash
+docker compose exec web ls /app/media/biens/principales | head
+```
+
+---
+
 ## E. Vérifier depuis l'extérieur / l'app mobile
 
 - Swagger : `http://34.77.243.188/api/docs/`
