@@ -172,43 +172,12 @@ CSRF_TRUSTED_ORIGINS = config(
 # Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        # Session : utilisée par le site web (Django templates) et l'API navigable
         'rest_framework.authentication.SessionAuthentication',
-        # JWT : utilisée par l'application mobile (header Authorization: Bearer <token>)
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-# Origines supplémentaires depuis le .env (ex. site web de prod). Séparées par des virgules.
-CORS_ALLOWED_ORIGINS += config(
-    'CORS_ALLOWED_ORIGINS',
-    default='',
-    cast=lambda v: [o.strip() for o in v.split(',') if o.strip()],
-)
-
-CORS_ALLOW_CREDENTIALS = True
-
-# CSRF : origines de confiance en HTTPS (obligatoire pour les POST du site web en prod).
-# Ex. dans le .env : CSRF_TRUSTED_ORIGINS=https://mon-domaine.com
-CSRF_TRUSTED_ORIGINS = config(
-    'CSRF_TRUSTED_ORIGINS',
-    default='',
-    cast=lambda v: [o.strip() for o in v.split(',') if o.strip()],
-)
-
-# Django REST Framework
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        # Session : utilisée par le site web (Django templates) et l'API navigable
-        'rest_framework.authentication.SessionAuthentication',
-        # JWT : utilisée par l'application mobile (header Authorization: Bearer <token>)
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
->>>>>>> origin/main
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
     'DEFAULT_FILTER_BACKENDS': [
@@ -265,7 +234,6 @@ STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 FNE_API_URL = config('FNE_API_URL', default='http://54.247.95.108/ws')
 FNE_API_KEY = config('FNE_API_KEY', default='')
 
-<<<<<<< HEAD
 # Reverse proxy / HTTPS headers
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
@@ -283,13 +251,3 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-# Celery — courtier de messages Redis (tâches planifiées : factures, rappels…).
-# En Docker, le service redis est joignable à redis://redis:6379/0 (voir docker-compose).
-# En local sans Docker : redis://localhost:6379/0.
-CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
-CELERY_TIMEZONE = TIME_ZONE
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
->>>>>>> origin/main
