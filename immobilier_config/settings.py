@@ -202,6 +202,28 @@ CSRF_TRUSTED_ORIGINS = config(
     cast=lambda v: [o.strip() for o in v.split(',') if o.strip()],
 )
 
+# Ceinture + bretelles : on dérive AUSSI les origines de confiance depuis
+# ALLOWED_HOSTS, pour que le propre domaine HTTPS du site soit toujours accepté
+# en POST — même si CSRF_TRUSTED_ORIGINS n'a pas été renseigné (ou mal renseigné)
+# dans le .env. Sans ça, un POST du site en HTTPS était rejeté par un 403
+# « La vérification CSRF a échoué » (contrôle d'origine), y compris le login.
+_HOTES_LOCAUX = {'127.0.0.1', 'localhost', '[::1]', '0.0.0.0', '10.0.2.2'}
+for _hote in ALLOWED_HOSTS:
+    if _hote and _hote != '*' and _hote not in _HOTES_LOCAUX:
+        _origine = f'https://{_hote}'
+        if _origine not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(_origine)
+
+# Derrière nginx (voir docker/nginx.conf : `proxy_set_header X-Forwarded-Proto`),
+# indiquer à Django que la connexion cliente est en HTTPS. Sans ça request.scheme
+# reste 'http' : l'origine calculée pour le contrôle CSRF devient http:// et ne
+# correspond plus à l'Origin https:// envoyé par le navigateur -> 403 sur TOUS
+# les POST (login inclus). Activé par défaut ; nginx réécrit toujours l'en-tête,
+# donc il n'est pas usurpable par le client. Mettre USE_X_FORWARDED_PROTO=False
+# dans le .env pour le désactiver (ex. accès direct sans reverse proxy).
+if config('USE_X_FORWARDED_PROTO', default=True, cast=bool):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
