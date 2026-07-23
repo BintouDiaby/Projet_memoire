@@ -2504,8 +2504,16 @@ def stripe_creer_session(request):
         return redirect(next_url)
 
     stripe.api_key = settings.STRIPE_SECRET_KEY
-    success_url = request.build_absolute_uri(
-        f'/dashboard/facturation/stripe/succes/?facture_id={facture.id}&session_id={{CHECKOUT_SESSION_ID}}'
+    # IMPORTANT : le placeholder {CHECKOUT_SESSION_ID} doit rester litteral dans
+    # l'URL envoyee a Stripe (c'est Stripe qui le remplace par le vrai id de
+    # session au retour). On construit donc la base absolue AVANT d'y coller la
+    # query : si on passait toute l'URL (query comprise) a build_absolute_uri,
+    # iri_to_uri encoderait les accolades en %7B/%7D, Stripe ne reconnaitrait
+    # plus le motif, ne substituerait rien, et le retrieve echouerait avec
+    # « No such checkout.session: {CHECKOUT_SESSION_ID} ».
+    success_url = (
+        request.build_absolute_uri('/dashboard/facturation/stripe/succes/')
+        + f'?facture_id={facture.id}&session_id={{CHECKOUT_SESSION_ID}}'
     )
     cancel_url = request.build_absolute_uri(next_url)
 
