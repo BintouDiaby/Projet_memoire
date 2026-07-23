@@ -274,16 +274,19 @@
 
       <div class="devis-card">
         <h3>Demander un devis</h3>
-        <p>Décrivez votre projet et recevez une proposition personnalisée de {{ company.name }}.</p>
+        <p>Un rendez-vous avec {{ company.name }} est requis avant le devis détaillé — dites-leur que vous êtes intéressé(e) pour qu'ils vous en proposent un.</p>
         {% if request.user.is_authenticated %}
-        <a class="btn" href="/construction/devis/{{ company.id }}/">
-          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M12 18v-6M9 15h6"/></svg>
-          Demander un devis
-        </a>
+        <form method="post" action="/construction/interesse/{{ company.id }}/" style="margin:0">
+          {% csrf_token %}
+          <button class="btn" type="submit">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            Je suis intéressé(e) — Prendre RDV
+          </button>
+        </form>
         {% else %}
-        <a class="btn" href="/accounts/login/?next=/construction/devis/{{ company.id }}/">
+        <a class="btn" href="/accounts/login/?next=/construction/entreprise/{{ company.id }}/">
           <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-          Se connecter pour un devis
+          Se connecter pour prendre RDV
         </a>
         {% endif %}
       </div>
@@ -307,10 +310,13 @@
             Envoyer un message
           </a>
           {% endif %}
-        <a class="contact-btn" href="/construction/devis/{{ company.id }}/">
-          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-          Demander un devis
-        </a>
+        <form method="post" action="/construction/interesse/{{ company.id }}/" style="margin:0">
+          {% csrf_token %}
+          <button type="submit" class="contact-btn" style="width:100%;border:none;cursor:pointer;font:inherit">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            Je suis intéressé(e) — Prendre RDV
+          </button>
+        </form>
         {% endif %}
         {% if profil and profil.adresse %}
         <div style="font-size:12.5px;color:var(--muted);margin-top:12px;display:flex;align-items:flex-start;gap:7px">

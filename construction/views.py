@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.http import JsonResponse, HttpResponseForbidden
 from django.utils import timezone
 from .models import ProfilConstruction, RealisationConstruction, ProjetConstruction, EtapeChantier, PhotoChantier, NotificationConstruction, Devis
@@ -67,12 +68,64 @@ def profil_entreprise(request, company_id):
     })
 
 
-# ─── Formulaire de demande de devis ─────────────────────────────────────────
+# ─── Premier contact : le client se dit intéressé, avant tout devis ─────────
+# Un devis détaillé ne peut plus être demandé directement — le client doit
+# d'abord obtenir un rendez-vous avec l'entreprise, et que celle-ci le
+# marque comme terminé (voir terminer_rdv), avant que demande_devis ne
+# s'ouvre pour ce projet.
 
 @login_required
-def demande_devis(request, company_id):
+def demander_contact_construction(request, company_id):
     company = get_object_or_404(Company, id=company_id)
-    terrain_lie = None
+    if 'construction' not in (company.types or []):
+        from django.http import Http404
+        raise Http404('Cette entreprise ne propose pas de service de construction')
+
+    if request.method != 'POST':
+        return redirect('construction:profil_entreprise', company_id=company.id)
+
+    projet = ProjetConstruction.objects.create(client=request.user, entreprise=company)
+    projet.creer_etapes_par_defaut()
+
+    contact = _get_contact_user(company)
+    if contact:
+        conv, _ = Conversation.objects.get_or_create(
+            projet=projet,
+            demandeur=request.user,
+            defaults={'proprietaire': contact, 'phase': Conversation.Phase.COMMERCIAL}
+        )
+        intro = (
+            f"Bonjour, je suis intéressé(e) par vos services de construction. "
+            f"Pouvez-vous me proposer un rendez-vous pour en discuter ?"
+        )
+        Message.objects.create(conversation=conv, expediteur=request.user, contenu=intro)
+        conv.mis_a_jour_le = timezone.now()
+        conv.save(update_fields=['mis_a_jour_le'])
+        NotificationConstruction.objects.create(
+            destinataire=contact,
+            projet=projet,
+            type=NotificationConstruction.Type.NOUVEAU_DEVIS,
+            message=f"{request.user.get_full_name() or request.user.username} est intéressé(e) "
+                    f"et souhaite un rendez-vous avant de vous soumettre son projet.",
+        )
+
+    messages.success(request, "Votre demande de contact a été envoyée — l'entreprise va vous proposer un rendez-vous.")
+    return redirect('construction:projet_detail', projet_id=projet.id)
+
+
+# ─── Formulaire de demande de devis (débloqué après le RDV) ────────────────
+
+@login_required
+def demande_devis(request, projet_id):
+    projet = get_object_or_404(ProjetConstruction, id=projet_id)
+    if request.user != projet.client:
+        return HttpResponseForbidden('Réservé au client de ce projet.')
+    if not projet.rdv_termine:
+        messages.error(request, "Le rendez-vous doit d'abord avoir lieu avant de pouvoir demander un devis détaillé.")
+        return redirect('construction:projet_detail', projet_id=projet.id)
+
+    company = projet.entreprise
+    terrain_lie = projet.terrain_lie
     terrain_id = request.GET.get('terrain')
     if terrain_id:
         from biens.models import Bien
@@ -88,25 +141,20 @@ def demande_devis(request, company_id):
 
         if not type_projet or not description:
             return render(request, 'construction/demande_devis.html', {
-                'company': company, 'profil': getattr(company, 'profil_construction', None),
+                'projet': projet, 'company': company, 'profil': getattr(company, 'profil_construction', None),
                 'terrain_lie': terrain_lie, 'erreur': 'Veuillez remplir tous les champs obligatoires.',
                 'post': request.POST,
             })
 
-        projet = ProjetConstruction.objects.create(
-            client=request.user,
-            entreprise=company,
-            type_projet=type_projet,
-            superficie=superficie,
-            a_terrain=a_terrain,
-            localisation_terrain=localisation,
-            budget_estime=budget,
-            description=description,
-            terrain_lie=terrain_lie,
-        )
-        projet.creer_etapes_par_defaut()
+        projet.type_projet = type_projet
+        projet.superficie = superficie
+        projet.a_terrain = a_terrain
+        projet.localisation_terrain = localisation
+        projet.budget_estime = budget
+        projet.description = description
+        projet.terrain_lie = terrain_lie
+        projet.save()
 
-        # Créer la conversation associée
         contact = _get_contact_user(company)
         if contact:
             conv, _ = Conversation.objects.get_or_create(
@@ -115,7 +163,7 @@ def demande_devis(request, company_id):
                 defaults={'proprietaire': contact, 'phase': Conversation.Phase.COMMERCIAL}
             )
             intro = (
-                f"Bonjour, je souhaite vous soumettre une demande de devis pour un(e) "
+                f"Suite à notre rendez-vous, voici ma demande de devis pour un(e) "
                 f"{projet.get_type_projet_display()}"
                 f"{f' à {localisation}' if localisation else ''}.\n\n"
                 f"{description}"
@@ -123,12 +171,11 @@ def demande_devis(request, company_id):
             Message.objects.create(conversation=conv, expediteur=request.user, contenu=intro)
             conv.mis_a_jour_le = timezone.now()
             conv.save(update_fields=['mis_a_jour_le'])
-            # Notification pour l'entreprise
             NotificationConstruction.objects.create(
                 destinataire=contact,
                 projet=projet,
                 type=NotificationConstruction.Type.NOUVEAU_DEVIS,
-                message=f"Nouveau devis reçu de {request.user.get_full_name() or request.user.username} "
+                message=f"Demande de devis détaillée reçue de {request.user.get_full_name() or request.user.username} "
                         f"pour un(e) {projet.get_type_projet_display()}"
                         f"{f' à {localisation}' if localisation else ''}.",
             )
@@ -136,11 +183,35 @@ def demande_devis(request, company_id):
         return redirect('construction:projet_detail', projet_id=projet.id)
 
     return render(request, 'construction/demande_devis.html', {
+        'projet': projet,
         'company': company,
         'profil': getattr(company, 'profil_construction', None),
         'terrain_lie': terrain_lie,
         'types': ProjetConstruction.TypeProjet.choices,
     })
+
+
+# ─── L'entreprise marque le rendez-vous comme terminé ───────────────────────
+
+@login_required
+def terminer_rdv(request, projet_id):
+    """Débloque le formulaire de devis détaillé pour le client une fois le
+    rendez-vous effectivement passé."""
+    projet = get_object_or_404(ProjetConstruction, id=projet_id)
+    contact = _get_contact_user(projet.entreprise)
+    est_entreprise = (contact and request.user == contact) or request.user.is_staff
+    if not est_entreprise:
+        return HttpResponseForbidden('Réservé à l\'entreprise.')
+
+    if request.method == 'POST' and projet.date_rdv and not projet.rdv_termine:
+        projet.rdv_termine = True
+        projet.save(update_fields=['rdv_termine'])
+        _notifier(
+            projet.client, projet, NotificationConstruction.Type.RDV_TERMINE,
+            "Le rendez-vous est terminé — vous pouvez maintenant nous soumettre votre demande de devis détaillée."
+        )
+
+    return redirect('construction:projet_detail', projet_id=projet.id)
 
 
 # ─── Mes projets (client) ────────────────────────────────────────────────────

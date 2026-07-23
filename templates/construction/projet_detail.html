@@ -357,7 +357,9 @@
         <div style="background:{% if projet.rdv_confirme %}#F0FDF4{% else %}#EFF6FF{% endif %};border-radius:10px;padding:12px 14px;margin-bottom:14px">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
             <div style="font-size:13.5px;font-weight:700;color:{% if projet.rdv_confirme %}var(--green,#16a34a){% else %}var(--primary){% endif %}">📅 {{ projet.date_rdv|date:"l d F Y à H:i" }}</div>
-            {% if projet.rdv_confirme %}
+            {% if projet.rdv_termine %}
+            <span style="background:#DCFCE7;color:#15803D;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap">✓ Terminé</span>
+            {% elif projet.rdv_confirme %}
             <span style="background:#DCFCE7;color:#15803D;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap">✓ Confirmé</span>
             {% else %}
             <span style="background:#FEF3C7;color:#B45309;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap">En attente de confirmation</span>
@@ -373,6 +375,21 @@
             Accepter ce rendez-vous
           </button>
         </form>
+        {% endif %}
+        {% if est_entreprise and not projet.rdv_termine %}
+        <form method="post" action="/construction/projet/{{ projet.id }}/rdv/terminer/" style="margin-bottom:14px" onsubmit="return confirm('Marquer ce rendez-vous comme terminé ? Le client pourra ensuite vous envoyer sa demande de devis détaillée.');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;font-size:13.5px;padding:10px;background:var(--green,#16a34a);border-color:var(--green,#16a34a)">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Marquer le RDV comme terminé
+          </button>
+        </form>
+        {% endif %}
+        {% if est_client and projet.rdv_termine and not projet.description %}
+        <a href="/construction/devis/{{ projet.id }}/" class="btn btn-primary" style="width:100%;justify-content:center;font-size:13.5px;padding:10px;margin-bottom:14px;display:flex">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M12 18v-6M9 15h6"/></svg>
+          Compléter ma demande de devis
+        </a>
         {% endif %}
         {% endif %}
         <form method="post" action="/construction/projet/{{ projet.id }}/rdv/">
