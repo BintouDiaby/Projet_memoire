@@ -152,8 +152,8 @@
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
           {% for c in autres_convs %}
           <a href="/chat/{{ c.id }}/" style="display:block;border:1px solid #e5e7eb;border-radius:10px;padding:12px;text-decoration:none;color:inherit;transition:.14s" onmouseover="this.style.borderColor='#185FA5'" onmouseout="this.style.borderColor='#e5e7eb'">
-            <div style="font-weight:600;font-size:13px;color:#111;margin-bottom:3px">{{ c.bien.titre|truncatechars:30 }}</div>
-            <div style="font-size:11.5px;color:#6B7280">{{ c.bien.commune|default:c.bien.ville }}</div>
+            <div style="font-weight:600;font-size:13px;color:#111;margin-bottom:3px">{% if c.bien %}{{ c.bien.titre|truncatechars:30 }}{% else %}Contact direct{% endif %}</div>
+            <div style="font-size:11.5px;color:#6B7280">{% if c.bien %}{{ c.bien.commune|default:c.bien.ville }}{% endif %}</div>
             <div style="margin-top:6px">
               <span style="font-size:10px;font-weight:700;border-radius:20px;padding:2px 7px;background:{% if c.phase == 'commercial' %}#E6F1FB{% elif c.phase == 'locataire' %}#EAF3DE{% else %}#FFFBEB{% endif %};color:{% if c.phase == 'commercial' %}#185FA5{% elif c.phase == 'locataire' %}#3B6D11{% else %}#92400E{% endif %}">{{ c.get_phase_display }}</span>
             </div>

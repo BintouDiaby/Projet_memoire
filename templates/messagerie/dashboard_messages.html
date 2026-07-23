@@ -104,7 +104,7 @@
                 <span class="phase-tag phase-{{ item.conv.phase }}">{{ item.conv.get_phase_display }}</span>
               </div>
               <div class="conv-sub">
-                {{ item.conv.bien.titre|truncatechars:30 }}
+                {{ item.conv.bien.titre|default:"Discussion générale"|truncatechars:30 }}
                 {% if item.dernier %} · {% if item.dernier.est_supprime %}<i>Message supprimé</i>{% else %}{{ item.dernier.contenu|truncatechars:28 }}{% endif %}{% endif %}
               </div>
             </div>
