@@ -376,7 +376,7 @@
           </button>
         </form>
         {% endif %}
-        {% if est_entreprise and not projet.rdv_termine %}
+        {% if est_entreprise and projet.rdv_confirme and not projet.rdv_termine %}
         <form method="post" action="/construction/projet/{{ projet.id }}/rdv/terminer/" style="margin-bottom:14px" onsubmit="return confirm('Marquer ce rendez-vous comme terminé ? Le client pourra ensuite vous envoyer sa demande de devis détaillée.');">
           {% csrf_token %}
           <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;font-size:13.5px;padding:10px;background:var(--green,#16a34a);border-color:var(--green,#16a34a)">
@@ -384,6 +384,8 @@
             Marquer le RDV comme terminé
           </button>
         </form>
+        {% elif est_entreprise and not projet.rdv_confirme and not projet.rdv_termine %}
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px">En attente que le client confirme ce rendez-vous avant de pouvoir le clore.</p>
         {% endif %}
         {% if est_client and projet.rdv_termine and not projet.description %}
         <a href="/construction/devis/{{ projet.id }}/" class="btn btn-primary" style="width:100%;justify-content:center;font-size:13.5px;padding:10px;margin-bottom:14px;display:flex">

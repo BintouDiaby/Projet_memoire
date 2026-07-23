@@ -196,14 +196,16 @@ def demande_devis(request, projet_id):
 @login_required
 def terminer_rdv(request, projet_id):
     """Débloque le formulaire de devis détaillé pour le client une fois le
-    rendez-vous effectivement passé."""
+    rendez-vous effectivement passé. Le client doit d'abord avoir confirmé
+    le rendez-vous — une entreprise ne peut pas le clore unilatéralement
+    avant que le client ne l'ait accepté."""
     projet = get_object_or_404(ProjetConstruction, id=projet_id)
     contact = _get_contact_user(projet.entreprise)
     est_entreprise = (contact and request.user == contact) or request.user.is_staff
     if not est_entreprise:
         return HttpResponseForbidden('Réservé à l\'entreprise.')
 
-    if request.method == 'POST' and projet.date_rdv and not projet.rdv_termine:
+    if request.method == 'POST' and projet.rdv_confirme and not projet.rdv_termine:
         projet.rdv_termine = True
         projet.save(update_fields=['rdv_termine'])
         _notifier(
