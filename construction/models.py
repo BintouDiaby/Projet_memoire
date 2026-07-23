@@ -65,7 +65,7 @@ class ProjetConstruction(models.Model):
     # Valeurs par défaut : un client "intéressé" crée d'abord ce projet en
     # coquille vide (voir demander_contact_construction), avant même de
     # connaître le type de projet — remplies pour de vrai une fois le RDV
-    # terminé, via demande_devis.
+    # confirmé par l'entreprise, via demande_devis.
     type_projet  = models.CharField(max_length=20, choices=TypeProjet.choices, default=TypeProjet.AUTRE)
     superficie   = models.DecimalField(max_digits=8, decimal_places=0, null=True, blank=True)
     a_terrain    = models.BooleanField(default=False)
@@ -77,11 +77,11 @@ class ProjetConstruction(models.Model):
     terrain_lie  = models.ForeignKey(Bien, on_delete=models.SET_NULL, null=True, blank=True, related_name='projets_construction')
     date_rdv     = models.DateTimeField(null=True, blank=True)
     notes_rdv    = models.TextField(blank=True)
+    # Confirmé par l'ENTREPRISE (pas le client) — c'est ce qui débloque le
+    # formulaire de devis détaillé (voir construction/views.py::demande_devis
+    # / confirmer_rdv). Le client peut proposer/modifier une date via
+    # gerer_rdv, mais seule l'entreprise peut la confirmer.
     rdv_confirme = models.BooleanField(default=False)
-    # Coché par l'entreprise une fois le rendez-vous effectivement passé —
-    # c'est ce qui débloque le formulaire de devis détaillé pour le client
-    # (voir construction/views.py::demande_devis / terminer_rdv).
-    rdv_termine  = models.BooleanField(default=False)
     cree_le      = models.DateTimeField(auto_now_add=True)
     mis_a_jour_le = models.DateTimeField(auto_now=True)
 
@@ -199,10 +199,9 @@ class NotificationConstruction(models.Model):
     class Type(models.TextChoices):
         NOUVEAU_DEVIS = 'nouveau_devis', 'Nouveau devis reçu'
         RDV_PROPOSE   = 'rdv_propose',   'RDV proposé'
-        RDV_MODIFIE   = 'rdv_modifie',   'RDV modifié par le client'
-        RDV_CONFIRME  = 'rdv_confirme',  'RDV confirmé par le client'
-        RDV_ANNULE    = 'rdv_annule',    'RDV annulé par l\'entreprise'
-        RDV_TERMINE   = 'rdv_termine',   'RDV terminé — devis débloqué'
+        RDV_MODIFIE   = 'rdv_modifie',   'RDV proposé/modifié par le client'
+        RDV_CONFIRME  = 'rdv_confirme',  'RDV confirmé par l\'entreprise — devis débloqué'
+        RDV_ANNULE    = 'rdv_annule',    'RDV annulé'
         STATUT_CHANGE = 'statut_change', 'Statut du projet modifié'
         ETAPE_CHANGE  = 'etape_change',  'Étape mise à jour'
 

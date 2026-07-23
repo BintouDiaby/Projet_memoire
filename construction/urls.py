@@ -16,7 +16,6 @@ urlpatterns = [
     path('projet/<int:projet_id>/rdv/', views.gerer_rdv, name='gerer_rdv'),
     path('projet/<int:projet_id>/rdv/confirmer/', views.confirmer_rdv, name='confirmer_rdv'),
     path('projet/<int:projet_id>/rdv/annuler/', views.annuler_rdv, name='annuler_rdv'),
-    path('projet/<int:projet_id>/rdv/terminer/', views.terminer_rdv, name='terminer_rdv'),
     path('notifs/lues/', views.marquer_notifs_lues, name='notifs_lues'),
     path('projet/<int:projet_id>/devis/preparer/', views.devis_preparer, name='devis_preparer'),
     path('devis/<int:devis_id>/repondre/', views.devis_repondre, name='devis_repondre'),

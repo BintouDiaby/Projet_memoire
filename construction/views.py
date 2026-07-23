@@ -71,8 +71,8 @@ def profil_entreprise(request, company_id):
 # ─── Premier contact : le client se dit intéressé, avant tout devis ─────────
 # Un devis détaillé ne peut plus être demandé directement — le client doit
 # d'abord obtenir un rendez-vous avec l'entreprise, et que celle-ci le
-# marque comme terminé (voir terminer_rdv), avant que demande_devis ne
-# s'ouvre pour ce projet.
+# confirme (voir confirmer_rdv), avant que demande_devis ne s'ouvre pour
+# ce projet.
 
 @login_required
 def demander_contact_construction(request, company_id):
@@ -120,8 +120,8 @@ def demande_devis(request, projet_id):
     projet = get_object_or_404(ProjetConstruction, id=projet_id)
     if request.user != projet.client:
         return HttpResponseForbidden('Réservé au client de ce projet.')
-    if not projet.rdv_termine:
-        messages.error(request, "Le rendez-vous doit d'abord avoir lieu avant de pouvoir demander un devis détaillé.")
+    if not projet.rdv_confirme:
+        messages.error(request, "L'entreprise doit d'abord confirmer votre rendez-vous avant de pouvoir demander un devis détaillé.")
         return redirect('construction:projet_detail', projet_id=projet.id)
 
     company = projet.entreprise
@@ -192,29 +192,6 @@ def demande_devis(request, projet_id):
 
 
 # ─── L'entreprise marque le rendez-vous comme terminé ───────────────────────
-
-@login_required
-def terminer_rdv(request, projet_id):
-    """Débloque le formulaire de devis détaillé pour le client une fois le
-    rendez-vous effectivement passé. Le client doit d'abord avoir confirmé
-    le rendez-vous — une entreprise ne peut pas le clore unilatéralement
-    avant que le client ne l'ait accepté."""
-    projet = get_object_or_404(ProjetConstruction, id=projet_id)
-    contact = _get_contact_user(projet.entreprise)
-    est_entreprise = (contact and request.user == contact) or request.user.is_staff
-    if not est_entreprise:
-        return HttpResponseForbidden('Réservé à l\'entreprise.')
-
-    if request.method == 'POST' and projet.rdv_confirme and not projet.rdv_termine:
-        projet.rdv_termine = True
-        projet.save(update_fields=['rdv_termine'])
-        _notifier(
-            projet.client, projet, NotificationConstruction.Type.RDV_TERMINE,
-            "Le rendez-vous est terminé — vous pouvez maintenant nous soumettre votre demande de devis détaillée."
-        )
-
-    return redirect('construction:projet_detail', projet_id=projet.id)
-
 
 # ─── Mes projets (client) ────────────────────────────────────────────────────
 
@@ -368,7 +345,7 @@ def gerer_rdv(request, projet_id):
                 destinataire = projet.client
                 type_notif = NotificationConstruction.Type.RDV_PROPOSE
             else:
-                msg = f"Le client souhaite modifier le RDV : {date_fmt}. {notes}"
+                msg = f"Le client propose un rendez-vous le {date_fmt}. {notes}"
                 destinataire = contact
                 type_notif = NotificationConstruction.Type.RDV_MODIFIE
 
@@ -381,23 +358,26 @@ def gerer_rdv(request, projet_id):
 
 @login_required
 def confirmer_rdv(request, projet_id):
-    """Le client accepte formellement la date de RDV proposée."""
+    """L'entreprise confirme formellement la date de RDV — c'est ce qui
+    débloque le formulaire de devis détaillé pour le client (voir
+    demande_devis). Le client peut proposer/modifier une date via
+    gerer_rdv, mais seule l'entreprise peut la confirmer."""
     projet = get_object_or_404(ProjetConstruction, id=projet_id)
     user = request.user
-    est_client = user == projet.client
+    contact = _get_contact_user(projet.entreprise)
+    est_entreprise = (contact and user == contact) or user.is_staff
 
-    if not est_client:
-        return HttpResponseForbidden()
+    if not est_entreprise:
+        return HttpResponseForbidden('Réservé à l\'entreprise.')
 
     if request.method == 'POST' and projet.date_rdv and not projet.rdv_confirme:
         projet.rdv_confirme = True
         projet.save(update_fields=['rdv_confirme'])
 
-        contact = _get_contact_user(projet.entreprise)
         date_fmt = projet.date_rdv.strftime('%d/%m/%Y à %H:%M')
         _notifier(
-            contact, projet, NotificationConstruction.Type.RDV_CONFIRME,
-            f"Le client a confirmé le rendez-vous du {date_fmt}."
+            projet.client, projet, NotificationConstruction.Type.RDV_CONFIRME,
+            f"Votre rendez-vous du {date_fmt} est confirmé — vous pouvez maintenant nous soumettre votre demande de devis détaillée."
         )
 
     return redirect('construction:projet_detail', projet_id=projet.id)
