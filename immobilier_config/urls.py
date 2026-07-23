@@ -157,6 +157,7 @@ def home(request):
             'api_facturation': 'http://127.0.0.1:8000/api/facturation/',
             'api_recherche': 'http://127.0.0.1:8000/api/recherche/',
             'api_dashboard': 'http://127.0.0.1:8000/api/dashboard/',
+            'api_messagerie': 'http://127.0.0.1:8000/api/messagerie/conversations/',
         },
         'documentation': {
             'guide': 'GUIDE_DEMARRAGE.md',
@@ -1070,7 +1071,8 @@ urlpatterns = [
     path('api/facturation/', include('facturation.urls')),
     path('api/recherche/', include('recherche.urls')),
     path('api/dashboard/', include('dashboard.urls')),
-    
+    path('api/messagerie/', include('messagerie.api_urls')),
+
     # DRF auth
     path('api-auth/', include('rest_framework.urls')),
     path('accounts/logout/', utilisateurs_views.logout_view, name='logout'),
