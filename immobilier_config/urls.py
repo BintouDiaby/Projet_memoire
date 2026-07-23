@@ -613,10 +613,13 @@ def mon_espace_locataire(request):
         .order_by('-date_creation')
     )
 
-    # Historique des paiements : mois passés/actuel uniquement (pas les
-    # échéances futures déjà générées à l'avance), du plus ancien au plus récent.
+    # Historique des paiements : mois passés/actuel, PLUS toute échéance future
+    # qui porte déjà une facture (loyer à régler d'avance / en attente). On
+    # exclut seulement les mois futurs encore sans facture (simples placeholders
+    # du planning), pour que les factures "en attente" apparaissent bien ici.
     paiements_recents = list(reversed(
-        Paiement.objects.filter(contrat__locataire=user, mois__lte=mois_actuel)
+        Paiement.objects.filter(contrat__locataire=user)
+        .filter(Q(mois__lte=mois_actuel) | Q(facture__isnull=False))
         .select_related('contrat__bien')
         .order_by('-mois')[:6]
     ))
