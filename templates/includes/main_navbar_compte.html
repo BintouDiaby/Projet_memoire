@@ -1,0 +1,16 @@
+{% comment %}
+Bloc compte affiché DANS le panneau déroulant, uniquement sous 600px
+(voir .ig-account dans includes/main_navbar.html). Au-dessus de 600px
+c'est .ig-actions dans la barre qui prend le relais.
+{% endcomment %}
+<li class="ig-account">
+  <span class="ig-username" style="display:block">{{ request.user.get_full_name|default:request.user.username }}</span>
+  <span class="ig-role-badge {{ request.user.role }}">{{ request.user.get_role_display }}</span>
+  {% if request.user.is_staff %}
+  <a href="/admin/" class="ig-btn ig-btn-ghost" style="font-size:12px;padding:6px 11px">Admin</a>
+  {% endif %}
+  <form method="post" action="{% url 'logout' %}" style="margin:0">
+    {% csrf_token %}
+    <button type="submit" class="ig-btn-logout">Déconnexion</button>
+  </form>
+</li>

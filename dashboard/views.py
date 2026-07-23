@@ -2504,8 +2504,16 @@ def stripe_creer_session(request):
         return redirect(next_url)
 
     stripe.api_key = settings.STRIPE_SECRET_KEY
-    success_url = request.build_absolute_uri(
-        f'/dashboard/facturation/stripe/succes/?facture_id={facture.id}&session_id={{CHECKOUT_SESSION_ID}}'
+    # IMPORTANT : le placeholder {CHECKOUT_SESSION_ID} doit rester litteral dans
+    # l'URL envoyee a Stripe (c'est Stripe qui le remplace par le vrai id de
+    # session au retour). On construit donc la base absolue AVANT d'y coller la
+    # query : si on passait toute l'URL (query comprise) a build_absolute_uri,
+    # iri_to_uri encoderait les accolades en %7B/%7D, Stripe ne reconnaitrait
+    # plus le motif, ne substituerait rien, et le retrieve echouerait avec
+    # « No such checkout.session: {CHECKOUT_SESSION_ID} ».
+    success_url = (
+        request.build_absolute_uri('/dashboard/facturation/stripe/succes/')
+        + f'?facture_id={facture.id}&session_id={{CHECKOUT_SESSION_ID}}'
     )
     cancel_url = request.build_absolute_uri(next_url)
 
@@ -2543,26 +2551,64 @@ def stripe_paiement_reussi(request):
     from django.conf import settings
     from django.shortcuts import redirect
     import stripe
+    import logging
+    logger = logging.getLogger(__name__)
 
     facture = Facture.objects.select_related('contrat__bien', 'contrat__proprietaire', 'paiement').filter(
         id=request.GET.get('facture_id'), contrat__locataire=request.user
     ).first()
     session_id = request.GET.get('session_id')
 
-    if facture and session_id and settings.STRIPE_SECRET_KEY:
-        stripe.api_key = settings.STRIPE_SECRET_KEY
+    if not (facture and session_id and settings.STRIPE_SECRET_KEY):
+        logger.warning(
+            "Retour Stripe ignore : facture_id=%s trouvee=%s session_id=%s cle_stripe=%s",
+            request.GET.get('facture_id'), bool(facture), session_id, bool(settings.STRIPE_SECRET_KEY),
+        )
+        return redirect('/dashboard/facturation/')
+
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+    except Exception as e:
+        logger.error("Retour Stripe : echec du retrieve de la session %s : %s", session_id, e)
+        session = None
+
+    # Lecture robuste de la metadata : l'objet renvoyé varie selon la version de
+    # stripe-python (certaines n'exposent ni .get() ni dict()), on n'utilise donc
+    # que `in` + l'indexation, protegees.
+    meta_facture_id = None
+    if session is not None:
         try:
-            session = stripe.checkout.Session.retrieve(session_id)
+            md = session.metadata
+            if md and 'facture_id' in md:
+                meta_facture_id = str(md['facture_id'])
         except Exception:
-            session = None
-        session_facture_id = session.metadata['facture_id'] if session and 'facture_id' in session.metadata else None
-        if session and session.payment_status == 'paid' and session_facture_id == str(facture.id):
-            if _marquer_facture_payee(facture, request.user, 'Carte bancaire', 'carte', session.payment_intent):
-                messages.success(request, "Paiement par carte confirmé. La facture est marquée payée.")
-            else:
-                messages.info(request, "Cette facture était déjà marquée payée.")
+            meta_facture_id = None
+
+    paye = session is not None and getattr(session, 'payment_status', None) == 'paid'
+    meta_ok = meta_facture_id == str(facture.id)
+    try:
+        montant_ok = session is not None and int(session.amount_total or 0) == int(facture.montant_total)
+    except Exception:
+        montant_ok = False
+
+    # On confirme si Stripe atteste le paiement ET que la session correspond bien
+    # à CETTE facture — soit par la metadata, soit (repli robuste, insensible aux
+    # aleas de version de la lib) par l'egalite du montant total.
+    if paye and (meta_ok or montant_ok):
+        payment_intent = getattr(session, 'payment_intent', None)
+        if _marquer_facture_payee(facture, request.user, 'Carte bancaire', 'carte', payment_intent):
+            messages.success(request, "Paiement par carte confirmé. La facture est marquée payée.")
         else:
-            messages.error(request, "Le paiement n'a pas pu être confirmé auprès de Stripe.")
+            messages.info(request, "Cette facture était déjà marquée payée.")
+    else:
+        logger.warning(
+            "Retour Stripe NON confirme : facture=%s session=%s payment_status=%s "
+            "meta_facture_id=%s meta_ok=%s montant_ok=%s",
+            facture.id, session_id, getattr(session, 'payment_status', None),
+            meta_facture_id, meta_ok, montant_ok,
+        )
+        messages.error(request, "Le paiement n'a pas pu être confirmé auprès de Stripe.")
 
     return redirect('/dashboard/facturation/')
 

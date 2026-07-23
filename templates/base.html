@@ -140,19 +140,10 @@
       /* Séparateur vertical */
       .ig-sep { width: 1px; height: 22px; background: var(--ig-border); flex-shrink: 0; }
 
-      /* Mobile : les liens de nav passent dans un menu déroulant (voir
-         includes/main_navbar.html pour le bouton et le JS de bascule) */
-      .ig-hamburger { display: none; background: none; border: 1px solid var(--ig-border); border-radius: 9px; width: 38px; height: 38px; cursor: pointer; color: #374151; align-items: center; justify-content: center; flex-shrink: 0; }
-      .ig-hamburger svg { width: 19px; height: 19px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
-      @media (max-width: 900px) {
-        .ig-hamburger { display: flex; }
-        .ig-navlinks { display: none; position: absolute; top: 60px; left: 0; right: 0; background: #fff; flex-direction: column; gap: 2px; padding: 10px; border-bottom: 1px solid var(--ig-border); box-shadow: 0 12px 24px rgba(16,32,48,.08); }
-        .ig-navlinks.ig-open { display: flex; }
-        .ig-navlinks li a { padding: 11px 14px; font-size: 14px; }
-      }
-      @media (max-width: 600px) {
-        .ig-btn-amber { display: none; }
-      }
+      /* Le responsive de la navbar (burger + panneau déroulant sous 900px)
+         est défini dans includes/main_navbar.html, qui est la source de
+         vérité. Ne pas redéclarer de media query .ig-nav* ici : les deux
+         copies se contrediraient selon l'ordre d'inclusion. */
     </style>
     {% block extra_head %}{% endblock %}
   </head>

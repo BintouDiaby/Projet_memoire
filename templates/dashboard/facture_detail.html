@@ -453,23 +453,51 @@
     {% if est_locataire and facture.statut != 'payee' and facture.statut != 'annulee' and facture.statut != 'en_validation' %}
     <div class="me-card">
       <h3 class="me-card-title">Payer cette facture</h3>
-      <form method="post" action="/dashboard/facturation/signaler-paiement/">
+      <form method="post" action="/dashboard/facturation/signaler-paiement/" id="payFactureForm">
         {% csrf_token %}
         <input type="hidden" name="facture_id" value="{{ facture.id }}">
         <input type="hidden" name="next" value="/dashboard/facturation/{{ facture.id }}/">
         <div class="fld">
-          <label>Moyen de paiement utilisé</label>
-          <select name="moyen_paiement">
+          <label>Moyen de paiement</label>
+          <select name="moyen_paiement" id="payMoyenSelect">
             {% for m in moyens_paiement %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
           </select>
         </div>
-        <div class="fld">
+        <div class="fld" id="payNumeroField">
           <label>Numéro utilisé pour le paiement (mobile money)</label>
           <input type="text" name="numero_paiement" placeholder="Ex : 07 XX XX XX XX">
         </div>
-        <p style="font-size:12.5px;color:#6B7280;margin-bottom:14px">Effectuez le paiement via le moyen choisi, puis déclarez-le ci-dessous — le propriétaire devra confirmer la réception pour finaliser.</p>
-        <button type="submit" class="ig-btn-full primary">Déclarer le paiement</button>
+        <p style="font-size:12.5px;color:#6B7280;margin-bottom:14px" id="payHintMobile">Effectuez le paiement via le moyen choisi, puis déclarez-le ci-dessous — le propriétaire devra confirmer la réception pour finaliser.</p>
+        <p style="font-size:12.5px;color:#6B7280;margin-bottom:14px" id="payHintCarte" hidden>Vous allez être redirigé vers la page de paiement sécurisée Stripe pour régler par carte.</p>
+        <button type="submit" class="ig-btn-full primary" id="payFactureBtn">Déclarer le paiement</button>
       </form>
+      <script>
+      (function () {
+        // « Carte bancaire » ne se déclare pas comme le mobile money : elle doit
+        // partir sur Stripe (comme la modale de la page liste). On bascule donc
+        // l'action du formulaire vers stripe_creer_session quand la carte est
+        // choisie, et on garde la déclaration classique pour Wave/OM/MTN.
+        var form = document.getElementById('payFactureForm');
+        var sel = document.getElementById('payMoyenSelect');
+        if (!form || !sel) return;
+        var SIGNALER = '/dashboard/facturation/signaler-paiement/';
+        var STRIPE = '{% url "stripe_creer_session" %}';
+        var numero = document.getElementById('payNumeroField');
+        var btn = document.getElementById('payFactureBtn');
+        var hintMobile = document.getElementById('payHintMobile');
+        var hintCarte = document.getElementById('payHintCarte');
+        function sync() {
+          var carte = sel.value === 'Carte bancaire';
+          form.action = carte ? STRIPE : SIGNALER;
+          if (numero) numero.style.display = carte ? 'none' : '';
+          if (btn) btn.textContent = carte ? 'Payer par carte' : 'Déclarer le paiement';
+          if (hintMobile) hintMobile.hidden = carte;
+          if (hintCarte) hintCarte.hidden = !carte;
+        }
+        sel.addEventListener('change', sync);
+        sync();
+      })();
+      </script>
     </div>
     {% endif %}
 
